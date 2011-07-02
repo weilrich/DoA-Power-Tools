@@ -1,0 +1,12 @@
+Version: 07022011b
+
+Attacks
+Attack bug: found that scanMapBusy was being set to true when dat.done in butSearchNow(). Fixed.
+Attack feature: Added 'Clear' button and checkbox to allow users to clear the last attacked field in the target list. This allows the user to start at the top of the list again rather than wherever they last left off.
+Attack bug: mapObject array had information in it when map is transferred causing some wrong map types to exist in the target list. I zero the array length before copying the new target list in butTransfer(). Fixed.
+Attack feature (private build only): Append alliance name to city/outpost target list
+
+Train
+Training feature: added third outpost and Firetroops. Guessed at new troop name: Djinn - will replace when I see what the actual name is
+Training bug: Stonetroop (and Firetroop) training not supported through checkReqs. Will add when I can build them.
+
