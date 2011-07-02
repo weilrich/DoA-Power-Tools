@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110630a';
+var Version = '20110702b';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -90,6 +90,7 @@ var kGiant = translate ('Giant');
 var kFireMirror = translate ('FireMirror');
 var kAquaTroop = translate ('AquaTroop');
 var kStoneTroop = translate ('StoneTroop');
+var kFireTroop = translate ('FireTroop');
 var kGreatDragon = translate ('GreatDragon');
 var kWaterDragon = translate ('WaterDragon');
 var kStoneDragon = translate ('StoneDragon');
@@ -108,6 +109,7 @@ var kWatDrg = translate ('WatDrg');
 var kStnDrg = translate ('StnDrg');
 var kFang = translate ('Fang');
 var kOgre = translate ('Ogre');
+var kDjinn = translate ('Djinn');
 
 // Tabs
 var kInfo = translate ('Info');
@@ -126,7 +128,7 @@ var kAquaTroopRespirator = translate ('AquaTroopRespirator');
 var kFatalSWF = translate ('"<B>Error initializing DOA Power Tools mod by Wham:</b><BR><BR>Unable to find SWF element"');
 var kStartupErr = translate ('"Unable to start DOA Power Tools mod by Wham:<BR>"');
 var kInitErr = translate ('"<B>Error initializing DOA Power Tools mod by Wham:</b><BR><BR>"');
-var kNoTargetTroops = translate ('No targets/troops available');
+var kNoTroops = translate ('No troops available');
 var kErrSendAttack = translate ('ERROR! (sendAttack is busy, no response from server?)');
 var kAttackErr = translate ('Attack Error: ');
 var kNoTroopsDefined = translate ('No Troops Defined');
@@ -145,6 +147,7 @@ var kTooManyTroops = translate ('Too many troops for muster point level');
 var kDisablingAutoTrain = translate ('Too many errors, disabling auto-train');
 var kTrainError = translate ('Train error: ');
 var kInvalidNumberTroops = translate ('Invalid # of troops');
+var kErrorOccurred = translate ('An error has occurred:');
 
 // User interface
 var kAttacks = translate ('Attacks');
@@ -156,6 +159,9 @@ var kWaveTitle = translate ('Attack One Target in Waves');
 var kAttackStatsTitle = translate ('Auto-attack Stats');
 var kAutoUpgradeBuildings = translate ('Auto Upgrade Buildings');
 var kClearStats = translate ('"Clear Stats"');
+var kClearLast = translate ('Clear last attack on current map');
+var kClear = translate ('Clear');
+var kClearAll = translate ('Clear last attack on all maps');
 var kTroopsLost = translate ('Troops lost! (');
 var kAutoOn = translate ('Auto ON');
 var kAutoOff = translate ('Auto OFF');
@@ -576,7 +582,7 @@ var OptionsDefaults = {
   ptWinIsOpen   : true,
   ptWinDrag     : true,
   ptWinPos      : {},
-  objAttack     : {enabled:false, repeatTime:3660, delayMin:30, delayMax:60, levelEnable:[], levelDist:[null,10,10,10,10,10,10,10,10,10,10], deleteObjAttacks:false, stopAttackOnLoss:false, logAttacks:true, maxMarches:10, troops:[]},
+  objAttack     : {enabled:false, repeatTime:3660, delayMin:30, delayMax:60, levelEnable:[], levelDist:[null,10,10,10,10,10,10,10,10,10,10], deleteObjAttacks:false, stopAttackOnLoss:false, logAttacks:true, maxMarches:10, troops:[], clearAllTargets:false},
   currentTab    : false,
   attackTab     : 0,
   mapTab        : 0,
@@ -2190,7 +2196,7 @@ Tabs.AutoAttack = {
         return;                
     }
     else {
-        t.dispFeedback (kNoTargetTroops);
+        t.dispFeedback (kNoTroops);
         t.attackTimer = setTimeout (t.autoCheckTargets, 10000);
     }
   },
@@ -2399,7 +2405,7 @@ Tabs.AutoAttack = {
  // Data.options.campAttack {enabled:false, maxDist:7, repeatTime:3660, delayMin:15, delayMax:25, levelEnable:[], levelDist:[]}
   
   //*** Attacks Tab - Levels Sub-Tab ***
-  troopTypes : [kPorter, kConscript, kSpy, kHalberdsman, kMinotaur, kLongbowman, kSwiftStrikeDragon, kBattleDragon, kArmoredTransport, kGiant, kFireMirror, kAquaTroop, kStoneTroop, kGreatDragon, kWaterDragon, kStoneDragon],
+  troopTypes : [kPorter, kConscript, kSpy, kHalberdsman, kMinotaur, kLongbowman, kSwiftStrikeDragon, kBattleDragon, kArmoredTransport, kGiant, kFireMirror, kAquaTroop, kStoneTroop, kFireTroop, kGreatDragon, kWaterDragon, kStoneDragon],
   tabConfigLevels : function (){
     var t = Tabs.AutoAttack;
      
@@ -2519,6 +2525,8 @@ Tabs.AutoAttack = {
       <TR><TD class=pbTabLeft>'+ kDeleteMarchReports +'</td><TD><INPUT id=pbaacfgDMR '+ (Data.options.objAttack.deleteObjAttacks?'CHECKED ':'') +' type=checkbox \></td></tr>\
       <TR><TD class=pbTabLeft>'+ kStopOnLoss +'</td><TD><INPUT id=pbaacfgSTL '+ (Data.options.objAttack.stopAttackOnLoss?'CHECKED ':'') +' type=checkbox \></td></tr>\
       <TR><TD class=pbTabLeft>'+ kMaxMarches +'</td><TD><INPUT class=short id=pbaacfgMM maxlength=2 type=text value="'+ Data.options.objAttack.maxMarches +'"\></td></tr>\
+      <TR><TD class=pbTabLeft>'+ kClearLast +'</td><TD><INPUT class=greenButton type=submit id=pbaacfgClr value='+ kClear +'></td></tr>\
+      <TR><TD class=pbTabLeft>'+ kClearAll +'</td><TD><INPUT id=pbaacfgCA '+ (Data.options.objAttack.clearAllTargets?'CHECKED ':'') +' type=checkbox \></td></tr>\
       </table>';
     document.getElementById('pbatContent').innerHTML = m;
     
@@ -2526,9 +2534,12 @@ Tabs.AutoAttack = {
     document.getElementById('pbaacfgDMR').addEventListener('change', function (e){Data.options.objAttack.deleteObjAttacks = e.target.checked;}, false);
     document.getElementById('pbaacfgSTL').addEventListener('change', function (e){Data.options.objAttack.stopAttackOnLoss = e.target.checked;}, false);
     document.getElementById('pbaacfgLA').addEventListener('change', function (e){Data.options.objAttack.logAttacks = e.target.checked;}, false);
+    document.getElementById('pbaacfgCA').addEventListener('change', function (e){Data.options.objAttack.clearAllTargets = e.target.checked;}, false);
     document.getElementById('pbaacfgRD1').addEventListener('change', delayChanged, false);
     document.getElementById('pbaacfgRD2').addEventListener('change', delayChanged, false);
     document.getElementById('pbaacfgMM').addEventListener('change', maxMarchesChanged, false);
+    document.getElementById('pbaacfgClr').addEventListener('click', clearLast, false);
+    
     
     function delayChanged (e){
       var min = parseIntNan(document.getElementById('pbaacfgRD1').value);
@@ -2551,6 +2562,43 @@ Tabs.AutoAttack = {
       e.target.style.backgroundColor = '';
       Data.options.objAttack.maxMarches = val;
     } 
+    
+    // Clear the information about when the target was last attacked
+    // This is useful because attacks always start with the oldest target or, 
+    // if no target has been attacked (last == 0), the first target in the list
+    function clearLast (e){
+        if (Data.options.objAttack.clearAllTargets) {
+            // Make sure the user has scanned the map
+            if (Data.targets.camps) {
+                // Clear the last field of all targets
+                for (var i=0; i<Data.targets.camps.length; i++)
+                    Data.targets.camps[i].last = 0;
+                for (var i=0; i<Data.targets.cities.length; i++)
+                    Data.targets.cities[i].last = 0;
+                for (var i=0; i<Data.targets.outposts.length; i++)
+                    Data.targets.outposts[i].last = 0;
+                for (var i=0; i<Data.targets.grasslands.length; i++)
+                    Data.targets.grasslands[i].last = 0;
+                for (var i=0; i<Data.targets.swamps.length; i++)
+                    Data.targets.swamps[i].last = 0;
+                for (var i=0; i<Data.targets.lakes.length; i++)
+                    Data.targets.lakes[i].last = 0;
+                for (var i=0; i<Data.targets.hills.length; i++)
+                    Data.targets.hills[i].last = 0;
+                for (var i=0; i<Data.targets.plains.length; i++)
+                    Data.targets.plains[i].last = 0;
+                for (var i=0; i<Data.targets.mountains.length; i++)
+                    Data.targets.mountains[i].last = 0;
+                for (var i=0; i<Data.targets.forests.length; i++)
+                    Data.targets.forests[i].last = 0;
+            }      
+        }
+        else
+            // Clear the last attacked field of the currently selected target
+            if (Data.targets.mapObjects)
+                for (var i=0; i<Data.targets.mapObjects.length; i++)
+                    Data.targets.mapObjects[i].last = 0;
+    }
   },
     
 
@@ -2590,7 +2638,7 @@ Tabs.AutoAttack = {
         
         // Add the skip attack button for cities and outposts
         if (t.selectedMapName == kCity || t.selectedMapName == kOutpost)
-            m += '<TD><INPUT class=small id=pbskipAN_'+ i +' type=submit value=' + kSkipAttack + '\></td>';
+            m += '<TD><INPUT class=small id=pbskipAN_'+ i +' type=submit value=' + kSkipAttack + '\></td><TD>'+ mapObjects[i].playerAlliance +'</td>';
             
         m += '</tr>';
         /*
@@ -2847,7 +2895,7 @@ Tabs.AutoAttack = {
                 Data.targets.forests.sort(function(a,b){return a.dist-b.dist});
 
                 Data.targets.radius = radius;
-                Tabs.AutoAttack.checkMapBusy = true;
+                Tabs.AutoAttack.checkMapBusy = false;
                 dial.destroy();
             }
             else
@@ -2874,6 +2922,7 @@ Tabs.AutoAttack = {
             default:            break;
         }
         if (currentlySelectedMap){
+            mapObjects.length = 0; // Zero out the array so stuff left in it from before is gone
             for (var i=0;i<currentlySelectedMap.length;i++){
                 mapObjects[i] = currentlySelectedMap[i];
             }
@@ -3505,6 +3554,7 @@ var Names = {
     [13, kStoneDragon, kStnDrg],
     [14, kAquaTroop, kFang],
     [15, kStoneTroop, kOgre],
+    [16, kFireTroop, kDjinn],
     ],
   }, 
   
@@ -4131,7 +4181,8 @@ Tabs.Train = {
   capitalTroops : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror'],
   outpost1Troops: ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop'],
   outpost2Troops: ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'StoneTroop'],
-  allTroops     : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop', 'StoneTroop'],
+  outpost3Troops: ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'FireTroop'],
+  allTroops     : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop', 'StoneTroop', 'FireTroop'],
   contentType   : 0, // 0 = train, 1 = config
   selectedQ     : kMinHousing,
   trainJobs     : [],
@@ -4255,6 +4306,9 @@ Tabs.Train = {
 				break;
 			case 2:
 				troopTypes = t.outpost2Troops;
+				break;
+			case 3:
+				troopTypes = t.outpost3Troops;
 				break;
 			default:
 				troopTypes = t.capitalTroops;
@@ -5220,6 +5274,9 @@ Tabs.Train = {
 			case 2:
 				troopsLength = t.outpost2Troops.length;
 				break;
+			case 3:
+				troopsLength = t.outpost3Troops.length;
+				break;
 			default:
 				troopsLength = t.capitalTroops.length;
 		}
@@ -5279,37 +5336,65 @@ Tabs.Train = {
                             troopType = t.outpost1Troops[j];
                             troopQty = Data.options.autoTrain.city[i].troopType[j];
                             cap = t.getTroopCap(troopType, troopQty);
-                            if (cap) {
-                                troopQty = 0;
-                                t.dispFeedback("Troops Capped");
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            try {
+                                if (cap) {
+                                    troopQty = 0;
+                                    t.dispFeedback("Troops Capped");
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                                }
+                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
                             }
-                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            catch (e) {
+                            }
                             break;
                         case 2:
                             troopType = t.outpost2Troops[j];
                             troopQty = Data.options.autoTrain.city[i].troopType[j];
                             cap = t.getTroopCap(troopType, troopQty);
-                            if (cap) {
-                                troopQty = 0;
-                                t.dispFeedback("Troops Capped");
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            try {
+                                if (cap) {
+                                    troopQty = 0;
+                                    t.dispFeedback("Troops Capped");
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                                }
+                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
                             }
-                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            catch (e) {
+                            }
+                            break;
+                        case 3:
+                            troopType = t.outpost3Troops[j];
+                            troopQty = Data.options.autoTrain.city[i].troopType[j];
+                            cap = t.getTroopCap(troopType, troopQty);
+                            try {
+                                if (cap) {
+                                    troopQty = 0;
+                                    t.dispFeedback("Troops Capped");
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                                }
+                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                            catch (e) {
+                            }
                             break;
                         default:
                             troopType = t.capitalTroops[j];
                             troopQty = Data.options.autoTrain.city[i].troopType[j];
                             cap = t.getTroopCap(troopType, troopQty);
-                            if (cap) {
-                                troopQty = 0;
-                                t.dispFeedback("Troops Capped");
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            try {
+                                if (cap) {
+                                    troopQty = 0;
+                                    t.dispFeedback("Troops Capped");
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                                }
+                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
                             }
-                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            catch (e) {
+                            }
                             break;
                     }
                     if (troopQty > 0) {
@@ -5364,35 +5449,62 @@ Tabs.Train = {
                         troopType = t.outpost1Troops[j];
                         troopQty = Data.options.autoTrain.city[i].troopType[j];
                         cap = t.getTroopCap(troopType, troopQty);
-                        if (cap) {
-                            troopQty = 0;
-                            t.dispFeedback("Troops Capped");
-                            document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                        try {
+                            if (cap) {
+                                troopQty = 0;
+                                t.dispFeedback("Troops Capped");
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            }
+                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                        catch (e) {
                         }
-                        else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                            document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
                         break;
                     case 2:
                         troopType = t.outpost2Troops[j];
                         troopQty = Data.options.autoTrain.city[i].troopType[j];
-                        if (cap) {
-                            troopQty = 0;
-                            t.dispFeedback("Troops Capped");
-                            document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                        try {
+                            if (cap) {
+                                troopQty = 0;
+                                t.dispFeedback("Troops Capped");
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            }
+                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                        catch (e) {
                         }
-                        else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                            document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                        break;
+                    case 3:
+                        troopType = t.outpost3Troops[j];
+                        troopQty = Data.options.autoTrain.city[i].troopType[j];
+                        try {
+                            if (cap) {
+                                troopQty = 0;
+                                t.dispFeedback("Troops Capped");
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            }
+                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                        catch (e) {
+                        }
                         break;
                     default:
                         troopType = t.capitalTroops[j];
                         troopQty = Data.options.autoTrain.city[i].troopType[j];
-                        if (cap) {
-                            troopQty = 0;
-                            t.dispFeedback("Troops Capped");
-                            document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                        try {
+                            if (cap) {
+                                troopQty = 0;
+                                t.dispFeedback("Troops Capped");
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            }
+                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                        catch (e) {
                         }
-                        else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                            document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
                         break;
                 }
                 if (troopQty > 0) {
@@ -5612,6 +5724,7 @@ var Map = {
     new MyAjaxRequest ('map.json', {x:t.firstX, y:t.firstY}, t.got);
   },  
 
+  // TBD: Change the if/else in the detail section to a case for the various types
   got : function (rslt){
     var t = Map;
     var x = rslt.dat.x;
@@ -6019,8 +6132,8 @@ function DialogRetry (errMsg, seconds, onRetry, onCancel){
     secs = parseInt(seconds);
     pop = new CPopup ('pbretry', 0, 0, 400,200, true);
     pop.centerMe(mainPop.getMainDiv());
-    pop.getTopDiv().innerHTML = '<CENTER>DOA Power Tools mod by Wham</center>';
-    pop.getMainDiv().innerHTML = '<CENTER><BR><FONT COLOR=#550000><B>An error has ocurred:</b></font><BR><BR><DIV id=paretryErrMsg></div>\
+    pop.getTopDiv().innerHTML = '<CENTER>'+ kDOAPowerTools +'</center>';
+    pop.getMainDiv().innerHTML = '<CENTER><BR><FONT COLOR=#550000><B>'+ kErrorOccurred +'</b></font><BR><BR><DIV id=paretryErrMsg></div>\
         <BR><BR><B>'+ kAutoRetry +'<SPAN id=paretrySeconds></b></span>'+ kSeconds1 +'<BR><BR><INPUT id=paretryCancel type=submit value='+ kCancelRetry +' \>';
     document.getElementById('paretryCancel').addEventListener ('click', doCancel, false);
     pop.show(true);
