@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110703a';
+var Version = '20110703b';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -4062,6 +4062,8 @@ Tabs.Build = {
                  <option value="7">7</option>\
                  <option value="8">8</option>\
                  <option value="9">9</option>\
+                 <option value="10">10</option>\
+                 <option value="11">11</option>\
                  </select></td>';
         return m;
     }
@@ -5766,6 +5768,7 @@ Tabs.Research = {
                  <option value="7">7</option>\
                  <option value="8">8</option>\
                  <option value="9">9</option>\
+                 <option value="10">10</option>\
                  </select></td>';
         return m;
     }
@@ -6087,6 +6090,7 @@ var Map = {
     new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.firstX, y:t.firstY, version:3 }, t.got, false);
   },  
 
+  // TBD: Change the if/else in the detail section to a case for the various types
   got : function (rslt){
     var t = Map;
     var x = rslt.dat.x;
