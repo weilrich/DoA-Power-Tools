@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110702b';
+var Version = '20110703a';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -27,7 +27,7 @@ var WAVE_TAB_ORDER = 2;
 var ATTACK_TAB_ORDER = 3;
 var TRAIN_TAB_ORDER = 4;
 var BUILD_TAB_ORDER = 5;
-var MAP_TAB_ORDER = 6;
+var RESEARCH_TAB_ORDER = 6;
 var LOG_TAB_ORDER = 7;
 var OPTIONS_TAB_ORDER = 8;
 var DEBUG_TAB_ORDER = 99;
@@ -117,7 +117,7 @@ var kWave = translate ('Wave');
 var kAttack = translate ('Attack');
 var kTrain = translate ('Train');
 var kBuild = translate ('Build');
-var kMaps = translate ('Maps');
+var kResearch = translate ('Research');
 var kLog = translate ('Log');
 var kOpts = translate ('Opts');
 
@@ -158,11 +158,13 @@ var kSkipAttack = translate ('"Skip Attack"');
 var kWaveTitle = translate ('Attack One Target in Waves');
 var kAttackStatsTitle = translate ('Auto-attack Stats');
 var kAutoUpgradeBuildings = translate ('Auto Upgrade Buildings');
+var kAutoResearch = translate ('Auto Research');
 var kClearStats = translate ('"Clear Stats"');
 var kClearLast = translate ('Clear last attack on current map');
 var kClear = translate ('Clear');
 var kClearAll = translate ('Clear last attack on all maps');
 var kTroopsLost = translate ('Troops lost! (');
+var kMaps = translate ('Maps');
 var kAutoOn = translate ('Auto ON');
 var kAutoOff = translate ('Auto OFF');
 var kAttackingLevel = translate ('Attacking level ');
@@ -207,9 +209,10 @@ var kAlliance = translate ('Alliance');
 var kLevels = translate (' Levels');
 var kTraining = translate ('Training:');
 var kTraining1 = translate ('Training ');
-var kResearch = translate ('Research:');
 var kAutoBuildOn = translate ('Auto Build ON');
 var kAutoBuildOff = translate ('Auto Build OFF');
+var kAutoResearchOn = translate ('Auto Research ON');
+var kAutoResearchOff = translate ('Auto Research OFF');
 var kCityNumber = translate (kCity) +' #';
 var kLevel = translate ('level ');
 var kLevel1 = translate (' Level');
@@ -581,14 +584,15 @@ TODO:
 var OptionsDefaults = {
   ptWinIsOpen   : true,
   ptWinDrag     : true,
-  ptWinPos      : {},
+  ptWinPos      : {x:WIN_POS_X, y:WIN_POS_Y},
   objAttack     : {enabled:false, repeatTime:3660, delayMin:30, delayMax:60, levelEnable:[], levelDist:[null,10,10,10,10,10,10,10,10,10,10], deleteObjAttacks:false, stopAttackOnLoss:false, logAttacks:true, maxMarches:10, troops:[], clearAllTargets:false},
   currentTab    : false,
   attackTab     : 0,
   mapTab        : 0,
   autoCollect   : {enabled:false, lastTime:0, delay:8*3600},
-  autoBuild     : {enabled:false, buildingEnable:[]},
-  autoTrain     : {},
+  autoBuild     : {enabled:false, buildingEnable:[], buildCap:[]},
+  autoResearch  : {enabled:false, researchEnable:[], researchCap:[]},
+  autoTrain     : {enabled:false, trainingEnable:[], city:[]},
   messages      : {lastRead:0, missing:0},
   waves         : null,
   objStats      : null,
@@ -632,15 +636,15 @@ var Styles = '\
   table.pbMainTab tr td.notSel {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#0044a0; color:white; border-color:black; cursor:hand; cursor:pointer; padding: 2px;}\
   .CPopup .CPopMain { background-color:#f8f8f8; padding:6px;}\
   .CPopup  {border:3px ridge #666}\
-  input.butAttackOff {width:110px; background-color:#e80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-  input.butAttackOff:hover {width:110px; background-color:#f80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-  input.butAttackOn {width:110px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-  input.butAttackOn:hover {width:110px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+  input.butAttackOff {width:130px; background-color:#e80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+  input.butAttackOff:hover {width:130px; background-color:#f80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+  input.butAttackOn {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+  input.butAttackOn:hover {width:130px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
   input.small {margin:0; padding-top:0; padding-bottom:0; padding-left:1px; padding-right:1px; font-size:10px}\
   input.short {width:30px}\
-  input.greenButton {width:120px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-  input.greenButton:active {width:120px; background-color:black; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
-  input.greenButton:hover {width:120px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
+  input.greenButton {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+  input.greenButton:active {width:130px; background-color:black; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
+  input.greenButton:hover {width:130px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
   .button {cursor:hand; cursor:pointer; border: 1px solid #006; background: #0044a0; color: white; padding: 2px; font-weight:bold; font-size:13px; border-style: solid solid none solid;}\
 //  .button:hover {background: #eed; font-weight:bold; font-size:13px; color: black; border-style: solid solid none solid; }\
 //  .button:active {background: black; font-weight:bold; font-size:13px; color: white; border-style: none none none none;}\
@@ -1131,7 +1135,7 @@ var Seed = {
   fetchSeed : function (notify) {
     var t = Seed;
     var now = new Date().getTime() / 1000;
-    new MyAjaxRequest ('player.json', {}, function (rslt){
+    new MyAjaxRequest ('player.json', {'%5Fsession%5Fid':C.attrs.sessionId, timestamp:parseInt(serverTime()), version:3 }, function (rslt){
       if (rslt.ok){
         if (rslt.dat.timestamp)
           t.serverTimeOffset = rslt.dat.timestamp - now;
@@ -1320,7 +1324,7 @@ var Seed = {
       maxTime = 5000;
     RequestQueue.add ('fetchCity', doit, maxTime);    
     function doit (){    
-      new MyAjaxRequest ('cities/'+ cityId +'.json', {}, function (rslt){
+      new MyAjaxRequest ('cities/'+ cityId +'.json', {'%5Fsession%5Fid':C.attrs.sessionId, timestamp:parseInt(serverTime()), version:3}, function (rslt){
         var t = Seed;
         if (rslt.ok){
           t.checkIncomingData(rslt);
@@ -1701,33 +1705,33 @@ var Data = {
         GM_setValue (t.names[i] +'_'+ t.serverID, JSON2.stringify(t[t.names[i]]));
       }
   },
-/*
-    readMergeOptions : function (label, defaults){
-        var t = Data, s;
-        s = (t.isChrome) ? localStorage.getItem(label) : GM_getValue (label +'_'+ t.serverID);           
-        if (s != null){
-            opts = JSON2.parse (s);
- 
-            // Copy Cache to Data
-            if (matTypeof(defaults)=='object')
-                for (d in defaults)
-                    for (o in opts)
-                        if (d == o)
-                            switch (matTypeof(defaults[d])) {
-                                case 'object':
-                                    for (dd in defaults[d])
-                                        for (oo in opts[o])
-                                            if (dd == oo)
-                                                defaults[d][dd] = opts[o][oo];
-                                    break;
-                                default:
-                                    defaults[d] = opts[o];
-                            }
-        }        
-        return defaults;
-},
-*/  
 
+  readMergeOptions : function (label, defaults){
+    var t = Data, s;
+    s = (t.isChrome) ? localStorage.getItem(label) : GM_getValue (label +'_'+ t.serverID);           
+    if (s != null){
+        opts = JSON2.parse (s);
+ 
+        // Copy Cache to Data
+        if (matTypeof(defaults)=='object')
+            for (d in defaults)
+                for (o in opts)
+                    if (d == o)
+                        switch (matTypeof(defaults[d])) {
+                            case 'object':
+                                for (dd in defaults[d])
+                                    for (oo in opts[o])
+                                        if (dd == oo)
+                                            defaults[d][dd] = opts[o][oo];
+                                break;
+                            default:
+                                defaults[d] = opts[o];
+                        }
+    }        
+    return defaults;
+},
+
+/*
   // TODO: recurse, don't modify defaults
   readMergeOptions : function (label, defaults){
     var t = Data;
@@ -1750,7 +1754,7 @@ var Data = {
     }
     return defaults;
   },
-  
+*/ 
   getCookie : function (name){
     var i = document.cookie.indexOf(name+'=');
     if (i < 0)
@@ -3050,7 +3054,7 @@ var Ajax = {
   messageList : function (cat, callback){
     if (!cat)
       cat = 'all';
-    new MyAjaxRequest ('reports.json', {page:1, count:12, category:cat}, mycb, false);
+    new MyAjaxRequest ('reports.json', {category:cat, timestamp:parseInt(serverTime()), count:12, '%5Fsession%5Fid':C.attrs.sessionId, version:3, page:1}, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3062,7 +3066,7 @@ var Ajax = {
   },
   
   messageDetail : function (id, callback){
-    new MyAjaxRequest ('reports/'+ id +'.json', {}, mycb, false);
+    new MyAjaxRequest ('reports/'+ id +'.json', {'%5Fsession%5Fid':C.attrs.sessionId, timestamp:parseInt(serverTime()), version:3}, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3074,8 +3078,13 @@ var Ajax = {
   },
 
   messageDelete : function (ids, callback){
-    var list = ids.join('|');
-    new MyAjaxRequest ('reports/bulk_delete.json', {_method:'delete', ids:list}, mycb, true);
+	var p = {}
+	p['ids'] = ids.join('%7C');
+	p['%5Fmethod'] = 'delete';
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['version'] = 3;
+	p['timestamp'] = parseInt(serverTime());
+    new MyAjaxRequest ('reports/bulk_delete.json', p, mycb, true);
     function mycb (rslt){
       if (rslt.ok && !rslt.dat.result.success)
         rslt.ok = false;
@@ -3088,7 +3097,10 @@ var Ajax = {
   buildingUpgrade : function (cityId, buildingId, callback){
     var t = Ajax;
     var p = {};
-    p._method = 'put';
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+    p['%5Fmethod'] = 'put';
+	p['timestamp'] = parseInt(serverTime());
+	p['version'] = 3;
     new MyAjaxRequest ('cities/'+ cityId +'/buildings/'+ buildingId +'.json', p, mycb, true);
     function mycb (rslt){
         //logit ("BUILD RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3107,10 +3119,12 @@ var Ajax = {
   troopTraining : function (troopType, troopQty, cityId, callback){
     var t = Ajax;
     var p = {};
-    p._method = 'post';
-	p['units[unit_type]'] = troopType;
-	p['units[quantity]'] = troopQty;
-	p.timestamp = parseInt(serverTime());
+	p['units%5Bquantity%5D'] = troopQty;
+    p['%5Fmethod'] = 'post';
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['timestamp'] = parseInt(serverTime());
+	p['version'] = 3;
+	p['units%5Bunit%5Ftype%5D'] = troopType;
     new MyAjaxRequest ('cities/'+ cityId +'/units.json', p, mycb, true);
     function mycb (rslt){
 	  //logit ("Troop Training Response:\n" + inspect (rslt, 10, 1));
@@ -3205,22 +3219,28 @@ if (this._queue.length > 0 && this._currentRequest == null) {
     var t = Ajax;
     var p = {};
     ++t.marchBusy;
-    p['march[x]'] = x;
-    p['march[y]'] = y;
-    p['march[march_type]'] = 'attack';
-    p._method = 'post';
-    p['march[general_id]'] = genId;
-    p.timestamp = parseInt(serverTime());
+	p['march%5By%5D'] = y;
+	p['march%5Bmarch%5Ftype%5D'] = 'attack';
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['timestamp'] = parseInt(serverTime());
     var u = {}
+	var mt = false;
+	var sendTroops = "%7B";
     for (var pu in units)
-      if (units[pu] > 0)
+      if (units[pu] > 0) {
         u[pu] = units[pu];
-    p['march[units]'] = JSON2.stringify(u);     //ie: '{"Longbowman":500}'; 
-    
-    var url = 'cities/'+ cityId +'/marches.json';
-    
-    
-    new MyAjaxRequest (url, p, mycb, true);
+		if (mt == true )
+			sendTroops += "%2C";
+		sendTroops += "%22" + pu + "%22%3A" + units[pu];
+		mt = true;
+	}
+	sendTroops += "%7D";
+    p['march%5Bunits%5D'] = sendTroops; //JSON2.stringify(u);     //ie: '{"Longbowman":500}';
+    p['march%5Bx%5D'] = x;
+    p['%5Fmethod'] = 'post';
+    p['march%5Bgeneral%5Fid%5D'] = genId;
+	p['version'] = 3;
+    new MyAjaxRequest ('cities/'+ cityId +'/marches.json', p, mycb, true);
     function mycb (rslt){
         //logit ("MARCH RESPONSE:\n" + inspect (rslt, 10, 1));
         --t.marchBusy;
@@ -3249,7 +3269,10 @@ if (this._queue.length > 0 && this._currentRequest == null) {
   marchRecall : function (cityId, marchId, callback){ // untested
     var t = Ajax;
     var p = {};
-    p._method = 'delete';
+    p['%5Fmethod'] = 'delete';
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['timestamp'] = parseInt(serverTime());
+	p['version'] = 3;
     new MyAjaxRequest ('cities/'+ cityId +'/marches/'+ marchId +'.json', p, mycb, true);
     function mycb (rslt){
         //logit ("MARCH RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3269,7 +3292,10 @@ if (this._queue.length > 0 && this._currentRequest == null) {
   },
 
   collectResources : function (cityId, callback){
-   new MyAjaxRequest ('cities/'+ cityId +'/move_resources.json', {}, mycb, true);
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['timestamp'] = parseInt(serverTime());
+	p['version'] = 3;
+    new MyAjaxRequest ('cities/'+ cityId +'/move_resources.json', p, mycb, true);
     function mycb (rslt){
       if (rslt.ok){
         Seed.jsonGotCity (rslt.dat);
@@ -3944,8 +3970,8 @@ Tabs.Build = {
   cont : null,
   buildTimer : null,
   statTimer : null,
-  capitalCity : [kHome, kGarrison, kScienceCenter, kMetalsmith, kOfficerQuarter, kMusterPoint, kRookery, kStorageVault, kTheater, kSentinel, kFactory, kFortress, kDragonKeep, kWall],
-  capitalField : [kMine, kFarm, kLumbermill, kQuarry],
+  capitolCity : [kHome, kGarrison, kScienceCenter, kMetalsmith, kOfficerQuarter, kMusterPoint, kRookery, kStorageVault, kTheater, kSentinel, kFactory, kFortress, kDragonKeep, kWall],
+  capitolField : [kMine, kFarm, kLumbermill, kQuarry],
   outpostCity : [kTrainingCamp, kHome, kSilo, kMusterPoint, kDragonKeep, kWall],
   outpostField : [kMine, kFarm, kLumbermill, kQuarry],
   
@@ -3955,6 +3981,10 @@ Tabs.Build = {
     for (var i=0; i<Seed.s.cities.length; i++)
       if (!Data.options.autoBuild.buildingEnable[i])
         Data.options.autoBuild.buildingEnable[i] = {};
+    
+    for (var i=0; i<Seed.s.cities.length; i++)
+      if (!Data.options.autoBuild.buildCap[i])
+        Data.options.autoBuild.buildCap[i] = {};
         
     var m = '<DIV class=pbTitle>'+ kAutoUpgradeBuildings +'</div>\
       <DIV class=pbStatBox><CENTER><INPUT id=pbbldOnOff type=submit\></center>\
@@ -3963,8 +3993,8 @@ Tabs.Build = {
     var el = [];
     for (var i=0; i<Seed.s.cities.length; i++){
       if (i==0){
-        listC = t.capitalCity;
-        listF = t.capitalField;
+        listC = t.capitolCity;
+        listF = t.capitolField;
       } 
       else {
         listC = t.outpostCity;
@@ -3975,14 +4005,14 @@ Tabs.Build = {
       // on defense, the list of generals, what and where the dragon is, a list of jobs (e.g. research, building, troops training and pending training, current marches)
       // the marches alone say where the troops are, whether or not they are returning or attacking, general assigned, etc.
       var city = Seed.s.cities[i];
-      m += '<DIV class=pbSubtitle>City #'+ (i+1) +' ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+      m += '<DIV class=pbSubtitle>'+ kCityNumber + (i+1) +' ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
       for (var ii=0; ii<listC.length; ii++){
-        m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listC[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listC[ii]]?'CHECKED':'') +' /></td><TD>'+ listC[ii] +'</td></tr>';  
+        m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listC[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listC[ii]]?'CHECKED':'') +' /></td><TD>'+ listC[ii] +'</td>'+ buildDisplayCap(i,ii) +'</tr>';  
         el.push('pbbldcb_'+ i +'_'+ listC[ii]);
       }
       m += '</table></td><TD><TABLE class=pbTab>';  
       for (var ii=0; ii<listF.length; ii++){
-        m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listF[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listF[ii]]?'CHECKED':'') +' /></td><TD>'+ listF[ii] +'</td></tr>';  
+        m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listF[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listF[ii]]?'CHECKED':'') +' /></td><TD>'+ listF[ii] +'</td>'+ buildDisplayCap(i,(listC.length + ii)) +'</tr>';  
         el.push('pbbldcb_'+ i +'_'+ listF[ii]);
       }
       m += '</table></td></tr></table>';
@@ -3993,16 +4023,56 @@ Tabs.Build = {
     // Add the event listeners for each city's building types
     for (var i=0; i<el.length; i++)
       document.getElementById(el[i]).addEventListener('click', checked, false);
+      
+    // Add the event listeners for each city's building type caps
+    // And restore the persistent data since it has to be done in the same loop
+    for (var i=0; i<Seed.s.cities.length; i++)
+        for (var ii=0;ii<(listC.length+listF.length); ii++) {
+            var selectMenu = document.getElementById('pbbldcap_'+ i + '_' + ii);
+            try {
+                // Why 2? Because the building cap starts at 2, not zero :)
+                selectMenu.selectedIndex = Data.options.autoBuild.buildCap[i][ii]-2;
+                selectMenu.options[Data.options.autoBuild.buildCap[i][ii]-2].selected = true;
+            }
+            catch (e) {
+            }
+            selectMenu.addEventListener('change', changeBuildCap, false);
+        }
+      
     t.setEnable (Data.options.autoBuild.enabled);
     document.getElementById('pbbldOnOff').addEventListener ('click', function (){
       t.setEnable (!Data.options.autoBuild.enabled);
     }, false);
     
-    
     function checked (evt){
       var id = evt.target.id.split ('_');
       var cityId = Seed.s.cities[id[1]].id;
       Data.options.autoBuild.buildingEnable[id[1]][id[2]] = evt.target.checked;
+      if (Data.options.autoBuild.enabled)
+        Tabs.Build.buildTimer = setTimeout (Tabs.Build.buildTick, 500);     
+    }
+
+    function buildDisplayCap (cityIdx, listIdx){
+        var m = '<TD><SELECT id="pbbldcap_' + cityIdx +'_'+ listIdx +'"<option value="1">1</option>\
+                 <option value="2">2</option>\
+                 <option value="3">3</option>\
+                 <option value="4">4</option>\
+                 <option value="5">5</option>\
+                 <option value="6">6</option>\
+                 <option value="7">7</option>\
+                 <option value="8">8</option>\
+                 <option value="9">9</option>\
+                 </select></td>';
+        return m;
+    }
+    
+    // Add to persistent storage
+    function changeBuildCap (evt) {
+        var bId = evt.target.id.split ('_');
+        Data.options.autoBuild.buildCap[bId[1]][bId[2]] = evt.target[evt.target.selectedIndex].value;
+        evt.target.style.backgroundColor = '';  
+        if (Data.options.autoBuild.enabled)
+            Tabs.Build.buildTimer = setTimeout (Tabs.Build.buildTick, 500);     
     }
   },
   
@@ -4031,6 +4101,7 @@ Tabs.Build = {
     }
   },
   
+  // Every 5 seconds
   statTick : function (){
     var t = Tabs.Build;
     var m = '<TABLE class=pbTabPad>';
@@ -4043,7 +4114,9 @@ Tabs.Build = {
         m += kIdle +'</td></tr>';
       else {
         var b = Buildings.getById(i, job.city_building_id);
-        m += kBuilding1 +'</td><TD>'+ kLevel + job.level +' '+ b.type  +'</td><TD>'+ timestr(job.run_at-serverTime())  +'</td></tr>';
+        var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
+        // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
+        m += kBuilding1 +'</td><TD>'+ kLevel + job.level +' '+ b.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
       }
     }
     document.getElementById('pbbldBldStat').innerHTML = m +'</table>';
@@ -4054,6 +4127,39 @@ Tabs.Build = {
     document.getElementById('pbbldFeedback').innerHTML = new Date().toTimeString().substring (0,8) +' '+  msg;
   },
 
+  getBuildingCap : function (cityIdx, buildingType){
+    var t = Tabs.Build;
+    var cap = 2;
+    var cityType =  (cityIdx == 0) ? t.capitolCity : t.outpostCity;
+    cityType =  (cityIdx == 0) ? cityType.concat(t.capitolField) : cityType.concat(t.outpostField);
+    
+    for (var i=0; i < cityType.length; i++) {
+        if (cityType[i] == buildingType) {
+            try {
+                cap = Data.options.autoBuild.buildCap[0][i]; 
+                break;
+            }
+            catch (e) {
+            }  
+        }
+    }
+
+    return cap;
+  },
+  
+  getBuildingIndex : function (cityIdx, buildingType){
+    var t = Tabs.Build, bldgIdx = 0;
+    var cityType =  (cityIdx == 0) ? t.capitolCity : t.outpostCity;
+    cityType =  (cityIdx == 0) ? cityType.concat(t.capitolField) : cityType.concat(t.outpostField);
+    
+    for (var i=0; i < cityType.length; i++)
+        if (cityType[i] == buildingType) { 
+            bldgIdx = i;
+            break;
+        }
+    return bldgIdx;
+  },
+  
   // TBD - this function is suspect
   // auto-building displays very odd behavior when multiple buildings are selected
   // for example, in the main city if I select quarries, farms, mines, and timbermills all to be built
@@ -4104,7 +4210,18 @@ Tabs.Build = {
               } 
               else {
                 t.reChecked = false;
-                t.doBuild (building, city);
+                var cap = t.getBuildingCap (ic, building.type);
+                if (building.level < cap) 
+                    t.doBuild (building, city);
+                else {
+                    // The nice way (and consistent with the other cap UI for training)
+                    // to show this is to hilight the capped building input in red
+                    // document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                    // The problem is although I have the city index (ic), I don't have the building index
+                    var bldgIdx = t.getBuildingIndex(ic, building.type);
+                    t.dispFeedback("Building level capped");
+                    document.getElementById('pbbldcap_' + ic + '_' + bldgIdx).style.backgroundColor = "red";
+                }
               }
               return;
             }
@@ -4178,11 +4295,11 @@ Tabs.Train = {
   cont          : null,
   trainTimer    : null,
   statTimer     : null,
-  capitalTroops : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror'],
+  capitolTroops : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror'],
   outpost1Troops: ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop'],
   outpost2Troops: ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'StoneTroop'],
   outpost3Troops: ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'FireTroop'],
-  allTroops     : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop', 'StoneTroop', 'FireTroop'],
+  allTroops     : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop', 'StoneTroop'],
   contentType   : 0, // 0 = train, 1 = config
   selectedQ     : kMinHousing,
   trainJobs     : [],
@@ -4193,7 +4310,7 @@ Tabs.Train = {
 
    
     // Initialize autoTrain
-    if (Data.options.autoTrain == false) {
+/*    if (Data.options.autoTrain == false) {
         Data.options.autoTrain.enabled = false;
         Data.options.autoTrain.city = []
         Data.options.autoTrain.city.troopType = [];
@@ -4202,11 +4319,11 @@ Tabs.Train = {
                 Data.options.autoTrain.city[c].troopType[tt] = {};        
     }
     
-	if (!Data.options.autoTrain.city) {
+	//if (!Data.options.autoTrain.city) {
 		Data.options.autoTrain.city = [];
 		for (var c=0; c<Seed.s.cities.length; c++)
 			Data.options.autoTrain.city[c] = {};
-	}
+	//}
 	
 	for (var c=0; c<Seed.s.cities.length; c++) {
 		if (!Data.options.autoTrain.city[c].troopType) {
@@ -4215,11 +4332,19 @@ Tabs.Train = {
 				Data.options.autoTrain.city[c].troopType[tt] = {};
 		}
 	}
-/*
-    for (var c=0; c<Seed.s.cities.length; c++)
-        if (!Data.options.autoTrain.city[c])
-            Data.options.autoTrain.city[c] = {};
-*/           
+*/
+	for (var c=0; c<Seed.s.cities.length; c++)
+		if (!Data.options.autoTrain.city[c])
+			Data.options.autoTrain.city[c] = {};
+	
+	for (var c=0; c<Seed.s.cities.length; c++) {
+		if (!Data.options.autoTrain.city[c].troopType) {
+			Data.options.autoTrain.city[c].troopType = [];
+			for (tt=0; tt<t.capitalTroops.length; tt++)
+				Data.options.autoTrain.city[c].troopType[tt] = {};
+		}
+	}
+               
 	// Initialize troopCap
     if (Data.options.troopCap == false) {
         Data.options.troopCap.city = []
@@ -4307,11 +4432,8 @@ Tabs.Train = {
 			case 2:
 				troopTypes = t.outpost2Troops;
 				break;
-			case 3:
-				troopTypes = t.outpost3Troops;
-				break;
 			default:
-				troopTypes = t.capitalTroops;
+				troopTypes = t.capitolTroops;
 		}
 		var city = Seed.s.cities[c];
 		m += '<DIV class=pbSubtitle>City #'+ (c+1) +' ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
@@ -5236,19 +5358,19 @@ Tabs.Train = {
 
     // The training heartbeat
     // Parameters:
-    //      ic - the city number (0 = capital, 1 = outpost 1, 2 = outpost 2
+    //      ic - the city number (0 = capitol, 1 = outpost 1, 2 = outpost 2
     //
     // Calls Seed.notifyOnUpdate() to find completed training jobs for the specified city
-    // If the city number is the same as the number of cities, recurse with city number zero (the capital)
+    // If the city number is the same as the number of cities, recurse with city number zero (the capitol)
     // This is weird, how would trainTick get called with ic = 3? If it does not, and ic really is 2, then 
     // there is a logic error: trainTick() should not recurse until it has finished calling () for
     // outpost 2
     // Also recurses (using setTimeout()) in three seconds if the call to getTrainJob() is not null. 
     // This happens if a training job already exists for the specified city. In this case, ic is incremented first.
-    // Called from setTrainEnable() with a starting city of zero (capital), attemptTrainShortQ() uses setTimeout() to call 
+    // Called from setTrainEnable() with a starting city of zero (capitol), attemptTrainShortQ() uses setTimeout() to call 
     // trainTick() in two different places. First, it uses it to prevent all the jobs from queueing immediately
     // but the logic is flawed on this because it calls loops calling getTrainJob(i) starting with the 
-    // capital city, but the loop ends prematurely if getTrainJob() finds an active job. In the second case, it 
+    // capitol city, but the loop ends prematurely if getTrainJob() finds an active job. In the second case, it 
     // uses setTimeout() to call trainTick() with the current city index if an one of the training jobs
     // does not meet the requirements. This will retry the job on the next tick (3 seconds).
   errorCount : 0,
@@ -5274,11 +5396,8 @@ Tabs.Train = {
 			case 2:
 				troopsLength = t.outpost2Troops.length;
 				break;
-			case 3:
-				troopsLength = t.outpost3Troops.length;
-				break;
 			default:
-				troopsLength = t.capitalTroops.length;
+				troopsLength = t.capitolTroops.length;
 		}
 		// Only check the job queue if we are in short queue mode
 		if (t.selectedQ == kMinHousing){
@@ -5301,7 +5420,7 @@ Tabs.Train = {
   },
   
     // Parameters: 
-    //      ic - city index (0 = capital, 1 = outpost 1, 2 = outpost 2)
+    //      ic - city index (0 = capitol, 1 = outpost 1, 2 = outpost 2)
     //      count - error count
     //      troopsLength - number of troops to be queued in this city
     // Called from trainTick() and doTrain()
@@ -5364,24 +5483,8 @@ Tabs.Train = {
                             catch (e) {
                             }
                             break;
-                        case 3:
-                            troopType = t.outpost3Troops[j];
-                            troopQty = Data.options.autoTrain.city[i].troopType[j];
-                            cap = t.getTroopCap(troopType, troopQty);
-                            try {
-                                if (cap) {
-                                    troopQty = 0;
-                                    t.dispFeedback("Troops Capped");
-                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                                }
-                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
-                            }
-                            catch (e) {
-                            }
-                            break;
                         default:
-                            troopType = t.capitalTroops[j];
+                            troopType = t.capitolTroops[j];
                             troopQty = Data.options.autoTrain.city[i].troopType[j];
                             cap = t.getTroopCap(troopType, troopQty);
                             try {
@@ -5418,7 +5521,7 @@ Tabs.Train = {
 	},
   
     // Parameters: 
-    //      ic - city index (0 = capital, 1 = outpost 1, 2 = outpost 2)
+    //      ic - city index (0 = capitol, 1 = outpost 1, 2 = outpost 2)
     //      count - error count
     //      troopsLength - number of troops to be queued in this city
     // Called from trainTick() and doTrain()
@@ -5476,23 +5579,8 @@ Tabs.Train = {
                         catch (e) {
                         }
                         break;
-                    case 3:
-                        troopType = t.outpost3Troops[j];
-                        troopQty = Data.options.autoTrain.city[i].troopType[j];
-                        try {
-                            if (cap) {
-                                troopQty = 0;
-                                t.dispFeedback("Troops Capped");
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                            }
-                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
-                            }
-                        catch (e) {
-                        }
-                        break;
                     default:
-                        troopType = t.capitalTroops[j];
+                        troopType = t.capitolTroops[j];
                         troopQty = Data.options.autoTrain.city[i].troopType[j];
                         try {
                             if (cap) {
@@ -5544,7 +5632,7 @@ Tabs.Train = {
     // Parameters:
     //      troopType - Porter, Conscript, etc.
     //      troopQty - number of troops to train
-    //      ic - city index (0=capital, 1=outpost 1, 2 = outpost 2)
+    //      ic - city index (0=capitol, 1=outpost 1, 2 = outpost 2)
     //      count - error count
     //      troopsLength - number of troop types
     // Calls Ajax.troopTraining with city troop type, qty, city id, and a function for the rslt
@@ -5601,6 +5689,281 @@ function getTrainJob (cityIdx){
 			return jobs[p];
 	}
 	return null;
+}
+
+//******************************** Research Tab *****************************
+
+Tabs.Research = {
+  tabOrder : RESEARCH_TAB_ORDER,
+  tabLabel : kResearch,
+  cont : null,
+  researchTimer : null,
+  statTimer : null,
+  capitolResearch : ['Agriculture', 'Woodcraft', 'Masonry', 'Alloys', 'Clairvoyance', 'Rapid Deployment', 'Weapons Calibration', 'Metallurgy', 'Medicine', 'Dragonry', 'Levitation', 'Mercantilism', 'Aerial Combat'],
+  
+  init : function (div){
+    var t = Tabs.Research;
+    t.cont = div;
+        
+    // Initialization
+    for (var i=0; i<Seed.s.cities.length; i++) {
+		if (!Data.options.autoResearch.researchEnable[i])
+            Data.options.autoResearch.researchEnable[i] = {};
+        if (!Data.options.autoResearch.researchCap[i])
+            Data.options.autoResearch.researchCap[i] = {};
+    }
+        
+    var m = '<DIV class=pbTitle>'+ kAutoResearch +'</div>\
+      <DIV class=pbStatBox><CENTER><INPUT id=pbresOnOff type=submit\></center>\
+      <DIV id=pbresStat></div> <BR> <DIV id=pbresFeedback style="font-weight:bold; border: 1px solid green; height:17px"></div>  </div>\
+      <DIV id=pbresConfig class=pbInput>';
+    
+    var el = [];
+    var city = Seed.s.cities[0];
+    
+    m += '<DIV class=pbSubtitle>'+ kCityNumber +'1 ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+    for (var ii=0; ii<t.capitolResearch.length; ii++){
+        m += '<TR><TD><INPUT type=checkbox id="pbrescb_'+ 0 + '_' +t.capitolResearch[ii] +'" '+ (Data.options.autoResearch.researchEnable[0][t.capitolResearch[ii]]?'CHECKED':'') +' /></td><TD>'+ t.capitolResearch[ii] +'</td>'+ researchDisplayCap(ii) +'</tr>';  
+        el.push('pbrescb_' + 0 + '_' +t.capitolResearch[ii]);
+    }
+    m += '</table></td><TD><TABLE class=pbTab>';  
+    m += '</div>';
+    div.innerHTML = m;
+    
+    // Add the event listeners for the research types
+    for (var i=0; i<el.length; i++)
+        document.getElementById(el[i]).addEventListener('click', checked, false);
+      
+    // Add the event listeners for the research caps
+    // And restore the persistent data since it has to be done in the same loop
+    for (var ii=0;ii<(t.capitolResearch.length); ii++) {
+        var selectMenu = document.getElementById('pbrescap_'+ 0 + '_' +ii);
+        try {
+            // Why 2? Because the research cap starts at 2, not zero :)
+            selectMenu.selectedIndex = Data.options.autoResearch.researchCap[0][ii]-2;
+            selectMenu.options[Data.options.autoResearch.researchCap[0][ii]-2].selected = true;
+        }
+        catch (e) {
+        }
+        selectMenu.addEventListener('change', changeResearchCap, false);
+    }
+      
+    t.setEnable (Data.options.autoResearch.enabled);
+    document.getElementById('pbresOnOff').addEventListener ('click', function (){t.setEnable (!Data.options.autoResearch.enabled);}, false);
+    
+    function checked (evt){
+        var rId = evt.target.id.split ('_');
+        Data.options.autoResearch.researchEnable[rId[1]][rId[2]] = evt.target.checked;
+    }
+
+    function researchDisplayCap (listIdx){
+        var m = '<TD><SELECT id="pbrescap_' + 0 + '_' + listIdx +'"<option value="1">1</option>\
+                 <option value="2">2</option>\
+                 <option value="3">3</option>\
+                 <option value="4">4</option>\
+                 <option value="5">5</option>\
+                 <option value="6">6</option>\
+                 <option value="7">7</option>\
+                 <option value="8">8</option>\
+                 <option value="9">9</option>\
+                 </select></td>';
+        return m;
+    }
+    
+    // Add to persistent storage
+    function changeResearchCap (evt) {
+        var rId = evt.target.id.split ('_');
+        Data.options.autoResearch.researchCap[rId[1]][rId[2]] = evt.target[evt.target.selectedIndex].value;
+        evt.target.style.backgroundColor = '';  
+        if (Data.options.autoResearch.enabled)
+            Tabs.Research.researchTimer = setTimeout (Tabs.Research.researchTick, 500);     
+    }
+  },
+  
+  hide : function (){
+    var t = Tabs.Research;
+    clearTimeout (t.statTimer);
+  },
+  show : function (){
+    var t = Tabs.Research;
+    t.statTick();
+  },
+  
+  setEnable : function (onOff){
+    var t = Tabs.Research;
+    var but = document.getElementById('pbresOnOff');
+    clearTimeout (t.researchTimer);
+    Data.options.autoResearch.enabled = onOff;
+    if (onOff){
+      but.value = kAutoResearchOn;
+      but.className = 'butAttackOn';
+      t.researchTick();
+    } 
+    else {
+      but.value = kAutoResearchOff;
+      but.className = 'butAttackOff';
+    }
+  },
+  
+  // Every 5 seconds
+  statTick : function (){
+    var t = Tabs.Research;
+    var m = '<TABLE class=pbTabPad>';
+    clearTimeout (t.statTimer);
+    var city = Seed.s.cities[0];
+    var job = getResearchJob ();
+    m += '<TR><TD>'+ kCityNumber +' 1</td><TD>';
+    if (job == null)
+        m += kIdle +'</td></tr>';
+    else {
+        var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
+        // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
+        m += kResearch +'</td><TD>'+ kLevel + job.level +' '+ job.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
+      }
+
+    document.getElementById('pbresStat').innerHTML = m +'</table>';
+    t.statTimer = setTimeout (t.statTick, 5000);
+  },
+  
+  dispFeedback : function (msg){
+    document.getElementById('pbresFeedback').innerHTML = new Date().toTimeString().substring (0,8) +' '+  msg;
+  },
+/*
+  getResearchCap : function (researchType){
+    var t = Tabs.Research;
+    var cap = 2;
+    var cityType = t.capitolResearch;
+     
+    for (var i=0; i < cityType.length; i++) {
+        if (cityType[i] == researchType) {
+            try {
+                cap = Data.options.autoResearch.researchCap[i]; 
+                break;
+            }
+            catch (e) {
+            }  
+        }
+    }
+
+    return cap;
+  },
+  
+  getResearchIndex : function (researchType){
+    var t = Tabs.Research, resIdx = 0;
+    var cityType = t.capitolResearch;
+    
+    for (var i=0; i < cityType.length; i++)
+        if (cityType[i] == researchType) { 
+            resIdx = i;
+            break;
+        }
+    return resIdx;
+  },
+  
+  // TBD - this function is suspect
+  // auto-building displays very odd behavior when multiple buildings are selected
+  // for example, in the main city if I select quarries, farms, mines, and timbermills all to be built
+  // auto-build will start building one type of building even though others are lower level (i.e. mine->5 while lumbermill is still at 3)
+  // The algorithm for getting the lowest level building may not be working correctly
+  errorCount : 0,
+  reChecked : false,
+  researchTick : function (){
+    var t = Tabs.Research;
+    clearTimeout (t.researchTimer);
+    if (!Data.options.autoResearch.enabled)
+      return;
+      
+    Seed.notifyOnUpdate(function(){
+        var nothingToDo = true;    
+        var city = Seed.s.cities[ic];
+        if (getResearchJob (ic) == null){     // city not currently building
+            // find lowest level eligible building ...
+            var research = null;  
+            var lowest = 9; 
+            // Get the list from the seed
+            //for (var ib=0; ib<t.capitolResearch.length; ib++){
+            //  if (bl[ib].level < lowest){
+            //    lowest = bl[ib].level;
+            //    building = bl[ib];
+            //  }
+            //}
+            // Why in the world are we checking the arbitrary level 5???
+            if (research != null){
+              //if (building.level>5 && !t.reChecked){ 
+              //if (building.level>0 && !t.reChecked){ 
+              //  logit ('BUILD: rechecking city');
+              //  t.reChecked = true;
+              //  Seed.fetchCity (city.id, 1000);
+              //  t.buildTimer = setTimeout (t.buildTick, 500);
+              } 
+              else {
+                //t.reChecked = false;
+                //var cap = t.getBuildingCap (ic, building.type);
+                //if (building.level < cap) 
+                 //   t.doBuild (building, city);
+                else {
+                    // The nice way (and consistent with the other cap UI for training)
+                    // to show this is to hilight the capped building input in red
+                    // document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                    // The problem is although I have the city index (ic), I don't have the building index
+                    //var bldgIdx = t.getBuildingIndex(ic, building.type);
+                    //t.dispFeedback("Building level capped");
+                    //document.getElementById('pbbldcap_' + ic + '_' + bldgIdx).style.backgroundColor = "red";
+                }
+              }
+              return;
+            }
+          } 
+          else {
+            nothingToDo = false;
+          }
+        }
+t.reChecked = false;        
+        if (nothingToDo){
+          t.dispFeedback (kNothingToDo);
+          t.setEnable (false);
+          return;
+        }
+        t.researchTimer = setTimeout (t.researchTick, 8000);
+    }); 
+  },
+  
+  doResearch : function (research){
+    var t = Tabs.Research;
+    
+    // check the building level, return if autobuild is trying to use a completion grant
+    if (research.level == 9)
+        return;
+        
+    var msg = kBuildingLevel + (building.level+1) +' '+ building.type + kAt + city.type;
+    t.dispFeedback (msg);
+    Ajax.buildingUpgrade (city.id, building.id, function (rslt){
+      //logit ('BUILD RESULT: '+ inspect (rslt, 7, 1)); 
+      
+      // TBD - place statTick inside rslt.ok, is it really needed if the Ajax call failed?
+      t.statTick();
+      if (rslt.ok){
+        t.errorCount = 0;
+        actionLog (msg);
+        t.buildTimer = setTimeout (t.buildTick, 8000);
+        return;
+      } 
+      else {
+        Seed.fetchSeed();
+        actionLog (kBuildErr+ rslt.errmsg);
+        if (++t.errorCount > 3){
+          t.dispFeedback (kTooManyBuildErrs);
+          t.setEnable (false);
+          return;
+        }
+        t.dispFeedback (kBuildErr + rslt.errmsg);
+        t.buildTimer = setTimeout (t.buildTick, 20000);
+        return;
+      }
+    });
+
+  }, 
+*/
 }
 
 /*********************************** Options Tab ***********************************/
@@ -5721,10 +6084,9 @@ var Map = {
     t.callback = callback; 
     t.circ = true;
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    new MyAjaxRequest ('map.json', {x:t.firstX, y:t.firstY}, t.got);
+    new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.firstX, y:t.firstY, version:3 }, t.got, false);
   },  
 
-  // TBD: Change the if/else in the detail section to a case for the various types
   got : function (rslt){
     var t = Map;
     var x = rslt.dat.x;
@@ -5764,7 +6126,7 @@ var Map = {
     ret.done = false;
     t.callback (ret);  
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    setTimeout (function(){new MyAjaxRequest ('map.json', {x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15))}, t.got);}, MAP_DELAY);
+    setTimeout (function(){new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), version:3 }, t.got, false);}, MAP_DELAY);
  },
     
   normalize : function (x){

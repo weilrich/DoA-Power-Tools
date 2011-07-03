@@ -1,11 +1,11 @@
 Bug list
 
-Version: 20110629a
+Version: 20110701a
 Browsers tested: Chrome, Firefox 5.0
 
 Module:
 
-readMergeOptions - does not restore window position; attack troop qty; training troop qty, cap qty
+readMergeOptions - does not restore window position; attack troop qty; training troop qty, cap qty, map data
 
 Info
 Feature: Show the real amount of troops and show in parentheses next to the troop quantities how many troops are being used.
@@ -28,6 +28,10 @@ Attack bug: t.delayMin undefined in autoCheckTargets() - fixed
 Attacks bug: if you do not have sufficient troops to attach the next item in the list, the attack returns the "Insufficient troops" error. If multiple levels are selected (in the Levels sub-tab) it should continue looking through the list and not just give up.
 Attacks feature: Do not automatically scan the map, wait for the user to initiate the scan on the maps sub-tab
 Attacks bug: If you have more generals than can be used at your muster point, sending attacks will generate the error: Attack Error: Player cannot start any more Marches. This will quickly turn off auto-attacks. This only happens if you have more generals than muster point slots. After examining autoCheckTargets() I've found that the calculation for numMarches only reflects out-going marches (where the ownerId is set to 'camp'). The numMarches is only used to make sure we don't exceed the user set max marches, but this is a sneaky flaw that could manifest in other areas. The check for muster point slots should be the one to catch this bug, but it does not and I suspect that a similar flaw exists here.
+Attack bug: found that scanMapBusy was being set to true when dat.done in butSearchNow(). Fixed.
+Attack feature: Added 'Clear' button and checkbox to allow users to clear the last attacked field in the target list. This allows the user to start at the top of the list again rather than wherever they last left off.
+Attack bug: mapObject array had information in it when map is transferred causing some wrong map types to exist in the target list. I zero the array length before copying the new target list in butTransfer(). Fixed.
+Attack feature (private build only): Append alliance name to city/outpost target list
 
 Train - short queue model working
 Training does not requeue for multiple cities as soon as a city finishes its training queue. For example, if I am training 200 fangs in my outpost, 300 bds in the city, and 300 bds in the other outpost and the fangs finish training auto-training does not requeue until all the training is complete - fixed   
@@ -35,15 +39,22 @@ TRAIN ERROR: You do not meet the necessary requirements - this will only show if
 Training does not calculate population correctly - fixed
 Training skipped porters (loop started at 1) - fixed
 Training now works correctly for the short queue model.
-TBD: add maximum troop cap. Stop training when the cap has been reached. Perhaps add a resource limit cap (don't go below).
-Train: weirdness!! trainTick() was getting called without the parameter 'ic' being defined! This caused all kinds of subtle and very strange problems. The fix, for now, is to detect if ic is undefined and then assign it a value of zero. Unfortunately, Javascript does not support default parameters... 
+Training feature: add maximum troop cap. Stop training when the cap has been reached. Perhaps add a resource limit cap (don't go below).
+Train: weirdness!! trainTick() was getting called without the parameter 'ic' being defined! This caused all kinds of subtle and very strange problems. The fix, for now, is to detect if ic is undefined and then assign it a value of zero. Unfortunately, Javascript does not support default parameters... Fixed - found I was calling trainTick with a parameter that was out of scope. 
+Training bug: long q does not stop when cap is reached.
+Training feature: added third outpost and Firetroops. Guessed at new troop name: Djinn - will replace when I see what the actual name is
+Training bug: Stonetroop (and Firetroop) training not supported through checkReqs. Will add when I can build them.
 
-Build - none
-Build feature: need a way to cap the build at a particular level. Will likely add a button to each city (to allow different cap levels per city).
+Build
+Build bug: If we have a build job and the time remaining is negative or zero we should delete the job
+Build feature: building caps started, UI implemented.
 
 Log - TBD: remove mapping information from the Log
 
 Opts - none
+
+Other
+DoAtLoaded bug: Found ptWinPos in Data was not initialized causing strange behavior for the starting position of the main window. Fixed.
 
 Browser specific bugs:
 Firefox does not save/restore information correctly. For example, refreshing the browser turns off auto-attacks, and resets the auto-attack config records to defaults.

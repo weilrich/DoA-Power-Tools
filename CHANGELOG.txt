@@ -10,3 +10,5 @@ Train
 Training feature: added third outpost and Firetroops. Guessed at new troop name: Djinn - will replace when I see what the actual name is
 Training bug: Stonetroop (and Firetroop) training not supported through checkReqs. Will add when I can build them.
 
+Other
+Added initializer to defaults for ptWinPos.
