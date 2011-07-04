@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110703b';
+var Version = '20110703e';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -138,7 +138,9 @@ var kNoGenerals = translate ('No Generals Available');
 var kInvalidDelay = translate ('Invalid delay(s)');
 var kErrScanningMap = translate ('<B>Bummer, there was an error while scanning the map.</b>');
 var kBuildErr = translate ('BUILD ERROR: ');
+var kResearchErr = translate ('RESEARCH ERROR: ');
 var kTooManyBuildErrs = translate ('Too many errors, disabling auto-build');
+var kTooManyResearchErrs = translate ('Too many errors, disabling auto-research');
 var kMaxMarchesReached = translate ('User-set maximum marches reached.');
 var kAttackSafetyFeature = translate ('Safety Feature: Auto-Attack turned off');
 var kTrainSafetyFeature = translate ('Safety Feature: Auto-Train turned off');
@@ -3139,6 +3141,29 @@ var Ajax = {
     }
  },
  
+  researchStart : function (cityId, researchType, callback){
+    var t = Ajax;
+    var p = {};
+    p['%5Fmethod'] = 'post';
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['timestamp'] = parseInt(serverTime());
+	p['version'] = 3;
+	p['research%5Bresearch%5Ftype%5D'] = researchType;
+    new MyAjaxRequest ('cities/'+ cityId +'/researches.json', p, mycb, true);
+    function mycb (rslt){
+        //logit ("RESEARCH RESPONSE:\n" + inspect (rslt, 10, 1));
+        if (rslt.dat.result.success){
+            Seed.jsonAddJob (rslt.dat.result.job);
+        } 
+        else {
+            rslt.ok = false;
+            rslt.errmsg = rslt.dat.result.errors[0];
+        }
+        if (callback)
+            callback (rslt);
+    }
+ },
+ 
 /***
 Headers: 
   Referer: http://castlemania-production.s3.amazonaws.com/flash/game/current/castlemania.swf?api%5Fserver=http%3A%2F%2Frealm57%2Ec6%2Ecastle%2Ewonderhill%2Ecom%2Fapi&pub%5Fserver=pub%2Ecastle%2Ewonderhill%2Ecom&rev=924319190&primary%5Fui%5Fcachebreaker=1306544367&pub%5Fport=7000&session%5Fid=x&secondary%5Fui%5Fcachebreaker=1306544367&facebook%5Fid=1400526627&s3%5Fserver=http%3A%2F%2Fcastlemania%2Dproduction%2Es3%2Eamazonaws%2Ecom&locale=en&s3%5Fswf%5Fprefix=%2Fflash%2Fgame%2Fcurrent&sound%5Fcachebreaker=1306544367&building%5Fcachebreaker=1306544367&lazy%5Floaded%5Fswf%5Fcachebreaker=1306547039&cachebreaker=1306544367 
@@ -4245,10 +4270,6 @@ t.reChecked = false;
   // Wham: exit immediately if the building level is 9 - never take a completion grant automatically
   doBuild : function (building, city){
     var t = Tabs.Build;
-    
-    // check the building level, return if autobuild is trying to use a completion grant
-    if (building.level == 9)
-        return;
         
     var msg = kBuildingLevel + (building.level+1) +' '+ building.type + kAt + city.type;
     t.dispFeedback (msg);
@@ -4342,7 +4363,7 @@ Tabs.Train = {
 	for (var c=0; c<Seed.s.cities.length; c++) {
 		if (!Data.options.autoTrain.city[c].troopType) {
 			Data.options.autoTrain.city[c].troopType = [];
-			for (tt=0; tt<t.capitalTroops.length; tt++)
+			for (tt=0; tt<t.capitolTroops.length; tt++)
 				Data.options.autoTrain.city[c].troopType[tt] = {};
 		}
 	}
@@ -5694,14 +5715,16 @@ function getTrainJob (cityIdx){
 }
 
 //******************************** Research Tab *****************************
-
+// Notes: We don't really need the double array because research is only allowed in the Capitol
+// but it's here just in case they ever decide to allow another research facility
+//
 Tabs.Research = {
-  tabOrder : RESEARCH_TAB_ORDER,
-  tabLabel : kResearch,
-  cont : null,
-  researchTimer : null,
-  statTimer : null,
-  capitolResearch : ['Agriculture', 'Woodcraft', 'Masonry', 'Alloys', 'Clairvoyance', 'Rapid Deployment', 'Weapons Calibration', 'Metallurgy', 'Medicine', 'Dragonry', 'Levitation', 'Mercantilism', 'Aerial Combat'],
+  tabOrder          : RESEARCH_TAB_ORDER,
+  tabLabel          : kResearch,
+  cont              : null,
+  researchTimer     : null,
+  statTimer         : null,
+  capitolResearch   : ['Agriculture', 'Woodcraft', 'Masonry', 'Alloys', 'Clairvoyance', 'Rapid Deployment', 'Weapons Calibration', 'Metallurgy', 'Medicine', 'Dragonry', 'Levitation', 'Mercantilism', 'Aerial Combat'],
   
   init : function (div){
     var t = Tabs.Research;
@@ -5789,65 +5812,76 @@ Tabs.Research = {
   },
   show : function (){
     var t = Tabs.Research;
-    t.statTick();
+    t.statTimer = setInterval(t.statTick, 5000);
   },
   
   setEnable : function (onOff){
     var t = Tabs.Research;
     var but = document.getElementById('pbresOnOff');
-    clearTimeout (t.researchTimer);
+
     Data.options.autoResearch.enabled = onOff;
     if (onOff){
       but.value = kAutoResearchOn;
       but.className = 'butAttackOn';
-      t.researchTick();
+      t.researchTimer = setInterval(t.researchTick, 10000);
     } 
     else {
       but.value = kAutoResearchOff;
       but.className = 'butAttackOff';
+      clearTimeout (t.researchTimer);
     }
   },
   
   // Every 5 seconds
   statTick : function (){
-    var t = Tabs.Research;
-    var m = '<TABLE class=pbTabPad>';
-    clearTimeout (t.statTimer);
-    var city = Seed.s.cities[0];
-    var job = getResearchJob ();
+    var t = Tabs.Research, m = '<TABLE class=pbTabPad>', city = Seed.s.cities[0];
+    var job = getResearchJob (0);
     m += '<TR><TD>'+ kCityNumber +' 1</td><TD>';
     if (job == null)
         m += kIdle +'</td></tr>';
     else {
         var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
         // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
-        m += kResearch +'</td><TD>'+ kLevel + job.level +' '+ job.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
-      }
+        m += kResearch +'</td><TD>'+ kLevel + job.level +' '+ job.research_type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
+    }
 
     document.getElementById('pbresStat').innerHTML = m +'</table>';
-    t.statTimer = setTimeout (t.statTick, 5000);
+    //t.statTimer = setTimeout (t.statTick, 5000);
   },
   
   dispFeedback : function (msg){
     document.getElementById('pbresFeedback').innerHTML = new Date().toTimeString().substring (0,8) +' '+  msg;
   },
-/*
+
+  getCurrentResearchLevel : function (researchType){
+    var t = Tabs.Research, level = 0;
+    
+    // This can be missing if the user has not done any research
+    // implying a research level of zero
+    try {
+        level = Seed.s.research[researchType]; 
+    }
+    catch (e) {
+    }  
+
+    return level;
+  },
+  
   getResearchCap : function (researchType){
     var t = Tabs.Research;
     var cap = 2;
-    var cityType = t.capitolResearch;
+    var resType = t.capitolResearch;
      
-    for (var i=0; i < cityType.length; i++) {
-        if (cityType[i] == researchType) {
+    for (var i=0; i < resType.length; i++) {
+        if (resType[i] == researchType) {
             try {
-                cap = Data.options.autoResearch.researchCap[i]; 
+                cap = Data.options.autoResearch.researchCap[0][i]; 
                 break;
             }
             catch (e) {
             }  
         }
     }
-
     return cap;
   },
   
@@ -5862,111 +5896,70 @@ Tabs.Research = {
         }
     return resIdx;
   },
-  
-  // TBD - this function is suspect
-  // auto-building displays very odd behavior when multiple buildings are selected
-  // for example, in the main city if I select quarries, farms, mines, and timbermills all to be built
-  // auto-build will start building one type of building even though others are lower level (i.e. mine->5 while lumbermill is still at 3)
-  // The algorithm for getting the lowest level building may not be working correctly
+ 
+  // Research heartbeat
   errorCount : 0,
   reChecked : false,
   researchTick : function (){
     var t = Tabs.Research;
-    clearTimeout (t.researchTimer);
     if (!Data.options.autoResearch.enabled)
-      return;
+        return;
       
     Seed.notifyOnUpdate(function(){
         var nothingToDo = true;    
-        var city = Seed.s.cities[ic];
-        if (getResearchJob (ic) == null){     // city not currently building
-            // find lowest level eligible building ...
-            var research = null;  
-            var lowest = 9; 
-            // Get the list from the seed
-            //for (var ib=0; ib<t.capitolResearch.length; ib++){
-            //  if (bl[ib].level < lowest){
-            //    lowest = bl[ib].level;
-            //    building = bl[ib];
-            //  }
-            //}
-            // Why in the world are we checking the arbitrary level 5???
-            if (research != null){
-              //if (building.level>5 && !t.reChecked){ 
-              //if (building.level>0 && !t.reChecked){ 
-              //  logit ('BUILD: rechecking city');
-              //  t.reChecked = true;
-              //  Seed.fetchCity (city.id, 1000);
-              //  t.buildTimer = setTimeout (t.buildTick, 500);
-              } 
-              else {
-                //t.reChecked = false;
-                //var cap = t.getBuildingCap (ic, building.type);
-                //if (building.level < cap) 
-                 //   t.doBuild (building, city);
-                else {
-                    // The nice way (and consistent with the other cap UI for training)
-                    // to show this is to hilight the capped building input in red
-                    // document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                    // The problem is although I have the city index (ic), I don't have the building index
-                    //var bldgIdx = t.getBuildingIndex(ic, building.type);
-                    //t.dispFeedback("Building level capped");
-                    //document.getElementById('pbbldcap_' + ic + '_' + bldgIdx).style.backgroundColor = "red";
+        if (getResearchJob (0) == null){     // no research being done yet
+            for (var p in Data.options.autoResearch.researchEnable[0]) {
+                if (Data.options.autoResearch.researchEnable[0][p] == true){
+                    var temp = p;
+                    var level = t.getCurrentResearchLevel(temp);
+                    var cap = t.getResearchCap(temp);
+                    if (level < cap) {
+                        t.doResearch(temp, level);
+                    }
+                    else {
+                        // We are capped
+                        nothingToDo = true;
+                    }
                 }
-              }
-              return;
             }
-          } 
-          else {
+        } 
+        else {
             nothingToDo = false;
-          }
         }
-t.reChecked = false;        
+        t.reChecked = false;        
         if (nothingToDo){
-          t.dispFeedback (kNothingToDo);
-          t.setEnable (false);
-          return;
+            t.dispFeedback (kNothingToDo);
+            t.setEnable (false);
+            return;
         }
-        t.researchTimer = setTimeout (t.researchTick, 8000);
     }); 
   },
-  
-  doResearch : function (research){
+   
+  doResearch : function (researchType, researchLevel){
     var t = Tabs.Research;
-    
-    // check the building level, return if autobuild is trying to use a completion grant
-    if (research.level == 9)
-        return;
-        
-    var msg = kBuildingLevel + (building.level+1) +' '+ building.type + kAt + city.type;
+    var city = Seed.s.cities[0];
+    var msg = kResearchLevel + (researchLevel) +' '+ researchType;
     t.dispFeedback (msg);
-    Ajax.buildingUpgrade (city.id, building.id, function (rslt){
-      //logit ('BUILD RESULT: '+ inspect (rslt, 7, 1)); 
-      
-      // TBD - place statTick inside rslt.ok, is it really needed if the Ajax call failed?
-      t.statTick();
-      if (rslt.ok){
-        t.errorCount = 0;
-        actionLog (msg);
-        t.buildTimer = setTimeout (t.buildTick, 8000);
-        return;
-      } 
-      else {
-        Seed.fetchSeed();
-        actionLog (kBuildErr+ rslt.errmsg);
-        if (++t.errorCount > 3){
-          t.dispFeedback (kTooManyBuildErrs);
-          t.setEnable (false);
-          return;
+    Ajax.researchStart (city.id, researchType, function (rslt){
+      //logit ('RESEARCH RESULT: '+ inspect (rslt, 7, 1));       
+        if (rslt.ok){
+            t.errorCount = 0;
+            actionLog (msg);
+            return;
+        } 
+        else {
+            Seed.fetchSeed();
+            actionLog (kResearchErr+ rslt.errmsg);
+            if (++t.errorCount > 3){
+                t.dispFeedback (kTooManyResearchErrs);
+                t.setEnable (false);
+                return;
+            }
+            t.dispFeedback (kResearchErr + rslt.errmsg);
+            return;
         }
-        t.dispFeedback (kBuildErr + rslt.errmsg);
-        t.buildTimer = setTimeout (t.buildTick, 20000);
-        return;
-      }
     });
-
   }, 
-*/
 }
 
 /*********************************** Options Tab ***********************************/
