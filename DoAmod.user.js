@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110703e';
+var Version = '20110703i';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -41,6 +41,7 @@ var IsChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
 //
 // Terrain types
 var kAnthropusCamp = translate ('Anthropus Camp');
+var kAntCamp = translate ('AntCamp');
 var kCity = translate ('City');
 var kOutpost = translate ('Outpost');
 var kSavanna = translate ('Savanna');
@@ -219,6 +220,7 @@ var kCityNumber = translate (kCity) +' #';
 var kLevel = translate ('level ');
 var kLevel1 = translate (' Level');
 var kNothingToDo = translate ('Nothing to do, disabling auto-build.');
+var kNoResearchToDo = translate ('Nothing to do, disabling auto-research');
 var kBuildingLevel = translate ('Building level ');
 var kBuilding = translate ('Building:');
 var kBuilding1 = translate (kBuilding) +' ';
@@ -601,7 +603,7 @@ var OptionsDefaults = {
   objMarches    : {},
   version       : {lastChecked:0, checkVersion:Version, lastVersion:Version},
   maps          : {enabled:false, repeatTime:3660, delayMin:30, delayMax:60, levelEnable:[], levelDist:[null,10,10,10,10,10,10,10,10,10,10], deleteObjAttacks:false, stopAttackOnLoss:false, logAttacks:true, maxMarches:10},
-  mapChoice     : kAnthropusCamp,
+  mapChoice     : kAntCamp,
   mapMarches    : {},
   autoColInt    : 8,
   isDefending   : false,
@@ -1785,7 +1787,7 @@ Tabs.AutoAttack = {
   MAX_DISTANCE  : 35,
   curRunStart   : 0,
   contentType   : 0, // 0 = levels, 1 = config, 2 = targets, 3 = stats, 4 = mapTypes these should be enums but Javascript doesn't support that type
-  selectedMapName: kAnthropusCamp,
+  selectedMapName: kAntCamp,
   
   init : function (div){
     var t = Tabs.AutoAttack;
@@ -2903,6 +2905,7 @@ Tabs.AutoAttack = {
                 Data.targets.radius = radius;
                 Tabs.AutoAttack.checkMapBusy = false;
                 dial.destroy();
+                butTransfer (e); // Transfer the map
             }
             else
                 actionLog('scanMap: still scanning...');
@@ -4072,9 +4075,7 @@ Tabs.Build = {
     function checked (evt){
       var id = evt.target.id.split ('_');
       var cityId = Seed.s.cities[id[1]].id;
-      Data.options.autoBuild.buildingEnable[id[1]][id[2]] = evt.target.checked;
-      if (Data.options.autoBuild.enabled)
-        Tabs.Build.buildTimer = setTimeout (Tabs.Build.buildTick, 500);     
+      Data.options.autoBuild.buildingEnable[id[1]][id[2]] = evt.target.checked;     
     }
 
     function buildDisplayCap (cityIdx, listIdx){
@@ -4097,9 +4098,7 @@ Tabs.Build = {
     function changeBuildCap (evt) {
         var bId = evt.target.id.split ('_');
         Data.options.autoBuild.buildCap[bId[1]][bId[2]] = evt.target[evt.target.selectedIndex].value;
-        evt.target.style.backgroundColor = '';  
-        if (Data.options.autoBuild.enabled)
-            Tabs.Build.buildTimer = setTimeout (Tabs.Build.buildTick, 500);     
+        evt.target.style.backgroundColor = '';       
     }
   },
   
@@ -4109,22 +4108,22 @@ Tabs.Build = {
   },
   show : function (){
     var t = Tabs.Build;
-    t.statTick();
+    t.statTimer = setInterval (t.statTick, 2000);
   },
   
   setEnable : function (onOff){
     var t = Tabs.Build;
     var but = document.getElementById('pbbldOnOff');
-    clearTimeout (t.buildTimer);
     Data.options.autoBuild.enabled = onOff;
     if (onOff){
       but.value = kAutoBuildOn;
       but.className = 'butAttackOn';
-      t.buildTick();
+      t.buildTimer = setInterval (t.buildTick, 3000);
     } 
     else {
       but.value = kAutoBuildOff;
       but.className = 'butAttackOff';
+      clearTimeout (t.buildTimer);
     }
   },
   
@@ -4132,7 +4131,7 @@ Tabs.Build = {
   statTick : function (){
     var t = Tabs.Build;
     var m = '<TABLE class=pbTabPad>';
-    clearTimeout (t.statTimer);
+
     for (var i=0; i<Seed.s.cities.length; i++){
       var city = Seed.s.cities[i];
       var job = getBuildJob (i);
@@ -4147,7 +4146,6 @@ Tabs.Build = {
       }
     }
     document.getElementById('pbbldBldStat').innerHTML = m +'</table>';
-    t.statTimer = setTimeout (t.statTick, 5000);
   },
   
   dispFeedback : function (msg){
@@ -4196,7 +4194,7 @@ Tabs.Build = {
   reChecked : false,
   buildTick : function (){
     var t = Tabs.Build;
-    clearTimeout (t.buildTimer);
+
     if (!Data.options.autoBuild.enabled)
       return;
       
@@ -4233,7 +4231,7 @@ Tabs.Build = {
                 logit ('BUILD: rechecking city');
                 t.reChecked = true;
                 Seed.fetchCity (city.id, 1000);
-                t.buildTimer = setTimeout (t.buildTick, 500);
+                //t.buildTimer = setTimeout (t.buildTick, 500);
               } 
               else {
                 t.reChecked = false;
@@ -4263,42 +4261,38 @@ t.reChecked = false;
           t.setEnable (false);
           return;
         }
-        t.buildTimer = setTimeout (t.buildTick, 8000);
+        //t.buildTimer = setTimeout (t.buildTick, 8000);
     }); 
   },
   
-  // Wham: exit immediately if the building level is 9 - never take a completion grant automatically
   doBuild : function (building, city){
     var t = Tabs.Build;
-        
     var msg = kBuildingLevel + (building.level+1) +' '+ building.type + kAt + city.type;
+    
     t.dispFeedback (msg);
+    
     Ajax.buildingUpgrade (city.id, building.id, function (rslt){
       //logit ('BUILD RESULT: '+ inspect (rslt, 7, 1)); 
-      
-      // TBD - place statTick inside rslt.ok, is it really needed if the Ajax call failed?
-      t.statTick();
-      if (rslt.ok){
-        t.errorCount = 0;
-        actionLog (msg);
-        t.buildTimer = setTimeout (t.buildTick, 8000);
-        return;
-      } 
-      else {
-        Seed.fetchSeed();
-        actionLog (kBuildErr+ rslt.errmsg);
-        if (++t.errorCount > 3){
-          t.dispFeedback (kTooManyBuildErrs);
-          t.setEnable (false);
-          return;
+        if (rslt.ok){
+            t.errorCount = 0;
+            actionLog (msg);
+            //t.buildTimer = setTimeout (t.buildTick, 8000);
+            return;
+        } 
+        else {
+            Seed.fetchSeed();
+            actionLog (kBuildErr+ rslt.errmsg);
+            if (++t.errorCount > 3){
+                t.dispFeedback (kTooManyBuildErrs);
+                t.setEnable (false);
+                return;
+            }
+            t.dispFeedback (kBuildErr + rslt.errmsg);
+            //t.buildTimer = setTimeout (t.buildTick, 20000);
+            return;
         }
-        t.dispFeedback (kBuildErr + rslt.errmsg);
-        t.buildTimer = setTimeout (t.buildTick, 20000);
-        return;
-      }
     });
   },
-  
 }
 
  function getBuildJob (cityIdx){
@@ -4430,7 +4424,8 @@ Tabs.Train = {
         case 0: t.tabTrain(); break;
         case 1: t.tabConfigTrain(); break;
     }
-    t.statTick();
+    t.statTimer = setInterval (t.statTick, 2000);
+    //t.statTick();
   },
   
   onUnload : function (){
@@ -5351,25 +5346,26 @@ Tabs.Train = {
   setTrainEnable : function (onOff){
     var t = Tabs.Train;
     var but = document.getElementById('pbtrnOnOff');
-    clearTimeout (t.trainTimer);
     Data.options.autoTrain.enabled = onOff;
     if (onOff){
       but.value = kAutoOn;
       but.className = 'butAttackOn';
-      t.trainTick(0);
+      t.trainTimer = setInterval(function() {t.trainTick(0) }, 3000);
+      //t.trainTick(0);
     } else {
       but.value = kAutoOff;
       but.className = 'butAttackOff';
       t.dispFeedback(""); // Erase previous feedback
+      clearTimeout (t.trainTimer);
     }
   },
   
   statTick : function (){
     var t = Tabs.Train;
-    clearTimeout (t.statTimer);
+    //clearTimeout (t.statTimer);
     var statElement = document.getElementById('pbtrnTrnStat');
     if (statElement != null) statElement.innerHTML = trainTable('train');
-    t.statTimer = setTimeout (t.statTick, 2000);
+    //t.statTimer = setTimeout (t.statTick, 2000);
   },
   
   dispFeedback : function (msg){
@@ -5400,15 +5396,16 @@ Tabs.Train = {
   reChecked : false,
   trainTick : function (ic){
     var t = Tabs.Train;
-    clearTimeout (t.trainTimer);
-    //t.setTrainEnable(false);
+    //clearTimeout (t.trainTimer);
+
     if (!Data.options.autoTrain.enabled)
       return;
+      
     if (ic == undefined)
         ic = 0;	
     Seed.notifyOnUpdate(function(){ 
 		if (ic == Seed.s.cities.length) {
-			t.trainTick(0);
+			//t.trainTick(0);
 			return;
 		}
 		// The length here is the number of troop types it is possible to train
@@ -5431,7 +5428,7 @@ Tabs.Train = {
             } 
             else {
                 ic = ic + 1;
-                t.trainTimer = setTimeout (function() {t.trainTick(ic) }, 3000);
+                //t.trainTimer = setTimeout (function() {t.trainTick(ic) }, 3000);
                 return;
             }
 		}
@@ -5456,7 +5453,7 @@ Tabs.Train = {
     //
 	attemptTrainShortQ : function (ic, count, troopsLength){
 		var t = Tabs.Train;
-		clearTimeout (t.trainTimer);
+		//clearTimeout (t.trainTimer);
 		
 		// Attempt to train if no jobs are in the queue already for the specified city
         // If any city has a job, set the recheck flag and reset the timer
@@ -5539,7 +5536,7 @@ Tabs.Train = {
             }
         }
         if (doRecheck) {
-            t.trainTimer = setTimeout (function() {t.trainTick(i)}, 20000);
+            //t.trainTimer = setTimeout (function() {t.trainTick(i)}, 20000);
         }		
 	},
   
@@ -5556,7 +5553,7 @@ Tabs.Train = {
     //
 	attemptTrainLongQ : function (ic, count, troopsLength){
 		var t = Tabs.Train;
-		clearTimeout (t.trainTimer);
+		//clearTimeout (t.trainTimer);
 		
 		// Attempt to train if no jobs are in the queue already for the specified city
         // If any city has a job, set the recheck flag and reset the timer
@@ -5637,7 +5634,13 @@ Tabs.Train = {
         if (doRecheck) {
            // t.trainTimer = setTimeout (function() {t.trainTick(i)}, 3000);
         }
-        t.runJobs();		
+        // See if we have space in the queue before we try to run the jobs
+        var qLen = 0;
+        for (var i=0; i<Seed.s.cities.length; i++) {
+            qLen += t.getRemainingQueue(i, kUnits);
+        }
+        if (qLen)
+            t.runJobs();   		
 	},
 
     runJobs : function(){
@@ -5647,8 +5650,8 @@ Tabs.Train = {
             t.doTrain(d.tType, d.tQty, d.cityIdx, d.troopIdx, d.tLen);
             setTimeout( "t.runJobs()", 3000);
         }
-        else
-            t.trainTimer = setTimeout (function() {t.trainTick(0)}, 3000);
+        //else
+        //    t.trainTimer = setTimeout (function() {t.trainTick(0)}, 3000);
     },
     
     // Queue the training job
@@ -5673,13 +5676,13 @@ Tabs.Train = {
 
 		Ajax.troopTraining (troopType, troopQty, city.id, function (rslt){
 			Seed.fetchCity (city.id, 1000);
-			t.statTick();
+			//t.statTick();
 			if (rslt.ok){
 				t.errorCount = 0;
 				actionLog (msg);
 				count = count + 1;
 				// Funnel all calls to attempTrain through the trainTimer
-				t.trainTime = setTimeout (t.trainTick, 3000);
+				//t.trainTime = setTimeout (t.trainTick, 3000);
 				//if (t.selectedQ == kMinHousing)
                 //    t.trainTimer = setTimeout (function(){ t.attemptTrainShortQ(ic, count, troopsLength) }, 3000);
                 //else
@@ -5697,7 +5700,7 @@ Tabs.Train = {
 					return;
 				}
 				t.dispFeedback (kTrainError + rslt.errmsg);
-				t.trainTimer = setTimeout (t.trainTick, 180000);
+				//t.trainTimer = setTimeout (t.trainTick, 180000);
 				return;
 			}
 		});
@@ -5915,6 +5918,7 @@ Tabs.Research = {
                     var cap = t.getResearchCap(temp);
                     if (level < cap) {
                         t.doResearch(temp, level);
+                        nothingToDo = false;
                     }
                     else {
                         // We are capped
@@ -5928,7 +5932,7 @@ Tabs.Research = {
         }
         t.reChecked = false;        
         if (nothingToDo){
-            t.dispFeedback (kNothingToDo);
+            t.dispFeedback (kNoResearchToDo);
             t.setEnable (false);
             return;
         }
@@ -5938,7 +5942,7 @@ Tabs.Research = {
   doResearch : function (researchType, researchLevel){
     var t = Tabs.Research;
     var city = Seed.s.cities[0];
-    var msg = kResearchLevel + (researchLevel) +' '+ researchType;
+    var msg = kResearch +' '+ researchLevel +' '+ researchType;
     t.dispFeedback (msg);
     Ajax.researchStart (city.id, researchType, function (rslt){
       //logit ('RESEARCH RESULT: '+ inspect (rslt, 7, 1));       
@@ -6083,7 +6087,6 @@ var Map = {
     new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.firstX, y:t.firstY, version:3 }, t.got, false);
   },  
 
-  // TBD: Change the if/else in the detail section to a case for the various types
   got : function (rslt){
     var t = Map;
     var x = rslt.dat.x;
@@ -6125,7 +6128,7 @@ var Map = {
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
     setTimeout (function(){new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), version:3 }, t.got, false);}, MAP_DELAY);
  },
-    
+     
   normalize : function (x){
     if (x > 750)
       x -= 750;

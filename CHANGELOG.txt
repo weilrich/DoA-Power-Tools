@@ -1,14 +1,28 @@
-Version: 07022011b
+Version: 07032011i
 
-Attacks
-Attack bug: found that scanMapBusy was being set to true when dat.done in butSearchNow(). Fixed.
-Attack feature: Added 'Clear' button and checkbox to allow users to clear the last attacked field in the target list. This allows the user to start at the top of the list again rather than wherever they last left off.
-Attack bug: mapObject array had information in it when map is transferred causing some wrong map types to exist in the target list. I zero the array length before copying the new target list in butTransfer(). Fixed.
-Attack feature (private build only): Append alliance name to city/outpost target list
+Attack
+07012011a Attack bug: found that scanMapBusy was being set to true when dat.done in butSearchNow(). Fixed.
+07012011a Attack feature: Added 'Clear' button and checkbox to allow users to clear the last attacked field in the target list. This allows the user to start at the top of the list again rather than wherever they last left off.
+07012011a Attack bug: mapObject array had information in it when map is transferred causing some wrong map types to exist in the target list. I zero the array length before copying the new target list in butTransfer(). Fixed.
+07022011a Attack feature (private build only): Append alliance name to city/outpost target list
+07032011f Attack bug: selected map name was set to 'Anthropus Camp' but was being checked as 'AntCamp' causing the radio button to never be selected. Fixed
+07032011g Attack bug: butSearch did not transfer the map to the target. Fixed
 
 Train
-Training feature: added third outpost and Firetroops. Guessed at new troop name: Djinn - will replace when I see what the actual name is
-Training bug: Stonetroop (and Firetroop) training not supported through checkReqs. Will add when I can build them.
+07012011a Training feature: added third outpost and Firetroops. Guessed at new troop name: Djinn - will replace when I see what the actual name is
+07012011a Training bug: Stonetroop (and Firetroop) training not supported through checkReqs. Will add when I can build them.
+07032011i Training feature: Added a check for queue space before calling runJob to lighten the load on the server and reduce/eliminate turning auto-train off because of errors
+TBD: show individual time for completion in status with total time next to city name
+TBD: make runJobs smarter by only starting a job in a city with enough queue space
+
+Build
+TBD: allow building to continue for jobs that have not reached their caps. As it is now, auto-build stops as soon as any cap is reached
+
+Research
+07032011a Implemented basic auto-research using research caps.
+07032011i Research bug: says 'Nothing to do, disabling auto-build' - should say 'Nothing to do, disabling auto-research'. Fixed
+07032011i Research bug: after submitting the research job, auto-research turns itself off. Fixed
 
 Other
-Added initializer to defaults for ptWinPos.
+07012011a Added initializer to defaults for ptWinPos.
+07032011i Changed setTimeout to setInterval in Research, Build, and Training - this will propagate to the rest of the code base over time
