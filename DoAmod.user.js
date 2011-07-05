@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110703i';
+var Version = '20110704c';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -149,7 +149,7 @@ var kSelectLevelsReminder = translate ('Use the Levels Tab to select attack area
 var kTooManyTroops = translate ('Too many troops for muster point level');
 var kDisablingAutoTrain = translate ('Too many errors, disabling auto-train');
 var kTrainError = translate ('Train error: ');
-var kInvalidNumberTroops = translate ('Invalid # of troops');
+var kInvalidNumberTroops = translate ('Invalid number of troops');
 var kErrorOccurred = translate ('An error has occurred:');
 
 // User interface
@@ -886,7 +886,7 @@ function onUnload (){
 
 // Translation
 function dialogFatal (msg){
-  pop = new CPopup ('dtfatal', 200,300, 400,300, true); 
+  var pop = new CPopup ('dtfatal', 200,300, 400,300, true); 
   pop.getMainDiv ().innerHTML = '<STYLE>'+ Styles +'</style><BR>'+ msg ;
   pop.getTopDiv ().innerHTML = '<B><CENTER>Uh ohs</center></b>' ;
   pop.show(true);
@@ -3320,6 +3320,7 @@ if (this._queue.length > 0 && this._currentRequest == null) {
   },
 
   collectResources : function (cityId, callback){
+    var p = {};
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['timestamp'] = parseInt(serverTime());
 	p['version'] = 3;
@@ -3327,6 +3328,9 @@ if (this._queue.length > 0 && this._currentRequest == null) {
     function mycb (rslt){
       if (rslt.ok){
         Seed.jsonGotCity (rslt.dat);
+      }
+      else {
+        actionLog( "Auto-Collect Error: " + rslt.msg);
       }
       if (callback)
         callback (rslt.ok);
@@ -3350,14 +3354,16 @@ var AutoCollect = {
     var t = AutoCollect;
     clearTimeout (t.timer);
     Data.options.autoCollect.enabled = onOff;
+    // Always collect on startup
     if (onOff){
-      var time = Data.options.autoCollect.delay - serverTime() + Data.options.autoCollect.lastTime;
-      if (time <= 0)
+      //var time = Data.options.autoCollect.delay - serverTime() + Data.options.autoCollect.lastTime;
+      //if (time <= 0)
         t.doit ();
-      else
+      //else
         t.timer = setTimeout (t.doit, time*1000);
     }
   },
+  
   doit : function (){
     var t = AutoCollect;
     Data.options.autoCollect.lastTime = serverTime();
@@ -3956,20 +3962,16 @@ function getSwfVar (name){
 
 var TestSomething = {
   init : function (){
-    t = TestSomething;
+    var t = TestSomething;
   }, 
 }
 
 function parseIntNan (n){
-  x = parseInt(n, 10);
-  if (isNaN(x))
-    return 0;
-  return x; 
+  var x = parseInt(n, 10);
+  return (isNaN(x)) ? 0 : x;
 }
 function parseIntZero (n){
-  if (!n || n=='')
-    return 0;
-  return parseInt(n, 10);
+  return (!n || n=='') ? 0 : parseInt(n, 10);
 }
 
 
@@ -4018,7 +4020,9 @@ Tabs.Build = {
       <DIV class=pbStatBox><CENTER><INPUT id=pbbldOnOff type=submit\></center>\
       <DIV id=pbbldBldStat></div> <BR> <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:17px"></div>  </div>\
       <DIV id=pbbldConfig class=pbInput>';
-    var el = [];
+    
+    var el = [], listC = [], listF = [];
+    
     for (var i=0; i<Seed.s.cities.length; i++){
       if (i==0){
         listC = t.capitolCity;
@@ -4054,18 +4058,28 @@ Tabs.Build = {
       
     // Add the event listeners for each city's building type caps
     // And restore the persistent data since it has to be done in the same loop
-    for (var i=0; i<Seed.s.cities.length; i++)
-        for (var ii=0;ii<(listC.length+listF.length); ii++) {
+    for (var i=0; i<Seed.s.cities.length; i++) {
+        var len = (i==0) ? (t.capitolCity.length + t.capitolField.length) : (t.outpostCity.length + t.outpostField.length);
+        for (var ii=0;ii<len; ii++) {
             var selectMenu = document.getElementById('pbbldcap_'+ i + '_' + ii);
             try {
-                // Why 2? Because the building cap starts at 2, not zero :)
-                selectMenu.selectedIndex = Data.options.autoBuild.buildCap[i][ii]-2;
-                selectMenu.options[Data.options.autoBuild.buildCap[i][ii]-2].selected = true;
+                if (!Data.options.autoBuild.buildCap[i][ii]) {
+                    var capitolB = t.capitolCity.concat(t.capitolField);
+                    var outpostB = t.outpostCity.concat(t.outpostField);                    
+                    var currentLowestBuildingLevel = t.getCurrentLowestBuildingLevel(i, (i==0)? capitolB[ii] : outpostB[ii]);
+                    selectMenu.selectedIndex = (currentLowestBuildingLevel > 1) ? currentLowestBuildingLevel-2 : 0;
+                }
+                else {
+                    // Why 2? Because the building cap starts at 2, not zero :)
+                    selectMenu.selectedIndex = Data.options.autoBuild.buildCap[i][ii]-2;
+                    selectMenu.options[Data.options.autoBuild.buildCap[i][ii]-2].selected = true;
+                }
             }
             catch (e) {
             }
             selectMenu.addEventListener('change', changeBuildCap, false);
         }
+    }
       
     t.setEnable (Data.options.autoBuild.enabled);
     document.getElementById('pbbldOnOff').addEventListener ('click', function (){
@@ -4108,7 +4122,7 @@ Tabs.Build = {
   },
   show : function (){
     var t = Tabs.Build;
-    t.statTimer = setInterval (t.statTick, 2000);
+    t.statTimer = setInterval (t.statTick, 1000);
   },
   
   setEnable : function (onOff){
@@ -4152,6 +4166,24 @@ Tabs.Build = {
     document.getElementById('pbbldFeedback').innerHTML = new Date().toTimeString().substring (0,8) +' '+  msg;
   },
 
+  getCurrentLowestBuildingLevel : function (cityIdx, buildingType){
+    var t = Tabs.Build, level = 12;
+    
+    // This can be missing if the user has not done any research
+    // implying a research level of zero
+    try {
+        var b = Seed.s.cities[cityIdx].buildings;
+        for (var i=0; i<b.length; i++)
+            if (b[i].type == buildingType)
+                if (b[i].level < level)
+                    level = b[i].level; 
+    }
+    catch (e) {
+    }  
+
+    return level;
+  },
+  
   getBuildingCap : function (cityIdx, buildingType){
     var t = Tabs.Build;
     var cap = 2;
@@ -4424,7 +4456,7 @@ Tabs.Train = {
         case 0: t.tabTrain(); break;
         case 1: t.tabConfigTrain(); break;
     }
-    t.statTimer = setInterval (t.statTick, 2000);
+    t.statTimer = setInterval (t.statTick, 1000);
     //t.statTick();
   },
   
@@ -4487,7 +4519,7 @@ Tabs.Train = {
     function troopsChanged (e){
 		var args = e.target.id.split('_');
 		var x = parseIntZero(e.target.value);
-		if (isNaN(x) || x<0 || x>100000){
+		if (isNaN(x) || x<0 || x>120000){
 			e.target.style.backgroundColor = 'red';
 			dispError (kInvalidNumberTroops);
 		} 
@@ -5524,7 +5556,7 @@ Tabs.Train = {
                         var ret = t.checkReqs(troopType, troopQty, i, j, troopsLength);
                         t.dispFeedback (ret.msg);
                         if (ret.trainable) {
-                            t.doTrain(troopType, troopQty, i, j, troopsLength);
+                            t.doTrain(troopType, troopQty, i);
                         }
                         else {
                             // Error condition prevents training, try again later
@@ -5643,15 +5675,52 @@ Tabs.Train = {
             t.runJobs();   		
 	},
 
+    // Algorithm change
+    // Examine the training queue for the city, if there is space, run the job
+    // Possible side effects are implied prioritization based on queue availability
+    // and speed of training
     runJobs : function(){
         var t = Tabs.Train;
         if (t.trainJobs.length > 0) {
-            var d = t.trainJobs.shift();
-            t.doTrain(d.tType, d.tQty, d.cityIdx, d.troopIdx, d.tLen);
+        
+            // Create a set of training jobs in each city
+            for (var i=0; i<Seed.s.cities.length; i++){
+                var jList = []; // list of troops for this city
+                
+                // Iterate the training list looking for all the troops from this city
+                // Could be none up to every troop type available
+                // Might be a problem if the user selects all the troops but doesn't have
+                // enough garrisons/training camps to do them all at once
+                var j=0;
+                while (j < t.trainJobs.length) {
+                    if (t.trainJobs[j].cityIdx == i)
+                        jList[j] = t.trainJobs[j];
+                    ++j;
+                }
+   
+                // Get the remaining queue length for this city        
+                var qLen = t.getRemainingQueue(i, kUnits);
+               
+                // Are there enough queue slots for the jobs?
+                var len = jList.length; // length is modified inside the loop
+                if (qLen >= len)
+                    // Yes, do the job
+                    for (var j=0; j<len; j++) {
+                    
+                        var tJob = jList.shift();
+                        t.doTrain (tJob.tType, tJob.tQty, i);                   
+                    }
+                // Remove this city's job set from the training list
+                t.trainJobs.splice(0, len);
+            }
+            
+            //var d = t.trainJobs.shift();
+            //t.doTrain(d.tType, d.tQty, d.cityIdx, d.troopIdx, d.tLen);
             setTimeout( "t.runJobs()", 3000);
         }
         //else
         //    t.trainTimer = setTimeout (function() {t.trainTick(0)}, 3000);
+
     },
     
     // Queue the training job
@@ -5668,7 +5737,7 @@ Tabs.Train = {
     // If the rslt is not ok, we refetch the city info, log the error, increment the Train Tab errorCount (if we have more than
     // three errors we disable training and show the feedback) and display the error message, reset the training time for 20 seconds
     // but do not disable training
-	doTrain : function (troopType, troopQty, ic, count, troopsLength){
+	doTrain : function (troopType, troopQty, ic){
 		var t = Tabs.Train;
 		var city = Seed.s.cities[ic];
 		var msg = kTraining1 + troopQty +' '+ troopType + kAt + city.type;
@@ -5680,7 +5749,7 @@ Tabs.Train = {
 			if (rslt.ok){
 				t.errorCount = 0;
 				actionLog (msg);
-				count = count + 1;
+				//count = count + 1;
 				// Funnel all calls to attempTrain through the trainTimer
 				//t.trainTime = setTimeout (t.trainTick, 3000);
 				//if (t.selectedQ == kMinHousing)
@@ -5768,8 +5837,14 @@ Tabs.Research = {
         var selectMenu = document.getElementById('pbrescap_'+ 0 + '_' +ii);
         try {
             // Why 2? Because the research cap starts at 2, not zero :)
-            selectMenu.selectedIndex = Data.options.autoResearch.researchCap[0][ii]-2;
-            selectMenu.options[Data.options.autoResearch.researchCap[0][ii]-2].selected = true;
+            if (!Data.options.autoResearch.researchCap[0][ii]) {
+                var currentResearchLevel = t.getCurrentResearchLevel(t.capitolResearch[ii]);
+                selectMenu.selectedIndex = (currentResearchLevel >=2) ? currentResearchLevel-2 : 0;
+            }
+            else {
+                selectMenu.selectedIndex = Data.options.autoResearch.researchCap[0][ii]-2;
+                selectMenu.options[Data.options.autoResearch.researchCap[0][ii]-2].selected = true;
+            }
         }
         catch (e) {
         }
@@ -6087,6 +6162,7 @@ var Map = {
     new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.firstX, y:t.firstY, version:3 }, t.got, false);
   },  
 
+ // TBD: Change the if/else in the detail section to a case for the various types
   got : function (rslt){
     var t = Map;
     var x = rslt.dat.x;
@@ -6128,6 +6204,7 @@ var Map = {
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
     setTimeout (function(){new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), version:3 }, t.got, false);}, MAP_DELAY);
  },
+
      
   normalize : function (x){
     if (x > 750)

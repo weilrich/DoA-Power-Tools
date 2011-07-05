@@ -1,28 +1,41 @@
 Version: 07032011i
 
 Attack
-07012011a Attack bug: found that scanMapBusy was being set to true when dat.done in butSearchNow(). Fixed.
+07012011a Attack bug: found that scanMapBusy was being set to true when dat.done in butSearchNow(). Fixed
 07012011a Attack feature: Added 'Clear' button and checkbox to allow users to clear the last attacked field in the target list. This allows the user to start at the top of the list again rather than wherever they last left off.
-07012011a Attack bug: mapObject array had information in it when map is transferred causing some wrong map types to exist in the target list. I zero the array length before copying the new target list in butTransfer(). Fixed.
+07012011a Attack bug: mapObject array had information in it when map is transferred causing some wrong map types to exist in the target list. I zero the array length before copying the new target list in butTransfer(). Fixed
 07022011a Attack feature (private build only): Append alliance name to city/outpost target list
 07032011f Attack bug: selected map name was set to 'Anthropus Camp' but was being checked as 'AntCamp' causing the radio button to never be selected. Fixed
 07032011g Attack bug: butSearch did not transfer the map to the target. Fixed
+07042011c Attack bug: troopsChanged would not allow more than 100000 troops to be sent at once. Changed to 120000. Fixed
 
 Train
 07012011a Training feature: added third outpost and Firetroops. Guessed at new troop name: Djinn - will replace when I see what the actual name is
 07012011a Training bug: Stonetroop (and Firetroop) training not supported through checkReqs. Will add when I can build them.
 07032011i Training feature: Added a check for queue space before calling runJob to lighten the load on the server and reduce/eliminate turning auto-train off because of errors
+07042011b Jobs now created as city "sets". A set will run if the city has enough queue space for all the troops in the job. For example, if you are training bds, lbms, minos, and ats the set is four troops and will be queued as soon as the city has 4 empty queue slots. It does waste some queue slots, but it prevents runaway training of a few troops. A better way would be to create job sets based on the number of queue slots available. In this case if you have 10 slots available and four troop types training the LCM would be 4*5*3 (60), 60/10 slots gives 6 jobs before the jobs repeat: 
+job1: bd, lbm, mino, at 
+job2: bd, lbm, mino, at
+job3: bd, lbm (queue full)
+job4: mino, at, bd, lbm
+job5: mino, at, bd, lbm
+job7: mino, at
 TBD: show individual time for completion in status with total time next to city name
-TBD: make runJobs smarter by only starting a job in a city with enough queue space
+
+Auto-Collect
+07042011b Was generating server errors spuriously because 'p' was not declared as a var before it was used. Fixed.
 
 Build
+07042011c caps show current lowest levels unless the user sets them otherwise
 TBD: allow building to continue for jobs that have not reached their caps. As it is now, auto-build stops as soon as any cap is reached
 
 Research
 07032011a Implemented basic auto-research using research caps.
 07032011i Research bug: says 'Nothing to do, disabling auto-build' - should say 'Nothing to do, disabling auto-research'. Fixed
 07032011i Research bug: after submitting the research job, auto-research turns itself off. Fixed
+07042011c caps show current levels unless the user sets them otherwise
 
 Other
 07012011a Added initializer to defaults for ptWinPos.
 07032011i Changed setTimeout to setInterval in Research, Build, and Training - this will propagate to the rest of the code base over time
+07042011c Added variable declarations to readMergeOptions to eliminate possible scope conflicts
