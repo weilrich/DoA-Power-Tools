@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110704c';
+var Version = '20110706a';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -610,6 +610,7 @@ var OptionsDefaults = {
   trainTab      : 0,
   trainQChoice  : kMinHousing,
   troopCap      : {},
+  tJobs         : [],
 //  alertConfig  : {aChat:false, aPrefix:'** I\'m being attacked! **', scouting:false, wilds:false, minTroops:10000, spamLimit:10 },
 };
 
@@ -1324,20 +1325,20 @@ var Seed = {
   },
  
   fetchCity : function (cityId, maxTime){  // do on job completion
-    if (maxTime==null)
-      maxTime = 5000;
-    RequestQueue.add ('fetchCity', doit, maxTime);    
-    function doit (){    
-      new MyAjaxRequest ('cities/'+ cityId +'.json', {'%5Fsession%5Fid':C.attrs.sessionId, timestamp:parseInt(serverTime()), version:3}, function (rslt){
-        var t = Seed;
-        if (rslt.ok){
-          t.checkIncomingData(rslt);
-          if (rslt.dat.timestamp)
-            t.serverTimeOffset = rslt.dat.timestamp - (new Date().getTime() / 1000);
-          t.jsonGotCity (rslt.dat);
-        }
-      });
-    }
+      if (maxTime==null)
+          maxTime = 5000;
+      RequestQueue.add ('fetchCity', doit, maxTime);    
+      function doit (){    
+          new MyAjaxRequest ('cities/'+ cityId +'.json', {'%5Fsession%5Fid':C.attrs.sessionId, timestamp:parseInt(serverTime()), version:3}, function (rslt){
+              var t = Seed;
+              if (rslt.ok){
+                  t.checkIncomingData(rslt);
+                  if (rslt.dat.timestamp)
+                  t.serverTimeOffset = rslt.dat.timestamp - (new Date().getTime() / 1000);
+                  t.jsonGotCity (rslt.dat);
+              }
+          });
+      }
   },
 }
 
@@ -2487,7 +2488,7 @@ Tabs.AutoAttack = {
     function troopsChanged (e){
       var args = e.target.id.split('_');
       var x = parseIntZero(e.target.value);
-      if (isNaN(x) || x<0 || x>100000){
+      if (isNaN(x) || x<0 || x>120000){
         e.target.style.backgroundColor = 'red';
         dispError (kTroopWarning);
       }
@@ -3995,15 +3996,15 @@ function MarchTracker (){
 //******************************** BUILD Tab *****************************
 
 Tabs.Build = {
-  tabOrder : BUILD_TAB_ORDER,
-  tabLabel : kBuild,
-  cont : null,
-  buildTimer : null,
-  statTimer : null,
-  capitolCity : [kHome, kGarrison, kScienceCenter, kMetalsmith, kOfficerQuarter, kMusterPoint, kRookery, kStorageVault, kTheater, kSentinel, kFactory, kFortress, kDragonKeep, kWall],
-  capitolField : [kMine, kFarm, kLumbermill, kQuarry],
-  outpostCity : [kTrainingCamp, kHome, kSilo, kMusterPoint, kDragonKeep, kWall],
-  outpostField : [kMine, kFarm, kLumbermill, kQuarry],
+  tabOrder      : BUILD_TAB_ORDER,
+  tabLabel      : kBuild,
+  cont          : null,
+  buildTimer    : null,
+  statTimer     : null,
+  capitolCity   : [kHome, kGarrison, kScienceCenter, kMetalsmith, kOfficerQuarter, kMusterPoint, kRookery, kStorageVault, kTheater, kSentinel, kFactory, kFortress, kDragonKeep, kWall],
+  capitolField  : [kMine, kFarm, kLumbermill, kQuarry],
+  outpostCity   : [kTrainingCamp, kHome, kSilo, kMusterPoint, kDragonKeep, kWall],
+  outpostField  : [kMine, kFarm, kLumbermill, kQuarry],
   
   init : function (div){
     var t = Tabs.Build;
@@ -4068,6 +4069,7 @@ Tabs.Build = {
                     var outpostB = t.outpostCity.concat(t.outpostField);                    
                     var currentLowestBuildingLevel = t.getCurrentLowestBuildingLevel(i, (i==0)? capitolB[ii] : outpostB[ii]);
                     selectMenu.selectedIndex = (currentLowestBuildingLevel > 1) ? currentLowestBuildingLevel-2 : 0;
+                    Data.options.autoBuild.buildCap[i][ii] = currentLowestBuildingLevel;
                 }
                 else {
                     // Why 2? Because the building cap starts at 2, not zero :)
@@ -4089,7 +4091,7 @@ Tabs.Build = {
     function checked (evt){
       var id = evt.target.id.split ('_');
       var cityId = Seed.s.cities[id[1]].id;
-      Data.options.autoBuild.buildingEnable[id[1]][id[2]] = evt.target.checked;     
+      Data.options.autoBuild.buildingEnable[id[1]][id[2]] = evt.target.checked;  
     }
 
     function buildDisplayCap (cityIdx, listIdx){
@@ -4141,23 +4143,23 @@ Tabs.Build = {
     }
   },
   
-  // Every 5 seconds
+  // Every 1 seconds
   statTick : function (){
     var t = Tabs.Build;
     var m = '<TABLE class=pbTabPad>';
 
     for (var i=0; i<Seed.s.cities.length; i++){
-      var city = Seed.s.cities[i];
-      var job = getBuildJob (i);
-      m += '<TR><TD>'+ kCityNumber + (i+1) +'</td><TD>';
-      if (job == null)
-        m += kIdle +'</td></tr>';
-      else {
-        var b = Buildings.getById(i, job.city_building_id);
-        var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
-        // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
-        m += kBuilding1 +'</td><TD>'+ kLevel + job.level +' '+ b.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
-      }
+        var city = Seed.s.cities[i];
+        var job = getBuildJob (i);
+        m += '<TR><TD>'+ kCityNumber + (i+1) +'</td><TD>';
+        if (job == null)
+            m += kIdle +'</td></tr>';
+        else {
+            var b = Buildings.getById(i, job.city_building_id);
+            var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
+            // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
+            m += kBuilding1 +'</td><TD>'+ kLevel + job.level +' '+ b.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
+        }
     }
     document.getElementById('pbbldBldStat').innerHTML = m +'</table>';
   },
@@ -4223,77 +4225,79 @@ Tabs.Build = {
   // auto-build will start building one type of building even though others are lower level (i.e. mine->5 while lumbermill is still at 3)
   // The algorithm for getting the lowest level building may not be working correctly
   errorCount : 0,
-  reChecked : false,
   buildTick : function (){
     var t = Tabs.Build;
 
     if (!Data.options.autoBuild.enabled)
-      return;
+        return;
       
-    Seed.notifyOnUpdate(function(){
-        var nothingToDo = true;    
+    Seed.notifyOnUpdate(function(){   
         for (var ic=0; ic<Seed.s.cities.length; ic++ ){
-          var city = Seed.s.cities[ic];
-          if (getBuildJob (ic) == null){     // city not currently building
-            // find lowest level eligible building ...
-            var bl = []; // Concatenated array of buildings
-            for (var p in Data.options.autoBuild.buildingEnable[ic]){
-              // Is this building type enabled for autobuild?
-              if (Data.options.autoBuild.buildingEnable[ic][p])
-                bl = bl.concat (Buildings.getList (ic, p));
-            }
-            // NOTE: will do this even if the building is not enabled for autobuild
-            // bl.length will be zero in that case and building will be set to null
-            // When working correctly, it will find the lowest level building of a particular type (e.g. quarry)
-            // and set building to that instance and set lowest to the level of that building
-            // Because this is not doing a sorted search (on the grid location of the building), it may
-            // appear to randomly jump around the grid to pick the next building
-            var building = null;  
-            var lowest = 9; 
-            for (var ib=0; ib<bl.length; ib++){
-              if (bl[ib].level < lowest){
-                lowest = bl[ib].level;
-                building = bl[ib];
-              }
-            }
-            // Why in the world are we checking the arbitrary level 5???
-            if (building != null){
-              //if (building.level>5 && !t.reChecked){ 
-              if (building.level>0 && !t.reChecked){ 
-                logit ('BUILD: rechecking city');
-                t.reChecked = true;
-                Seed.fetchCity (city.id, 1000);
-                //t.buildTimer = setTimeout (t.buildTick, 500);
-              } 
-              else {
-                t.reChecked = false;
-                var cap = t.getBuildingCap (ic, building.type);
-                if (building.level < cap) 
-                    t.doBuild (building, city);
-                else {
+            var city = Seed.s.cities[ic];
+            if (getBuildJob (ic) == null){     // city not currently building
+                // find lowest level eligible building ...
+                var bl = []; // Concatenated array of buildings
+                for (var p in Data.options.autoBuild.buildingEnable[ic]){
+                    // Is this building type enabled for autobuild?
+                    if (Data.options.autoBuild.buildingEnable[ic][p])
+                        bl = bl.concat (Buildings.getList (ic, p));
+                }
+                var bFound = false;
+                for (var i=0; i<Data.options.tJobs.length; i++) 
+                    for (var j=0; j<bl.length; j++) 
+                        if (bl[j] == Data.options.tJobs[i]) {
+                            bl[j].level++;
+                            bFound = true;
+                        }
+
+                if (bFound) {
+                    Seed.fetchCity (city.id, 1000);
+                    setTimer(t.buildTick, 2000);
+                    return;
+                }
+                else
+                    Data.options.tJobs.length = 0;
+                    
+                // Change: we want to iterate over each buildings comparing the level to the cap. If the cap has not
+                // been reached, call doBuild
+                var bBuilt = false;
+                var bCapped = false;
+                var bType = '';
+                var len = bl.length;
+                for (var i=0; i<len; i++) {
+                    var cap = t.getBuildingCap (ic, bl[i].type);
+                    if (bl[i].level < cap) {
+                            t.doBuild (bl[i], city);
+                            bBuilt = true;
+                            Data.options.tJobs.push(bl[i]);
+                            break;
+                    }
+                    else {
+                        bCapped = true;
+                        bType = bl[i].type;
+                    }
+                }
+                
+                if (bBuilt == false && bCapped == true) {
                     // The nice way (and consistent with the other cap UI for training)
                     // to show this is to hilight the capped building input in red
-                    // document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                    // The problem is although I have the city index (ic), I don't have the building index
-                    var bldgIdx = t.getBuildingIndex(ic, building.type);
-                    t.dispFeedback("Building level capped");
+                    var bldgIdx = t.getBuildingIndex(ic, bType);
+                    t.dispFeedback("Building capped");
                     document.getElementById('pbbldcap_' + ic + '_' + bldgIdx).style.backgroundColor = "red";
                 }
-              }
-              return;
-            }
-          } 
-          else {
-            nothingToDo = false;
-          }
-        }
-t.reChecked = false;        
-        if (nothingToDo){
-          t.dispFeedback (kNothingToDo);
-          t.setEnable (false);
-          return;
-        }
-        //t.buildTimer = setTimeout (t.buildTick, 8000);
+                
+                if (bBuilt)
+                    // If we built something, we need to refetch the city before starting a new cycle 
+                    // to make sure the build jobs are not stale. Otherwise we could end up scheduling a 
+                    // build job for a building that just completed - possibly using up a grant!
+                    // Another way to avoid this problem is to keep a list of jobs we have started (copying the
+                    // job) and then updating the build level in bl before it ever gets to the cap check
+                    // As we are compiling bl, if we see a discrepancy we can call fetchCity on a timer
+                    // If the copy level matches our bl level, then we can splice out the copy. This should be
+                    // a very short list (with three cities, it should ever only contain 3 items).
+                    Seed.fetchCity (city.id, 1000);
+            } 
+       }       
     }); 
   },
   
@@ -4519,7 +4523,10 @@ Tabs.Train = {
     function troopsChanged (e){
 		var args = e.target.id.split('_');
 		var x = parseIntZero(e.target.value);
-		if (isNaN(x) || x<0 || x>120000){
+		var lvl = getMusterPointLevel(0);
+		var maxLvl = lvl * 10000;
+	    maxLvl = (lvl == 11) ? 120000 : maxLvl;
+		if (isNaN(x) || x<0 || x>maxLvl){
 			e.target.style.backgroundColor = 'red';
 			dispError (kInvalidNumberTroops);
 		} 
@@ -5840,6 +5847,8 @@ Tabs.Research = {
             if (!Data.options.autoResearch.researchCap[0][ii]) {
                 var currentResearchLevel = t.getCurrentResearchLevel(t.capitolResearch[ii]);
                 selectMenu.selectedIndex = (currentResearchLevel >=2) ? currentResearchLevel-2 : 0;
+                Data.options.autoBuild.researchCap[0][ii] = currentResearchLevel;
+
             }
             else {
                 selectMenu.selectedIndex = Data.options.autoResearch.researchCap[0][ii]-2;
@@ -5937,6 +5946,13 @@ Tabs.Research = {
     // This can be missing if the user has not done any research
     // implying a research level of zero
     try {
+        if (researchType == 'Rapid Deployment')
+            researchType = 'RapidDeployment';
+        if (researchType == 'Weapons Calibration')
+            researchType = 'Ballistics';
+        if (researchType == 'Aerial Combat')
+            researchType = 'AerialCombat';
+        // Note: Alloys is completely missing from the research list in the Seed
         level = Seed.s.research[researchType]; 
     }
     catch (e) {
@@ -6017,7 +6033,7 @@ Tabs.Research = {
   doResearch : function (researchType, researchLevel){
     var t = Tabs.Research;
     var city = Seed.s.cities[0];
-    var msg = kResearch +' '+ researchLevel +' '+ researchType;
+    var msg = kResearch +' '+ (researchLevel+1) +' '+ researchType;
     t.dispFeedback (msg);
     Ajax.researchStart (city.id, researchType, function (rslt){
       //logit ('RESEARCH RESULT: '+ inspect (rslt, 7, 1));       
