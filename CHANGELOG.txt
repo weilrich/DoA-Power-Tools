@@ -1,4 +1,8 @@
-Version: 07062011a
+Version: 07072011f
+
+Info
+07062011b Info feature: Added the alliance name to the city title
+07072011f Info feathre: Added Jason's UI modifications to show the wall status
 
 Attack
 07012011a Attack bug: found that scanMapBusy was being set to true when dat.done in butSearchNow(). Fixed
@@ -21,8 +25,11 @@ job3: bd, lbm (queue full)
 job4: mino, at, bd, lbm
 job5: mino, at, bd, lbm
 job7: mino, at
-TBD: show individual time for completion in status with total time next to city name
 07062011a Training bug: found one instance where I refreshed the browser and training lost the local array that was holding the current training job causing it to increment to the next level when that job had finished. Added a persistent storage variable to take care of that corner case.
+07062011b Training feature: changed caps to start at zero (started a new realm for testing)
+07072011f Added Stonetroop check requirements
+07072011f Training bug: Recheck was not working so training would not continue as needed items became available in short queue mode. Added call to Seed.fetchCity. Fixed
+TBD: show individual time for completion in status with total time next to city name
    
 Auto-Collect
 07042011b Was generating server errors spuriously because 'p' was not declared as a var before it was used. Fixed.
@@ -30,6 +37,10 @@ Auto-Collect
 Build
 07042011c caps show current lowest levels unless the user sets them otherwise
 07062011a allow building to continue for jobs that have not reached their caps. As it is now, auto-build stops as soon as any cap is reached. Fixed
+07072011b Build feature: rather than displaying 'BUILD ERROR', show the building type and error message
+07072011b Build bug: changed the height of the feedback bar to show the entire message (was 17px, is 34px)
+07072011f Changed cap levels to start at zero
+07072011f Build bug: Refreshing the browser can confuse the build such that it builds one building a level past the cap. Fixed
 
 Research
 07032011a Implemented basic auto-research using research caps.
@@ -37,7 +48,16 @@ Research
 07032011i Research bug: after submitting the research job, auto-research turns itself off. Fixed
 07042011c caps show current levels unless the user sets them otherwise
 07062011a Research bug: feedback area showed the current research level rather than the one being researched. Fixed
+07072011f Changed research list to associative array to prevent translating types (e.g. Alloys <-> Mining)
+07072011f Changed cap levels to start at zero
+07072011f Research bug: Alloys does not work. I'm guessing that the research name is not really Alloys (because it doesn't show up in Seeds.s.research). Fixed
+07072011f Research bug: Refreshing the browser can confuse the research such that it researches one level past the cap. Fixed
+
 Other
 07012011a Added initializer to defaults for ptWinPos.
 07032011i Changed setTimeout to setInterval in Research, Build, and Training - this will propagate to the rest of the code base over time
 07042011c Added variable declarations to readMergeOptions to eliminate possible scope conflicts
+07062011b Research feature: changed caps to start at zero (started a new realm for testing)
+07072011a Modify all Ajax calls to accept Dragon Heart and user_id parameters, add initilizers to cattrs
+
+

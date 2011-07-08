@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110706a';
+var Version = '20110707f';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -124,6 +124,7 @@ var kOpts = translate ('Opts');
 
 // Items
 var kAquaTroopRespirator = translate ('AquaTroopRespirator');
+var kStoneTroopItem = translate('StoneTroopItem');
 
 // Error messages
 var kFatalSWF = translate ('"<B>Error initializing DOA Power Tools mod by Wham:</b><BR><BR>Unable to find SWF element"');
@@ -611,53 +612,56 @@ var OptionsDefaults = {
   trainQChoice  : kMinHousing,
   troopCap      : {},
   tJobs         : [],
+  rJobs         : [],
 //  alertConfig  : {aChat:false, aPrefix:'** I\'m being attacked! **', scouting:false, wilds:false, minTroops:10000, spamLimit:10 },
 };
 
 var Styles = '\
-  div {margin:0 ! important}\
-  div.pbTitle {border:1px solid; border-color:#ffffff; font-weight:bold; padding-top:2px; padding-bottom:2px; text-align:center; color:#ffffff; background-color:#436}\
-  div.pbSubtitle {border:1px solid; border-color:#ffffff; font-weight:bold; padding-top:2px; padding-bottom:2px; text-align:center; color:#ffffff; background-color:#444}\
-  div.pbInput {border:2px ridge yellow; background-color:#ffffee; padding:3px}\
-  div.pbStatBox {border:2px ridge black; background-color:#efefe0; padding:2px}\
-  div.short {height:7px;}\
-  div#qTip {padding: 3px; border: 1px solid #777; border-right-width: 2px; border-bottom-width: 2px; display: none; background: #999; color: #fff; font: bold 9px Verdana, Arial, sans-serif; text-align: left; position: absolute; z-index: 1000}\
-  table.pbTabPad tr td {border:none; background:none; white-space:nowrap; padding: 2px 4px}\
-  table.pbTab tr td {border:none; background:none; white-space:nowrap; padding: 0px 4px;}\
-  table tr td.pbTabLeft {font-weight:bold; text-align:right; padding-right: 5px}\
-  table.pbTabLined tr td {border-bottom:1px solid #ccc; background:none; white-space:nowrap; padding: 1px 4px 1px 4px;}\
-  table tr.pbTabHdr1 td {background-color:#dde; font-weight:bold}\
-  table tr.pbTabHdr2 td {font-weight:bold}\
-  tr.pbMarchOther td {color:#888888}\
-  tr.pbMarchMine td {color:#000000}\
-  tr.pbPopTop td { background-color:#dde; border:none; height: 21px;  padding:0px; }\
-  tr.pbretry_ptPopTop td { background-color:#a00; color:#fff; border:none; height: 21px; padding:0px; }\
-  tr.pbOwned {background-color: #e80000; color:white}\
-  table.pbMainTab {empty-cells:show; margin-top:5px; }\
-  table.pbMainTab tr td a {color:inherit }\
-  table.pbMainTab tr td   {height:60%; empty-cells:show; padding: 0px 5px 0px 5px;  margin-top:5px; white-space:nowrap; border: 2px solid; border-style: none none solid none; }\
-  table.pbMainTab tr td.spacer {padding: 0px 3px; border:none; }\
-  table.pbMainTab tr td.sel    {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#eed; cursor:hand; cursor:pointer; padding: 2px;}\
-  table.pbMainTab tr td.notSel {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#0044a0; color:white; border-color:black; cursor:hand; cursor:pointer; padding: 2px;}\
-  .CPopup .CPopMain { background-color:#f8f8f8; padding:6px;}\
-  .CPopup  {border:3px ridge #666}\
-  input.butAttackOff {width:130px; background-color:#e80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-  input.butAttackOff:hover {width:130px; background-color:#f80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-  input.butAttackOn {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-  input.butAttackOn:hover {width:130px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-  input.small {margin:0; padding-top:0; padding-bottom:0; padding-left:1px; padding-right:1px; font-size:10px}\
-  input.short {width:30px}\
-  input.greenButton {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-  input.greenButton:active {width:130px; background-color:black; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
-  input.greenButton:hover {width:130px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
-  .button {cursor:hand; cursor:pointer; border: 1px solid #006; background: #0044a0; color: white; padding: 2px; font-weight:bold; font-size:13px; border-style: solid solid none solid;}\
+    div {margin:0 ! important}\
+    div.pbTitle {border:1px solid; border-color:#ffffff; font-weight:bold; padding-top:2px; padding-bottom:2px; text-align:center; color:#ffffff; background-color:#436}\
+    div.pbSubtitle {border:1px solid; border-color:#ffffff; font-weight:bold; padding-top:2px; padding-bottom:2px; text-align:center; color:#ffffff; background-color:#444}\
+    div.pbInput {border:2px ridge yellow; background-color:#ffffee; padding:3px}\
+    div.pbStatBox {border:2px ridge black; background-color:#efefe0; padding:2px}\
+    div.short {height:7px;}\
+    .hiding {background-color: #2FAC2F; color: white; padding-left: 10px; padding-right: 10px; margin-right: -2px;}\
+    .defending {background-color: #F80000; color: white; padding-left: 10px; padding-right: 10px; margin-right: -2px;}\
+    div#qTip {padding: 3px; border: 1px solid #777; border-right-width: 2px; border-bottom-width: 2px; display: none; background: #999; color: #fff; font: bold 9px Verdana, Arial, sans-serif; text-align: left; position: absolute; z-index: 1000}\
+    table.pbTabPad tr td {border:none; background:none; white-space:nowrap; padding: 2px 4px}\
+    table.pbTab tr td {border:none; background:none; white-space:nowrap; padding: 0px 4px;}\
+    table tr td.pbTabLeft {font-weight:bold; text-align:right; padding-right: 5px}\
+    table.pbTabLined tr td {border-bottom:1px solid #ccc; background:none; white-space:nowrap; padding: 1px 4px 1px 4px;}\
+    table tr.pbTabHdr1 td {background-color:#dde; font-weight:bold}\
+    table tr.pbTabHdr2 td {font-weight:bold}\
+    tr.pbMarchOther td {color:#888888}\
+    tr.pbMarchMine td {color:#000000}\
+    tr.pbPopTop td { background-color:#dde; border:none; height: 21px;  padding:0px; }\
+    tr.pbretry_ptPopTop td { background-color:#a00; color:#fff; border:none; height: 21px; padding:0px; }\
+    tr.pbOwned {background-color: #e80000; color:white}\
+    table.pbMainTab {empty-cells:show; margin-top:5px; }\
+    table.pbMainTab tr td a {color:inherit }\
+    table.pbMainTab tr td   {height:60%; empty-cells:show; padding: 0px 5px 0px 5px;  margin-top:5px; white-space:nowrap; border: 2px solid; border-style: none none solid none; }\
+    table.pbMainTab tr td.spacer {padding: 0px 3px; border:none; }\
+    table.pbMainTab tr td.sel    {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#eed; cursor:hand; cursor:pointer; padding: 2px;}\
+    table.pbMainTab tr td.notSel {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#0044a0; color:white; border-color:black; cursor:hand; cursor:pointer; padding: 2px;}\
+    .CPopup .CPopMain { background-color:#f8f8f8; padding:6px;}\
+    .CPopup  {border:3px ridge #666}\
+    input.butAttackOff {width:130px; background-color:#e80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+    input.butAttackOff:hover {width:130px; background-color:#f80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+    input.butAttackOn {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+    input.butAttackOn:hover {width:130px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+    input.small {margin:0; padding-top:0; padding-bottom:0; padding-left:1px; padding-right:1px; font-size:10px}\
+    input.short {width:30px}\
+    input.greenButton {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+    input.greenButton:active {width:130px; background-color:black; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
+    input.greenButton:hover {width:130px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
+    .button {cursor:hand; cursor:pointer; border: 1px solid #006; background: #0044a0; color: white; padding: 2px; font-weight:bold; font-size:13px; border-style: solid solid none solid;}\
 //  .button:hover {background: #eed; font-weight:bold; font-size:13px; color: black; border-style: solid solid none solid; }\
 //  .button:active {background: black; font-weight:bold; font-size:13px; color: white; border-style: none none none none;}\
-  span.boldRed {color:#550000; font-weight:bold}\
-  hr.thin {margin:0px; padding:0px}\
-  #hd ul.tabs li.tab a.toolbutOn {background-color:#900 ! important; color:white ! important}\
-  #hd ul.tabs li.tab a.toolbutOff {background-color:#ffc ! important; color:black ! important}\
-  ';
+    span.boldRed {color:#550000; font-weight:bold}\
+    hr.thin {margin:0px; padding:0px}\
+    #hd ul.tabs li.tab a.toolbutOn {background-color:#900 ! important; color:white ! important}\
+    #hd ul.tabs li.tab a.toolbutOff {background-color:#ffc ! important; color:black ! important}\
+    ';
 
 var JSON;if(!JSON){JSON={};}(function(){"use strict";function f(n){return n<10?'0'+n:n;}if(typeof Date.prototype.toJSON!=='function'){Date.prototype.toJSON=function(key){return isFinite(this.valueOf())?this.getUTCFullYear()+'-'+f(this.getUTCMonth()+1)+'-'+f(this.getUTCDate())+'T'+f(this.getUTCHours())+':'+f(this.getUTCMinutes())+':'+f(this.getUTCSeconds())+'Z':null;};String.prototype.toJSON=Number.prototype.toJSON=Boolean.prototype.toJSON=function(key){return this.valueOf();};}var cx=/[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,escapable=/[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,gap,indent,meta={'\b':'\\b','\t':'\\t','\n':'\\n','\f':'\\f','\r':'\\r','"':'\\"','\\':'\\\\'},rep;function quote(string){escapable.lastIndex=0;return escapable.test(string)?'"'+string.replace(escapable,function(a){var c=meta[a];return typeof c==='string'?c:'\\u'+('0000'+a.charCodeAt(0).toString(16)).slice(-4);})+'"':'"'+string+'"';}function str(key,holder){var i,k,v,length,mind=gap,partial,value=holder[key];if(value&&typeof value==='object'&&typeof value.toJSON==='function'){value=value.toJSON(key);}if(typeof rep==='function'){value=rep.call(holder,key,value);}switch(typeof value){case'string':return quote(value);case'number':return isFinite(value)?String(value):'null';case'boolean':case'null':return String(value);case'object':if(!value){return'null';}gap+=indent;partial=[];if(Object.prototype.toString.apply(value)==='[object Array]'){length=value.length;for(i=0;i<length;i+=1){partial[i]=str(i,value)||'null';}v=partial.length===0?'[]':gap?'[\n'+gap+partial.join(',\n'+gap)+'\n'+mind+']':'['+partial.join(',')+']';gap=mind;return v;}if(rep&&typeof rep==='object'){length=rep.length;for(i=0;i<length;i+=1){k=rep[i];if(typeof k==='string'){v=str(k,value);if(v){partial.push(quote(k)+(gap?': ':':')+v);}}}}else{for(k in value){if(Object.hasOwnProperty.call(value,k)){v=str(k,value);if(v){partial.push(quote(k)+(gap?': ':':')+v);}}}}v=partial.length===0?'{}':gap?'{\n'+gap+partial.join(',\n'+gap)+'\n'+mind+'}':'{'+partial.join(',')+'}';gap=mind;return v;}}if(typeof JSON.stringify!=='function'){JSON.stringify=function(value,replacer,space){var i;gap='';indent='';if(typeof space==='number'){for(i=0;i<space;i+=1){indent+=' ';}}else if(typeof space==='string'){indent=space;}rep=replacer;if(replacer&&typeof replacer!=='function'&&(typeof replacer!=='object'||typeof replacer.length!=='number')){throw new Error('JSON.stringify');}return str('',{'':value});};}if(typeof JSON.parse!=='function'){JSON.parse=function(text,reviver){var j;function walk(holder,key){var k,v,value=holder[key];if(value&&typeof value==='object'){for(k in value){if(Object.hasOwnProperty.call(value,k)){v=walk(value,k);if(v!==undefined){value[k]=v;}else{delete value[k];}}}}return reviver.call(holder,key,value);}text=String(text);cx.lastIndex=0;if(cx.test(text)){text=text.replace(cx,function(a){return'\\u'+('0000'+a.charCodeAt(0).toString(16)).slice(-4);});}if(/^[\],:{}\s]*$/.test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,'@').replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,']').replace(/(?:^|:|,)(?:\s*\[)+/g,''))){j=eval('('+text+')');return typeof reviver==='function'?walk({'':j},''):j;}throw new SyntaxError('JSON.parse');};}}());
 var JSON2 = JSON; 
@@ -739,6 +743,9 @@ function getC (swf){
   // will have to enhance this if they change the names ...
   C.attrs.apiServer = attrs.api_server;
   C.attrs.sessionId = attrs.session_id;
+  C.attrs.dragonHeart = attrs.dragon_heart;
+  C.attrs.userId = attrs.user_id;
+  //alert(C.attrs.userId); // DELETE
 }
 
 var dtStartupTimer = null;
@@ -1140,7 +1147,7 @@ var Seed = {
   fetchSeed : function (notify) {
     var t = Seed;
     var now = new Date().getTime() / 1000;
-    new MyAjaxRequest ('player.json', {'%5Fsession%5Fid':C.attrs.sessionId, timestamp:parseInt(serverTime()), version:3 }, function (rslt){
+    new MyAjaxRequest ('player.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, '%5Fsession%5Fid':C.attrs.sessionId, version:3, timestamp:parseInt(serverTime()) }, function (rslt){
       if (rslt.ok){
         if (rslt.dat.timestamp)
           t.serverTimeOffset = rslt.dat.timestamp - now;
@@ -1329,7 +1336,7 @@ var Seed = {
           maxTime = 5000;
       RequestQueue.add ('fetchCity', doit, maxTime);    
       function doit (){    
-          new MyAjaxRequest ('cities/'+ cityId +'.json', {'%5Fsession%5Fid':C.attrs.sessionId, timestamp:parseInt(serverTime()), version:3}, function (rslt){
+          new MyAjaxRequest ('cities/'+ cityId +'.json', {'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:3, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt){
               var t = Seed;
               if (rslt.ok){
                   t.checkIncomingData(rslt);
@@ -3060,7 +3067,7 @@ var Ajax = {
   messageList : function (cat, callback){
     if (!cat)
       cat = 'all';
-    new MyAjaxRequest ('reports.json', {category:cat, timestamp:parseInt(serverTime()), count:12, '%5Fsession%5Fid':C.attrs.sessionId, version:3, page:1}, mycb, false);
+    new MyAjaxRequest ('reports.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, count:12, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, category:cat, page:1, version:3 }, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3072,7 +3079,7 @@ var Ajax = {
   },
   
   messageDetail : function (id, callback){
-    new MyAjaxRequest ('reports/'+ id +'.json', {'%5Fsession%5Fid':C.attrs.sessionId, timestamp:parseInt(serverTime()), version:3}, mycb, false);
+    new MyAjaxRequest ('reports/'+ id +'.json', {'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:3, 'dragon%5Fheart':C.attrs.dragonHeart }, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3085,11 +3092,13 @@ var Ajax = {
 
   messageDelete : function (ids, callback){
 	var p = {}
-	p['ids'] = ids.join('%7C');
+	p['user%5Fid'] = C.attrs.userId;
 	p['%5Fmethod'] = 'delete';
-	p['%5Fsession%5Fid'] = C.attrs.sessionId;
-	p['version'] = 3;
 	p['timestamp'] = parseInt(serverTime());
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['ids'] = ids.join('%7C');
+	p['dragon%5Fheart'] = C.attrs.dragonHeart;
+	p['version'] = 3;
     new MyAjaxRequest ('reports/bulk_delete.json', p, mycb, true);
     function mycb (rslt){
       if (rslt.ok && !rslt.dat.result.success)
@@ -3103,10 +3112,12 @@ var Ajax = {
   buildingUpgrade : function (cityId, buildingId, callback){
     var t = Ajax;
     var p = {};
+	p['user%5Fid'] = C.attrs.userId;
+	p['dragon%5Fheart'] = C.attrs.dragonHeart;
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
     p['%5Fmethod'] = 'put';
-	p['timestamp'] = parseInt(serverTime());
 	p['version'] = 3;
+	p['timestamp'] = parseInt(serverTime());
     new MyAjaxRequest ('cities/'+ cityId +'/buildings/'+ buildingId +'.json', p, mycb, true);
     function mycb (rslt){
         //logit ("BUILD RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3125,12 +3136,14 @@ var Ajax = {
   troopTraining : function (troopType, troopQty, cityId, callback){
     var t = Ajax;
     var p = {};
-	p['units%5Bquantity%5D'] = troopQty;
-    p['%5Fmethod'] = 'post';
-	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['user%5Fid'] = C.attrs.userId;
+	p['%5Fmethod'] = 'post';
 	p['timestamp'] = parseInt(serverTime());
-	p['version'] = 3;
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['units%5Bquantity%5D'] = troopQty;
 	p['units%5Bunit%5Ftype%5D'] = troopType;
+	p['dragon%5Fheart'] = C.attrs.dragonHeart;
+	p['version'] = 3;
     new MyAjaxRequest ('cities/'+ cityId +'/units.json', p, mycb, true);
     function mycb (rslt){
 	  //logit ("Troop Training Response:\n" + inspect (rslt, 10, 1));
@@ -3148,11 +3161,13 @@ var Ajax = {
   researchStart : function (cityId, researchType, callback){
     var t = Ajax;
     var p = {};
+	p['user%5Fid'] = C.attrs.userId;
     p['%5Fmethod'] = 'post';
-	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['timestamp'] = parseInt(serverTime());
-	p['version'] = 3;
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['research%5Bresearch%5Ftype%5D'] = researchType;
+	p['dragon%5Fheart'] = C.attrs.dragonHeart;
+	p['version'] = 3;
     new MyAjaxRequest ('cities/'+ cityId +'/researches.json', p, mycb, true);
     function mycb (rslt){
         //logit ("RESEARCH RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3248,9 +3263,10 @@ if (this._queue.length > 0 && this._currentRequest == null) {
     var t = Ajax;
     var p = {};
     ++t.marchBusy;
-	p['march%5By%5D'] = y;
 	p['march%5Bmarch%5Ftype%5D'] = 'attack';
-	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['march%5By%5D'] = y;
+	p['%5Fmethod'] = 'post';
+	p['march%5Bgeneral%5Fid%5D'] = genId;
 	p['timestamp'] = parseInt(serverTime());
     var u = {}
 	var mt = false;
@@ -3266,8 +3282,9 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 	sendTroops += "%7D";
     p['march%5Bunits%5D'] = sendTroops; //JSON2.stringify(u);     //ie: '{"Longbowman":500}';
     p['march%5Bx%5D'] = x;
-    p['%5Fmethod'] = 'post';
-    p['march%5Bgeneral%5Fid%5D'] = genId;
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['user%5Fid'] = C.attrs.userId;
+	p['dragon%5Fheart'] = C.attrs.dragonHeart;
 	p['version'] = 3;
     new MyAjaxRequest ('cities/'+ cityId +'/marches.json', p, mycb, true);
     function mycb (rslt){
@@ -3298,10 +3315,12 @@ if (this._queue.length > 0 && this._currentRequest == null) {
   marchRecall : function (cityId, marchId, callback){ // untested
     var t = Ajax;
     var p = {};
-    p['%5Fmethod'] = 'delete';
+	p['user%5Fid'] = C.attrs.userId;
+	p['dragon%5Fheart'] = C.attrs.dragonHeart;
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
-	p['timestamp'] = parseInt(serverTime());
+    p['%5Fmethod'] = 'delete';
 	p['version'] = 3;
+	p['timestamp'] = parseInt(serverTime());
     new MyAjaxRequest ('cities/'+ cityId +'/marches/'+ marchId +'.json', p, mycb, true);
     function mycb (rslt){
         //logit ("MARCH RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3322,9 +3341,11 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 
   collectResources : function (cityId, callback){
     var p = {};
-	p['%5Fsession%5Fid'] = C.attrs.sessionId;
+	p['user%5Fid'] = C.attrs.userId;
 	p['timestamp'] = parseInt(serverTime());
+	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['version'] = 3;
+	p['dragon%5Fheart'] = C.attrs.dragonHeart;
     new MyAjaxRequest ('cities/'+ cityId +'/move_resources.json', p, mycb, true);
     function mycb (rslt){
       if (rslt.ok){
@@ -3525,12 +3546,13 @@ Tabs.Info = {
       var city = Seed.s.cities[cityIdx];
       // Outposts are always defending (until further notice)
       var wallStatus = '';
+      var alliance_name = (Seed.s.alliance) ? Seed.s.alliance.name : '';
       if (cityIdx == 0)
-        wallStatus = (Seed.s.cities[cityIdx].defended) ? '<font color=#EEF>'+ kDefending +'</font>' : '<font color=yellow>'+ kSanctuary +'</font>';
+        wallStatus = (Seed.s.cities[cityIdx].defended) ? '<font class="defending">'+ kDefending +'</font>' : '<font class="hiding">'+ kSanctuary +'</font>';
       else
-        wallStatus = '<font color=#EEF>'+ kDefending +'</font>';
+        wallStatus = '<font class="defending">'+ kDefending +'</font>';
       
-      return '<div class=pbSubtitle><TABLE class=pbTab><TR><TD>'+ kCityNumber + (cityIdx+1) +'</td><TD align=center>'+ city.type +'</td><TD align=right>'+ city.x +','+ city.y +'</td><TD width=220px align=right>'+ wallStatus +'</td></tr></table></div>';
+      return '<div class=pbSubtitle><TABLE class=pbTab><TR><TD>'+ kCityNumber + (cityIdx+1) +'</td><TD align=center>'+ city.type +'</td><TD align=right>'+ city.x +','+ city.y + ' ' + alliance_name +'</td><TD width=220px align=right>'+ wallStatus +'</td></tr></table></div>';
     }
   },
 
@@ -4019,7 +4041,7 @@ Tabs.Build = {
         
     var m = '<DIV class=pbTitle>'+ kAutoUpgradeBuildings +'</div>\
       <DIV class=pbStatBox><CENTER><INPUT id=pbbldOnOff type=submit\></center>\
-      <DIV id=pbbldBldStat></div> <BR> <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:17px"></div>  </div>\
+      <DIV id=pbbldBldStat></div> <BR> <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:34px"></div>  </div>\
       <DIV id=pbbldConfig class=pbInput>';
     
     var el = [], listC = [], listF = [];
@@ -4068,13 +4090,13 @@ Tabs.Build = {
                     var capitolB = t.capitolCity.concat(t.capitolField);
                     var outpostB = t.outpostCity.concat(t.outpostField);                    
                     var currentLowestBuildingLevel = t.getCurrentLowestBuildingLevel(i, (i==0)? capitolB[ii] : outpostB[ii]);
-                    selectMenu.selectedIndex = (currentLowestBuildingLevel > 1) ? currentLowestBuildingLevel-2 : 0;
+                    selectMenu.selectedIndex = currentLowestBuildingLevel;
                     Data.options.autoBuild.buildCap[i][ii] = currentLowestBuildingLevel;
                 }
                 else {
                     // Why 2? Because the building cap starts at 2, not zero :)
-                    selectMenu.selectedIndex = Data.options.autoBuild.buildCap[i][ii]-2;
-                    selectMenu.options[Data.options.autoBuild.buildCap[i][ii]-2].selected = true;
+                    selectMenu.selectedIndex = Data.options.autoBuild.buildCap[i][ii];
+                    selectMenu.options[Data.options.autoBuild.buildCap[i][ii]].selected = true;
                 }
             }
             catch (e) {
@@ -4096,6 +4118,8 @@ Tabs.Build = {
 
     function buildDisplayCap (cityIdx, listIdx){
         var m = '<TD><SELECT id="pbbldcap_' + cityIdx +'_'+ listIdx +'"<option value="1">1</option>\
+                 <option value="0">0</option>\
+                 <option value="1">1</option>\
                  <option value="2">2</option>\
                  <option value="3">3</option>\
                  <option value="4">4</option>\
@@ -4134,7 +4158,7 @@ Tabs.Build = {
     if (onOff){
       but.value = kAutoBuildOn;
       but.className = 'butAttackOn';
-      t.buildTimer = setInterval (t.buildTick, 3000);
+      t.buildTimer = setInterval (t.buildTick, 4000);
     } 
     else {
       but.value = kAutoBuildOff;
@@ -4158,7 +4182,7 @@ Tabs.Build = {
             var b = Buildings.getById(i, job.city_building_id);
             var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
             // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
-            m += kBuilding1 +'</td><TD>'+ kLevel + job.level +' '+ b.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
+            m += kBuilding1 +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ b.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
         }
     }
     document.getElementById('pbbldBldStat').innerHTML = m +'</table>';
@@ -4188,14 +4212,14 @@ Tabs.Build = {
   
   getBuildingCap : function (cityIdx, buildingType){
     var t = Tabs.Build;
-    var cap = 2;
+    var cap = 0;
     var cityType =  (cityIdx == 0) ? t.capitolCity : t.outpostCity;
     cityType =  (cityIdx == 0) ? cityType.concat(t.capitolField) : cityType.concat(t.outpostField);
     
     for (var i=0; i < cityType.length; i++) {
         if (cityType[i] == buildingType) {
             try {
-                cap = Data.options.autoBuild.buildCap[0][i]; 
+                cap = (Data.options.autoBuild.buildCap[0][i]) ? Data.options.autoBuild.buildCap[0][i] : 0; 
                 break;
             }
             catch (e) {
@@ -4224,6 +4248,8 @@ Tabs.Build = {
   // for example, in the main city if I select quarries, farms, mines, and timbermills all to be built
   // auto-build will start building one type of building even though others are lower level (i.e. mine->5 while lumbermill is still at 3)
   // The algorithm for getting the lowest level building may not be working correctly
+  // New approach 07072011b
+  // Calculate the completion time by examining the job record for any job running
   errorCount : 0,
   buildTick : function (){
     var t = Tabs.Build;
@@ -4234,29 +4260,57 @@ Tabs.Build = {
     Seed.notifyOnUpdate(function(){   
         for (var ic=0; ic<Seed.s.cities.length; ic++ ){
             var city = Seed.s.cities[ic];
-            if (getBuildJob (ic) == null){     // city not currently building
-                // find lowest level eligible building ...
+            var cityId = city.id;
+            var bJob = getBuildJob (ic);
+            if (bJob == null){     // city not currently building
+                
+                // Yes, is there a job in persistent data in in this city?
+                for (var i=0; i<Data.options.tJobs.length; i++) {
+                    if (Data.options.tJobs[i].city_id == cityId) {
+                        // Yes, has the job completed?
+                        if (!Data.options.tJobs[i].duration) {
+                            // If there is no duration, the job has completed
+                            Seed.fetchCity (city.id, 1000);
+                            clearTimeout (t.buildTimer);
+                            t.buildTimer = setInterval (t.buildTick, 4000);
+                            Data.options.tJobs.splice(i,1);
+                            return;
+                        }
+                        else if (Data.options.tJobs[i].run_at + Data.options.tJobs[i].duration > serverTime()) {
+                            // Yes, the job should be done. Wait at least 4 seconds for updated information
+                            // We might be able to use the remaining duration in the calculations for either
+                            // fetchCity or setInterval...
+                            Seed.fetchCity (city.id, 1000);
+                            Data.options.tJobs.splice(i,1); // Remove the record
+                            clearTimeout (t.buildTimer);
+                            t.buildTimer = setInterval (t.buildTick, 4000);
+                            return;
+                        }
+                    }
+                }                   
+                
                 var bl = []; // Concatenated array of buildings
                 for (var p in Data.options.autoBuild.buildingEnable[ic]){
                     // Is this building type enabled for autobuild?
                     if (Data.options.autoBuild.buildingEnable[ic][p])
                         bl = bl.concat (Buildings.getList (ic, p));
                 }
-                var bFound = false;
-                for (var i=0; i<Data.options.tJobs.length; i++) 
-                    for (var j=0; j<bl.length; j++) 
-                        if (bl[j] == Data.options.tJobs[i]) {
-                            bl[j].level++;
-                            bFound = true;
-                        }
+                //var bFound = false;
+                //for (var i=0; i<Data.options.tJobs.length; i++) 
+                //    for (var j=0; j<bl.length; j++) 
+                //        if (bl[j] == Data.options.tJobs[i]) {
+                //            bl[j].level++;
+                //            bFound = true;
+                //        }
 
-                if (bFound) {
-                    Seed.fetchCity (city.id, 1000);
-                    setTimer(t.buildTick, 2000);
-                    return;
-                }
-                else
-                    Data.options.tJobs.length = 0;
+                //if (bFound) {
+                //    Seed.fetchCity (city.id, 1000);
+                //    clearTimeout(t.buildTimer);
+                //    t.buildTimer = setInterval (t.buildTick, 4000);
+                //    return;
+                //}
+                //else
+                //    Data.options.tJobs.length = 0;
                     
                 // Change: we want to iterate over each buildings comparing the level to the cap. If the cap has not
                 // been reached, call doBuild
@@ -4297,13 +4351,31 @@ Tabs.Build = {
                     // a very short list (with three cities, it should ever only contain 3 items).
                     Seed.fetchCity (city.id, 1000);
             } 
+            else {
+                // We have a job running
+                // Look at the job record
+                if (bJob) {
+                    var jFound = false;
+                    // Look for the job in our persistent data
+                    for (var i=0; i<Data.options.tJobs.length; i++) {
+                        if (bJob == Data.options.tJobs[i]) {
+                            jFound = true;
+                        }   
+                    }
+                    // If the job is not in persistent data, put it there
+                    if (!jFound) {
+                        Data.options.tJobs.push(bJob);
+                        actionLog("Putting build job in persistent data");
+                    }
+                }
+            }
        }       
     }); 
   },
   
   doBuild : function (building, city){
     var t = Tabs.Build;
-    var msg = kBuildingLevel + (building.level+1) +' '+ building.type + kAt + city.type;
+    var msg = kBuildingLevel + (building.level+1) +' '+ building.type + kAt + (city.type == "Capital") ? "Capitol" : city.type;
     
     t.dispFeedback (msg);
     
@@ -4317,13 +4389,13 @@ Tabs.Build = {
         } 
         else {
             Seed.fetchSeed();
-            actionLog (kBuildErr+ rslt.errmsg);
+            actionLog (building.type + ': ' + rslt.errmsg);
             if (++t.errorCount > 3){
                 t.dispFeedback (kTooManyBuildErrs);
                 t.setEnable (false);
                 return;
             }
-            t.dispFeedback (kBuildErr + rslt.errmsg);
+            t.dispFeedback (building.type + ': ' + rslt.errmsg);
             //t.buildTimer = setTimeout (t.buildTick, 20000);
             return;
         }
@@ -5282,6 +5354,71 @@ Tabs.Train = {
     return ret;    
   },
  
+ checkStoneTroopReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Clairvoyance: 5
+    // Metalsmith: 9
+    // Metallurgy: 10
+    // Masonry: 10
+    // Food: 3000
+    // TrainingCamp Level: 10
+    // Idle Population: 8
+    // Lumber: 4000
+    // Metals: 2000
+    // Stone: 8000
+    // Upkeep: 110 food
+    // Glowing Mandrake: 1
+    
+    var t = Tabs.Train;    
+    var food = troopQty * 3000;
+    var trainingCampLevel = 10;
+    var idlePop = troopQty * 8;
+    var lumber = troopQty * 4000;
+    var metal = troopQty * 2000;
+    var stone = troopQty * 8000;
+    var upkeep = troopQty * 100;
+    var metalsmithLevel = 9;
+    var metallurgyLevel = 9;
+    var masonryLevel = 10;
+    var clairvoyanceLevel = 5;
+    var mandrakeQty = troopQty;
+    var city = Seed.s.cities[0];
+    var m = '';
+    var n = '<TABLE><TR><TD>Need: </td>';
+    var t = Tabs.Train;
+    var ret = {trainable:false, msg:[]};
+    var troopCapped = t.getTroopCap(kStoneTroop, troopQty);
+    
+    // If the troop is capped, are we about to exceed the limit?
+    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+    // Returns zero or the building level
+    if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
+    if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
+    var availableMandrakes = t.getItem(ic, kStoneTroopItem);
+    if (availableMandrakes < mandrakeQty) m += '<TD>&nbsp;Mandrakes '+ (mandrakeQty - availableMandrakes) +'</td>';
+    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+    if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+    availablePop = (availablePop > 0) ? availablePop : 0;
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
+    if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
+    if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
+    if (Seed.s.research.Masonry < masonryLevel) m += '<TD>&nbsp;Masonry ' + masonryLevel +'</td>'; 
+    if (m.length == 0) {
+        ret.trainable = true;
+        ret.msg = troopQty +' '+ kStoneTroop +'s eat ' + upkeep + ' food';
+    }
+    else {
+        ret.trainable = false;
+        ret.msg = n + m + '</tr></table>';
+    }
+    return ret;    
+  },
+  
   // Return the total number troops of the specified type adding in the qty about to 
   // be produced. If this number is less than the cap, return zero     
   getTroopCap : function(troopType, qty){
@@ -5378,6 +5515,7 @@ Tabs.Train = {
         case kGiant: ret = t.checkGiantReqs(troopQty, ic, count, troopsLength); break;
         case kFireMirror: ret = t.checkFireMirrorReqs(troopQty, ic, count, troopsLength); break;
         case kAquaTroop: ret = t.checkAquaTroopReqs(troopQty, ic, count, troopsLength); break;
+        case kStoneTroop: ret = t.checkStoneTroopReqs(troopQty, ic, count, troopsLength); break;
     }
     return ret;
   },
@@ -5575,6 +5713,7 @@ Tabs.Train = {
             }
         }
         if (doRecheck) {
+            Seed.fetchCity(Seed.s.cities[ic].id, 1000);
             //t.trainTimer = setTimeout (function() {t.trainTick(i)}, 20000);
         }		
 	},
@@ -5797,13 +5936,28 @@ function getTrainJob (cityIdx){
 // Notes: We don't really need the double array because research is only allowed in the Capitol
 // but it's here just in case they ever decide to allow another research facility
 //
+// RapidDeployment
+// Levitation
+// Mercantilism
+// Clairvoyance
+// Ballistics = Weapons Calibration
+// Medicine
+// Agriculture
+// Mining = Alloys
+// Masonry
+// Dragonry
+// Woodcraft
+// Metallurgy
+// AerialCombat
+//
 Tabs.Research = {
   tabOrder          : RESEARCH_TAB_ORDER,
   tabLabel          : kResearch,
   cont              : null,
   researchTimer     : null,
   statTimer         : null,
-  capitolResearch   : ['Agriculture', 'Woodcraft', 'Masonry', 'Alloys', 'Clairvoyance', 'Rapid Deployment', 'Weapons Calibration', 'Metallurgy', 'Medicine', 'Dragonry', 'Levitation', 'Mercantilism', 'Aerial Combat'],
+  capitolResearch   : {Agriculture:'Agriculture', Woodcraft:'Woodcraft', Masonry:'Masonry', Mining:'Alloys', Clairvoyance:'Clairvoyance', RapidDeployment:'Rapid Deployment', Ballistics:'Weapons Calibration', Metallurgy:'Metallurgy', Medicine:'Medicine', Dragonry:'Dragonry', Levitation:'Levitation', Mercantilism:'Mercantilism', AerialCombat:'Aerial Combat'},
+  researchIdx       : {Agriculture:0, Woodcraft:1, Masonry:2, Mining:3, Clairvoyance:4, RapidDeployment:5, Ballistics:6, Metallurgy:7, Medicine:8, Dragonry:9, Levitation:10, Mercantilism:11, AerialCombat:12},
   
   init : function (div){
     var t = Tabs.Research;
@@ -5826,9 +5980,11 @@ Tabs.Research = {
     var city = Seed.s.cities[0];
     
     m += '<DIV class=pbSubtitle>'+ kCityNumber +'1 ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
-    for (var ii=0; ii<t.capitolResearch.length; ii++){
-        m += '<TR><TD><INPUT type=checkbox id="pbrescb_'+ 0 + '_' +t.capitolResearch[ii] +'" '+ (Data.options.autoResearch.researchEnable[0][t.capitolResearch[ii]]?'CHECKED':'') +' /></td><TD>'+ t.capitolResearch[ii] +'</td>'+ researchDisplayCap(ii) +'</tr>';  
-        el.push('pbrescb_' + 0 + '_' +t.capitolResearch[ii]);
+    var i=0;
+    for (var p in t.capitolResearch){
+        m += '<TR><TD><INPUT type=checkbox id="pbrescb_'+ 0 + '_' +t.capitolResearch[p] +'" '+ (Data.options.autoResearch.researchEnable[0][t.capitolResearch[p]]?'CHECKED':'') +' /></td><TD>'+ t.capitolResearch[p] +'</td>'+ researchDisplayCap(i) +'</tr>';  
+        el.push('pbrescb_' + 0 + '_' +t.capitolResearch[p]);
+        ++i;
     }
     m += '</table></td><TD><TABLE class=pbTab>';  
     m += '</div>';
@@ -5840,24 +5996,24 @@ Tabs.Research = {
       
     // Add the event listeners for the research caps
     // And restore the persistent data since it has to be done in the same loop
-    for (var ii=0;ii<(t.capitolResearch.length); ii++) {
+    var ii = 0;
+    for (var p in t.capitolResearch) {
         var selectMenu = document.getElementById('pbrescap_'+ 0 + '_' +ii);
         try {
-            // Why 2? Because the research cap starts at 2, not zero :)
             if (!Data.options.autoResearch.researchCap[0][ii]) {
-                var currentResearchLevel = t.getCurrentResearchLevel(t.capitolResearch[ii]);
-                selectMenu.selectedIndex = (currentResearchLevel >=2) ? currentResearchLevel-2 : 0;
-                Data.options.autoBuild.researchCap[0][ii] = currentResearchLevel;
-
+                var currentResearchLevel = t.getCurrentResearchLevel(p);
+                selectMenu.selectedIndex = currentResearchLevel;
+                Data.options.autoResearch.researchCap[0][ii] = currentResearchLevel;
             }
             else {
-                selectMenu.selectedIndex = Data.options.autoResearch.researchCap[0][ii]-2;
-                selectMenu.options[Data.options.autoResearch.researchCap[0][ii]-2].selected = true;
+                selectMenu.selectedIndex = Data.options.autoResearch.researchCap[0][ii];
+                selectMenu.options[Data.options.autoResearch.researchCap[0][ii]].selected = true;
             }
         }
         catch (e) {
         }
         selectMenu.addEventListener('change', changeResearchCap, false);
+        ++ii;
     }
       
     t.setEnable (Data.options.autoResearch.enabled);
@@ -5870,6 +6026,8 @@ Tabs.Research = {
 
     function researchDisplayCap (listIdx){
         var m = '<TD><SELECT id="pbrescap_' + 0 + '_' + listIdx +'"<option value="1">1</option>\
+                 <option value="0">0</option>\
+                 <option value="1">1</option>\
                  <option value="2">2</option>\
                  <option value="3">3</option>\
                  <option value="4">4</option>\
@@ -5910,7 +6068,7 @@ Tabs.Research = {
     if (onOff){
       but.value = kAutoResearchOn;
       but.className = 'butAttackOn';
-      t.researchTimer = setInterval(t.researchTick, 10000);
+      t.researchTimer = setInterval(t.researchTick, 5000);
     } 
     else {
       but.value = kAutoResearchOff;
@@ -5929,7 +6087,7 @@ Tabs.Research = {
     else {
         var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
         // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
-        m += kResearch +'</td><TD>'+ kLevel + job.level +' '+ job.research_type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
+        m += kResearch +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ job.research_type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
     }
 
     document.getElementById('pbresStat').innerHTML = m +'</table>';
@@ -5953,7 +6111,7 @@ Tabs.Research = {
         if (researchType == 'Aerial Combat')
             researchType = 'AerialCombat';
         // Note: Alloys is completely missing from the research list in the Seed
-        level = Seed.s.research[researchType]; 
+        level = (Seed.s.research[researchType]) ? Seed.s.research[researchType] : 0; 
     }
     catch (e) {
     }  
@@ -5963,13 +6121,13 @@ Tabs.Research = {
   
   getResearchCap : function (researchType){
     var t = Tabs.Research;
-    var cap = 2;
+    var cap = 0;
     var resType = t.capitolResearch;
      
-    for (var i=0; i < resType.length; i++) {
-        if (resType[i] == researchType) {
+    for (var p in resType) {
+        if (resType[p] == researchType) {
             try {
-                cap = Data.options.autoResearch.researchCap[0][i]; 
+                cap = (Data.options.autoResearch.researchCap[0][t.researchIdx[researchType]]) ? Data.options.autoResearch.researchCap[0][t.researchIdx[researchType]] : 0; 
                 break;
             }
             catch (e) {
@@ -5980,15 +6138,8 @@ Tabs.Research = {
   },
   
   getResearchIndex : function (researchType){
-    var t = Tabs.Research, resIdx = 0;
-    var cityType = t.capitolResearch;
-    
-    for (var i=0; i < cityType.length; i++)
-        if (cityType[i] == researchType) { 
-            resIdx = i;
-            break;
-        }
-    return resIdx;
+    var t = Tabs.Research;
+    return t.researchIdx[researchType];
   },
  
   // Research heartbeat
@@ -5998,35 +6149,103 @@ Tabs.Research = {
     var t = Tabs.Research;
     if (!Data.options.autoResearch.enabled)
         return;
+//    Data.options.rJobs.length = 0;
+//    return;
       
     Seed.notifyOnUpdate(function(){
-        var nothingToDo = true;    
-        if (getResearchJob (0) == null){     // no research being done yet
+        var nothingToDo = true;
+        var rJob = getResearchJob (0);
+        var city = Seed.s.cities[0];
+        var cityId = city.id;
+            
+        if (rJob == null){     // no research being done yet
+        
+            // Is there a research job in persistent data?
+            for (var i=0; i<Data.options.rJobs.length; i++) {
+                // Yes, has the job completed?
+                if (!Data.options.rJobs[i].duration) {
+                    // If there is no duration, the job has completed
+                    Seed.fetchCity (cityId, 1000);
+                    Data.options.rJobs.splice(i,1);
+                    clearTimeout (t.researchTimer);
+                    t.researchTimer = setInterval (t.researchTick, 5000);
+                    return;
+                }
+                else if (Data.options.rJobs[i].run_at + Data.options.rJobs[i].duration > serverTime()) {
+                    // The job has completed
+                    Seed.fetchCity (cityId, 1000);
+                    Data.options.rJobs.splice(i,1);
+                    clearTimeout (t.researchTimer);
+                    t.researchTimer = setInterval (t.researchTick, 5000);
+                    return;
+                }
+            }
+            
             for (var p in Data.options.autoResearch.researchEnable[0]) {
                 if (Data.options.autoResearch.researchEnable[0][p] == true){
-                    var temp = p;
-                    var level = t.getCurrentResearchLevel(temp);
-                    var cap = t.getResearchCap(temp);
+                
+                    //if (t.reChecked == false) {
+                    //    Seed.fetchCity (cityId, 1000);
+                    //    clearTimeout(t.researchTimer);
+                    //    t.researchTimer = setInterval (t.researchTick, 5000);
+                    //    t.reChecked = true;
+                    //    return;
+                    //}
+
+                    var level = t.getCurrentResearchLevel (p);
+                    var cap = t.getResearchCap (p);
+                    var rBuilt = false;
+                    var rCapped = false;
                     if (level < cap) {
-                        t.doResearch(temp, level);
-                        nothingToDo = false;
+                        t.doResearch(p, level);
+                        rBuilt = true;
+                        //Data.options.rJobs.push (rJob);
+                        //nothingToDo = false;
+                        break;
                     }
                     else {
                         // We are capped
-                        nothingToDo = true;
+                        rCapped = true;
+                        //nothingToDo = true;
                     }
                 }
             }
+            if (rBuilt == false && rCapped == true) {
+                // The nice way (and consisten with the other cap UI for building and training
+                // to show this is to hilight the capped research input in red
+                var resIdx = t.getResearchIndex (p);
+                t.dispFeedback("Research capped");
+                document.getElementById('pbrescap_' + 0 + '_' + resIdx).style.backgroundColor = "red";
+            }
+            
+            if (rBuilt)
+                Seed.fetchCity (cityId, 1000);
         } 
         else {
-            nothingToDo = false;
+            // We have a job running
+            // Look at the record
+            if (rJob) {
+                var jFound = false;
+                // Look for the job in persistent data
+                for (var i=0; i<Data.options.rJobs.length; i++) {
+                    if (rJob.id == Data.options.rJobs[i].id) {
+                        jFound = true;
+                    }
+                }
+                // If the job is not in persistent data, put it there
+                if (!jFound) {
+                    Data.options.rJobs.push(rJob);
+                    actionLog("Putting research job in persistent data");
+                }
+            }
+            //nothingToDo = false;
         }
-        t.reChecked = false;        
-        if (nothingToDo){
-            t.dispFeedback (kNoResearchToDo);
-            t.setEnable (false);
-            return;
-        }
+        //t.reChecked = false;        
+        //if (nothingToDo){
+        //    t.dispFeedback (kNoResearchToDo);
+        //    t.setEnable (false);
+        //    return;
+        //}
     }); 
   },
    
@@ -6175,7 +6394,7 @@ var Map = {
     t.callback = callback; 
     t.circ = true;
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.firstX, y:t.firstY, version:3 }, t.got, false);
+    new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.firstX, y:t.firstY, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:3 }, t.got, false);
   },  
 
  // TBD: Change the if/else in the detail section to a case for the various types
@@ -6218,8 +6437,16 @@ var Map = {
     ret.done = false;
     t.callback (ret);  
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    setTimeout (function(){new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), version:3 }, t.got, false);}, MAP_DELAY);
+    setTimeout (function(){new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:3 }, t.got, false);}, MAP_DELAY);
  },
+
+  normalize : function (x){
+    if (x > 750)
+      x -= 750;
+    if (x < 0)
+      x += 750;
+    return x;
+  },
 
      
   normalize : function (x){
