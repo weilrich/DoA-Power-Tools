@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110707f';
+var Version = '20110709a';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -1160,6 +1160,7 @@ var Seed = {
         catch (e) {
           rslt.ok = false;
           rslt.errmsg = e.toString();
+          logit ('Seed.updateCity error : '+ rslt.errmsg);
         }
       }
       if (notify)
@@ -1387,7 +1388,7 @@ Tabs.Waves = {
        <DIV id=pbwaveStatus class=pbStatBox style="margin-bottom:5px !important">\
        <CENTER><INPUT type=submit value="OnOff" id=pbwaveEnable></input></center>\
        <DIV id=pbwaveMarches style="height:165px; max-height:165px; overflow-y:auto;"></div>\
-      <DIV id=pbwaveFeedback style="height: 17px; border:1px solid black; background-color:#ffeeee; padding: 2px 0px; text-align:center; font-weight:bold"></div></div>\
+      <DIV id=pbwaveFeedback style="height: 34px; border:1px solid black; background-color:#ffeeee; padding: 2px 0px 2px 2px; text-align:left; font-weight:bold"></div></div>\
       <DIV class=pbInput>\
       <DIV style="height:48px;"><B>'+ kTargetCoords +'</b> &nbsp; X:<INPUT id=pbwaveX size=1 maxlength=3 type=text value="'+ Data.options.waves.targets[0].targetX +'" /> Y:<INPUT id=pbwaveY size=2 maxlength=3 value="'+ Data.options.waves.targets[0].targetY +'" type=text/> &nbsp <B>'+ kDistance1 +'</b> <SPAN id=pbwaveDist></span><BR>\
         <DIV class=pbStatBox style="margin:0px 10px !important"><CENTER><SPAN id=pbwaveTile></span></center></div></div>\
@@ -1824,7 +1825,7 @@ Tabs.AutoAttack = {
       <DIV class=pbStatBox id=pbatStatus style="margin-bottom:5px !important">\
       <CENTER><INPUT type=submit value="OnOff" id=pbatEnable></input></center>\
       <DIV id=pbatMarches style="height:165px; max-height:165px; overflow:auto;"></div>\
-      <DIV id=pbatFeedback style="height: 17px; border:1px solid black; background-color:#ffeeee; padding: 2px 0px; text-align:center; font-weight:bold"></div></div>\
+      <DIV id=pbatFeedback style="height: 34px; border:1px solid black; background-color:#ffeeee; padding: 2px 0px 2px 2px; text-align:left; font-weight:bold"></div></div>\
       <TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
       <INPUT class=button type=submit value='+ kLevels +' id=pbatConfigL></input>\
       <INPUT class=button type=submit value='+ kConfig +' id=pbatConfigG></input>\
@@ -4041,7 +4042,7 @@ Tabs.Build = {
         
     var m = '<DIV class=pbTitle>'+ kAutoUpgradeBuildings +'</div>\
       <DIV class=pbStatBox><CENTER><INPUT id=pbbldOnOff type=submit\></center>\
-      <DIV id=pbbldBldStat></div> <BR> <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:34px"></div>  </div>\
+      <DIV id=pbbldBldStat></div> <BR> <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>\
       <DIV id=pbbldConfig class=pbInput>';
     
     var el = [], listC = [], listF = [];
@@ -4181,8 +4182,11 @@ Tabs.Build = {
         else {
             var b = Buildings.getById(i, job.city_building_id);
             var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
-            // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
-            m += kBuilding1 +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ b.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
+            if (timeRemaining == 0) 
+                m += 'awaiting job completion notification...</td><TD></td><TD></td></tr>';
+            else
+                // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
+                m += kBuilding1 +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ b.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
         }
     }
     document.getElementById('pbbldBldStat').innerHTML = m +'</table>';
@@ -4270,7 +4274,8 @@ Tabs.Build = {
                         // Yes, has the job completed?
                         if (!Data.options.tJobs[i].duration) {
                             // If there is no duration, the job has completed
-                            Seed.fetchCity (city.id, 1000);
+                            //Seed.fetchCity (city.id, 1000);
+                            Seed.fetchSeed ();
                             clearTimeout (t.buildTimer);
                             t.buildTimer = setInterval (t.buildTick, 4000);
                             Data.options.tJobs.splice(i,1);
@@ -4280,7 +4285,8 @@ Tabs.Build = {
                             // Yes, the job should be done. Wait at least 4 seconds for updated information
                             // We might be able to use the remaining duration in the calculations for either
                             // fetchCity or setInterval...
-                            Seed.fetchCity (city.id, 1000);
+                            //Seed.fetchCity (city.id, 1000);
+                            Seed.fetchSeed ();
                             Data.options.tJobs.splice(i,1); // Remove the record
                             clearTimeout (t.buildTimer);
                             t.buildTimer = setInterval (t.buildTick, 4000);
@@ -4358,7 +4364,7 @@ Tabs.Build = {
                     var jFound = false;
                     // Look for the job in our persistent data
                     for (var i=0; i<Data.options.tJobs.length; i++) {
-                        if (bJob == Data.options.tJobs[i]) {
+                        if (bJob.id == Data.options.tJobs[i].id) {
                             jFound = true;
                         }   
                     }
@@ -4497,7 +4503,7 @@ Tabs.Train = {
     div.innerHTML = '<DIV class=pbTitle>'+ kAutoTrain +'</div>\
       <DIV class=pbStatBox style="margin-bottom: 5px !important"><CENTER><INPUT id=pbtrnOnOff type=submit\></center>\
       <DIV id=pbtrnTrnStat style="height:165px; max-height: 165px; overflow:auto;"></div> <BR>\
-      <DIV id=pbtrnFeedback style="font-weight:bold; border: 1px solid green; padding: 2px 0px; height:34px"></div>  </div>\
+      <DIV id=pbtrnFeedback style="font-weight:bold; border: 1px solid green; padding: 2px 0px 2px 2px; height:34px"></div>  </div>\
       <TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
       <INPUT class=button type=submit value='+ kTrain +' id=pbttTrain></input>\
       <INPUT class=button type=submit value='+ kConfig +' id=pbttConfigTrain></input></td></tr></table>\
@@ -4732,7 +4738,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m += '<TD>&nbsp;training queue</td>';
     if (m.length == 0) {
         ret.trainable = true;
@@ -4780,7 +4786,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m += '<TD>&nbsp;training queue</td>';
     if (m.length == 0) {
         ret.trainable = true;
@@ -4830,7 +4836,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m += '<TD>&nbsp;training queue</td>';
     if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel + '</td>';
     if (m.length == 0) {
@@ -4881,7 +4887,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
     if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
     if (m.length == 0) {
@@ -4934,7 +4940,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
     if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
     if (Seed.s.research.Metalsmith < metalsmithLevel) m += '<TD>&nbsp;Metalsmith ' + metalsmithLevel +'</td>'; 
@@ -4986,7 +4992,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
     if (Seed.s.research.WeaponsCalibration < weaponCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponCalibrationLevel +'</td>'; 
     if (m.length == 0) {
@@ -5042,7 +5048,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
     if (Seed.s.research.Dragonry < dragonryLevel) m += '<TD>&nbsp;Dragonry ' + dragonryLevel +'</td>'; 
     if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
@@ -5099,7 +5105,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
     if (Seed.s.research.Dragonry < dragonryLevel) m += '<TD>&nbsp;Dragonry ' + dragonryLevel +'</td>'; 
     if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
@@ -5155,7 +5161,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ ((metal - city.resources.ore)) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
     if (Seed.s.research.Levitation < levitationLevel) m += '<TD>&nbsp;Levitation ' + levitationLevel +'</td>'; 
     if (m.length == 0) {
@@ -5215,7 +5221,7 @@ Tabs.Train = {
     if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
     if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
     if (m.length == 0) {
@@ -5275,7 +5281,7 @@ Tabs.Train = {
     if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
     if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
     if (Seed.s.research.WeaponsCalibration < weaponsCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponsCalibrationLevel +'</td>'; 
@@ -5339,7 +5345,7 @@ Tabs.Train = {
     if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
     if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
     if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
@@ -5403,7 +5409,7 @@ Tabs.Train = {
     if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
     var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
     availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + availablePop + '</td>';
+    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
     if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
     if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
     if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
@@ -5745,6 +5751,7 @@ Tabs.Train = {
             for (var j=0; j<Data.options.autoTrain.city[i].troopType.length; j++){
                 var troopType = '';
                 var troopQty = 0;
+                var cap = null;
                 switch (i) {
                     case 1:
                         troopType = t.outpost1Troops[j];
@@ -5765,6 +5772,7 @@ Tabs.Train = {
                     case 2:
                         troopType = t.outpost2Troops[j];
                         troopQty = Data.options.autoTrain.city[i].troopType[j];
+                        cap = t.getTroopCap(troopType, troopQty);
                         try {
                             if (cap) {
                                 troopQty = 0;
@@ -5780,6 +5788,7 @@ Tabs.Train = {
                     default:
                         troopType = t.capitolTroops[j];
                         troopQty = Data.options.autoTrain.city[i].troopType[j];
+                        cap = t.getTroopCap(troopType, troopQty);
                         try {
                             if (cap) {
                                 troopQty = 0;
@@ -5973,7 +5982,7 @@ Tabs.Research = {
         
     var m = '<DIV class=pbTitle>'+ kAutoResearch +'</div>\
       <DIV class=pbStatBox><CENTER><INPUT id=pbresOnOff type=submit\></center>\
-      <DIV id=pbresStat></div> <BR> <DIV id=pbresFeedback style="font-weight:bold; border: 1px solid green; height:17px"></div>  </div>\
+      <DIV id=pbresStat></div> <BR> <DIV id=pbresFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>\
       <DIV id=pbresConfig class=pbInput>';
     
     var el = [];
@@ -5982,7 +5991,7 @@ Tabs.Research = {
     m += '<DIV class=pbSubtitle>'+ kCityNumber +'1 ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
     var i=0;
     for (var p in t.capitolResearch){
-        m += '<TR><TD><INPUT type=checkbox id="pbrescb_'+ 0 + '_' +t.capitolResearch[p] +'" '+ (Data.options.autoResearch.researchEnable[0][t.capitolResearch[p]]?'CHECKED':'') +' /></td><TD>'+ t.capitolResearch[p] +'</td>'+ researchDisplayCap(i) +'</tr>';  
+        m += '<TR><TD><INPUT type=checkbox id="pbrescb_'+ 0 + '_' +t.capitolResearch[p] +'" '+ (Data.options.autoResearch.researchEnable[0][t.capitolResearch[p]]?'CHECKED':'') +' /></td><TD>'+ t.capitolResearch[p] +'</td><TD>'+ researchDisplayCap(i) +'</td></tr>';  
         el.push('pbrescb_' + 0 + '_' +t.capitolResearch[p]);
         ++i;
     }
@@ -6081,13 +6090,18 @@ Tabs.Research = {
   statTick : function (){
     var t = Tabs.Research, m = '<TABLE class=pbTabPad>', city = Seed.s.cities[0];
     var job = getResearchJob (0);
+    
     m += '<TR><TD>'+ kCityNumber +' 1</td><TD>';
+
     if (job == null)
         m += kIdle +'</td></tr>';
     else {
         var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
-        // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
-        m += kResearch +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ job.research_type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
+        if (timeRemaining == 0)
+            m += 'Awaiting job completion notification...</td><TD></td><TD></td></tr>';
+        else
+            // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
+            m += kResearch +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ t.resUITranslate (job.research_type) +'</td><TD>'+ timeRemaining  +'</td></tr>';
     }
 
     document.getElementById('pbresStat').innerHTML = m +'</table>';
@@ -6125,7 +6139,8 @@ Tabs.Research = {
     var resType = t.capitolResearch;
      
     for (var p in resType) {
-        if (resType[p] == researchType) {
+        //if (resType[p] == researchType) {
+        if (p == researchType) {
             try {
                 cap = (Data.options.autoResearch.researchCap[0][t.researchIdx[researchType]]) ? Data.options.autoResearch.researchCap[0][t.researchIdx[researchType]] : 0; 
                 break;
@@ -6165,7 +6180,8 @@ Tabs.Research = {
                 // Yes, has the job completed?
                 if (!Data.options.rJobs[i].duration) {
                     // If there is no duration, the job has completed
-                    Seed.fetchCity (cityId, 1000);
+                    //Seed.fetchCity (cityId, 1000);
+                    Seed.fetchSeed();
                     Data.options.rJobs.splice(i,1);
                     clearTimeout (t.researchTimer);
                     t.researchTimer = setInterval (t.researchTick, 5000);
@@ -6173,7 +6189,8 @@ Tabs.Research = {
                 }
                 else if (Data.options.rJobs[i].run_at + Data.options.rJobs[i].duration > serverTime()) {
                     // The job has completed
-                    Seed.fetchCity (cityId, 1000);
+                    //Seed.fetchCity (cityId, 1000);
+                    Seed.fetchSeed();
                     Data.options.rJobs.splice(i,1);
                     clearTimeout (t.researchTimer);
                     t.researchTimer = setInterval (t.researchTick, 5000);
@@ -6191,13 +6208,19 @@ Tabs.Research = {
                     //    t.reChecked = true;
                     //    return;
                     //}
-
-                    var level = t.getCurrentResearchLevel (p);
-                    var cap = t.getResearchCap (p);
+                    var researchType = '';
+                    for (var rType in t.capitolResearch) 
+                        if (p == t.capitolResearch[rType]) {
+                            researchType = rType;
+                            break;
+                        }
+                            
+                    var level = t.getCurrentResearchLevel (researchType);
+                    var cap = t.getResearchCap (researchType);
                     var rBuilt = false;
                     var rCapped = false;
                     if (level < cap) {
-                        t.doResearch(p, level);
+                        t.doResearch(researchType, level);
                         rBuilt = true;
                         //Data.options.rJobs.push (rJob);
                         //nothingToDo = false;
@@ -6213,7 +6236,13 @@ Tabs.Research = {
             if (rBuilt == false && rCapped == true) {
                 // The nice way (and consisten with the other cap UI for building and training
                 // to show this is to hilight the capped research input in red
-                var resIdx = t.getResearchIndex (p);
+                var researchType = '';
+                for (var rType in t.capitolResearch) 
+                    if (p == t.capitolResearch[rType]) {
+                        researchType = rType;
+                        break;
+                    }
+                var resIdx = t.getResearchIndex (researchType);
                 t.dispFeedback("Research capped");
                 document.getElementById('pbrescap_' + 0 + '_' + resIdx).style.backgroundColor = "red";
             }
@@ -6249,11 +6278,19 @@ Tabs.Research = {
     }); 
   },
    
+  resUITranslate : function (researchType){
+      var t = Tabs.Research;
+      for (var p in t.capitolResearch)
+        if (p == researchType) 
+            return t.capitolResearch[p];
+  },
+  
   doResearch : function (researchType, researchLevel){
     var t = Tabs.Research;
     var city = Seed.s.cities[0];
-    var msg = kResearch +' '+ (researchLevel+1) +' '+ researchType;
+    var msg = kResearch +' '+ kLevel1 +' ' +(researchLevel+1) +' '+ t.resUITranslate (researchType);
     t.dispFeedback (msg);
+    actionLog('Research started: '+ researchType +' ' +researchLevel);
     Ajax.researchStart (city.id, researchType, function (rslt){
       //logit ('RESEARCH RESULT: '+ inspect (rslt, 7, 1));       
         if (rslt.ok){
@@ -6267,6 +6304,7 @@ Tabs.Research = {
             if (++t.errorCount > 3){
                 t.dispFeedback (kTooManyResearchErrs);
                 t.setEnable (false);
+                t.errorCount = 0;
                 return;
             }
             t.dispFeedback (kResearchErr + rslt.errmsg);
