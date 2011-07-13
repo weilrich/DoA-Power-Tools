@@ -1,4 +1,4 @@
-Version: 07092011a
+Version: 07113012a
 
 Info
 07062011b Info feature: Added the alliance name to the city title
@@ -31,6 +31,8 @@ job7: mino, at
 07072011f Training bug: Recheck was not working so training would not continue as needed items became available in short queue mode. Added call to Seed.fetchCity. Fixed
 07072011g Training bug: calculation for displaying needed population was incorrect. Fixed
 TBD: show individual time for completion in status with total time next to city name
+07122100a Training feature: use the manifest in Seed, if available, to check requirements. If the manifest is not available, log a warning and use the defaults.
+Note: items are not part of the requirements section, e.g. Respirators
    
 Auto-Collect
 07042011b Was generating server errors spuriously because 'p' was not declared as a var before it was used. Fixed.
@@ -43,6 +45,8 @@ Build
 07072011f Build feature: Changed cap levels to start at zero
 07072011f Build bug: Refreshing the browser can confuse the build such that it builds one building a level past the cap. Fixed
 07092011a Build feature: Changed call to fetchCity to fetchSeed to improve stability on job completion
+07122011b Build feature: Added checkReqs for building types
+07132011a Build feature: use the manifest in Seed, if available, to check requirements. If the manifest is not available, log a warning and use the defaults.
 
 Research
 07032011a Research feature: Implemented basic auto-research using research caps.
@@ -56,6 +60,8 @@ Research
 07072011f Research bug: Refreshing the browser can confuse the research such that it researches one level past the cap. Pending
 07072011g Research bug: parameter passed to getResearchIndex 'p' was UI translated causing the function to return a null value. Fixed
 07092011a Research feature: Changed call to fetchCity to fetchSeed to improve stability on job completion
+07132011a Research feature: use the manifest in Seed, if available, to check requirements. If the manifest is not available, log a warning and use the defaults.
+Note: items are part of the requirements section (unlike training), e.g. Respirators
 
 Other
 07012011a Added initializer to defaults for ptWinPos.
@@ -64,4 +70,4 @@ Other
 07062011b Research feature: changed caps to start at zero (started a new realm for testing)
 07072011a Modify all Ajax calls to accept Dragon Heart and user_id parameters, add initilizers to cattrs
 07092011a Changed all feedback areas to text-align:left; padding: 2px 0px 2px 2px; height:34px because error text was running over the bottom
-
+07112011a Replaced Seed with new version that reads manifest.json
