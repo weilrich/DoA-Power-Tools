@@ -1,0 +1,8 @@
+June 30, 2011
+Version: 06302011a
+
+Fixes
+Troop caps now work as designed. 
+Troops will continue to build if not capped. 
+Capped troops will not build if the train quantity exceeds the cap. 
+The input field turns red to let the user know that the cap limit has been reached.

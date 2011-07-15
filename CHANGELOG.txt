@@ -1,4 +1,4 @@
-Version: 07113012a
+Version: 07114012a
 
 Info
 07062011b Info feature: Added the alliance name to the city title
@@ -62,6 +62,8 @@ Research
 07092011a Research feature: Changed call to fetchCity to fetchSeed to improve stability on job completion
 07132011a Research feature: use the manifest in Seed, if available, to check requirements. If the manifest is not available, log a warning and use the defaults.
 Note: items are part of the requirements section (unlike training), e.g. Respirators
+07142011a Research bug: Deleting a research job left the length of the array positive. Added check to see if the job itself was null. This prevented research from continuing after successfully completing a job. Fixed
+07132011a Research feature: Call researchTick if research is enabled when the user changes the cap or selects a different research item. This allows research to continue without having to turn research off and then back on again. 
 
 Other
 07012011a Added initializer to defaults for ptWinPos.

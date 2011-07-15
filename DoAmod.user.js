@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110713a';
+var Version = '20110714a';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -28,11 +28,14 @@ var ATTACK_TAB_ORDER = 3;
 var TRAIN_TAB_ORDER = 4;
 var BUILD_TAB_ORDER = 5;
 var RESEARCH_TAB_ORDER = 6;
-var LOG_TAB_ORDER = 7;
-var OPTIONS_TAB_ORDER = 8;
+var JOBS_TAB_ORDER = 7;
+var LOG_TAB_ORDER = 8;
+var OPTIONS_TAB_ORDER = 9;
 var DEBUG_TAB_ORDER = 99;
 var WIN_POS_X = 760;
 var WIN_POS_Y = 129;
+var BUTTON_BGCOLOR = '#436';
+var JOB_BUTTON_BGCOLOR = '#049C93';
 
 var IsChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
 
@@ -119,6 +122,7 @@ var kAttack = translate ('Attack');
 var kTrain = translate ('Train');
 var kBuild = translate ('Build');
 var kResearch = translate ('Research');
+var kJobs = translate ('Jobs');
 var kLog = translate ('Log');
 var kOpts = translate ('Opts');
 
@@ -598,6 +602,7 @@ var OptionsDefaults = {
   currentTab    : false,
   attackTab     : 0,
   mapTab        : 0,
+  jobsTab       : 0,
   autoCollect   : {enabled:false, lastTime:0, delay:8*3600},
   autoBuild     : {enabled:false, buildingEnable:[], buildCap:[]},
   autoResearch  : {enabled:false, researchEnable:[], researchCap:[]},
@@ -658,7 +663,7 @@ var Styles = '\
     input.greenButton {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
     input.greenButton:active {width:130px; background-color:black; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
     input.greenButton:hover {width:130px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
-    .button {cursor:hand; cursor:pointer; border: 1px solid #006; background: #0044a0; color: white; padding: 2px; font-weight:bold; font-size:13px; border-style: solid solid none solid;}\
+    .button {cursor:hand; cursor:pointer; border: 1px solid #006; background: #049C93; color: white; padding: 2px; font-weight:bold; font-size:13px; border-style: solid solid none solid;}\
 //  .button:hover {background: #eed; font-weight:bold; font-size:13px; color: black; border-style: solid solid none solid; }\
 //  .button:active {background: black; font-weight:bold; font-size:13px; color: white; border-style: none none none none;}\
     span.boldRed {color:#550000; font-weight:bold}\
@@ -2104,13 +2109,13 @@ Tabs.AutoAttack = {
   tabStats : function (){
     var t = Tabs.AutoAttack;
 
-    document.getElementById('pbatConfigL').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatConfigL').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatConfigL').style.color = "white"; 
-    document.getElementById('pbatConfigG').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatConfigG').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatConfigG').style.color = "white"; 
-    document.getElementById('pbatTargets').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatTargets').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatTargets').style.color = "white"; 
-    document.getElementById('pbatMaps').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatMaps').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatMaps').style.color = "white"; 
 
     t.contentType = 3;
@@ -2505,13 +2510,13 @@ Tabs.AutoAttack = {
   tabConfigLevels : function (){
     var t = Tabs.AutoAttack;
      
-    document.getElementById('pbatConfigG').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatConfigG').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatConfigG').style.color = "white";
-    document.getElementById('pbatTargets').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatTargets').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatTargets').style.color = "white"; 
-    document.getElementById('pbatStats').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatStats').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatStats').style.color = "white"; 
-    document.getElementById('pbatMaps').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatMaps').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatMaps').style.color = "white"; 
 
     t.contentType = 0;
@@ -2597,13 +2602,13 @@ Tabs.AutoAttack = {
     var t = Tabs.AutoAttack;
     
 
-    document.getElementById('pbatConfigL').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatConfigL').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatConfigL').style.color = "white";
-    document.getElementById('pbatTargets').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatTargets').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatTargets').style.color = "white";
-    document.getElementById('pbatStats').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatStats').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatStats').style.color = "white";
-    document.getElementById('pbatMaps').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatMaps').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatMaps').style.color = "white";
 
     t.contentType = 1;
@@ -2702,13 +2707,13 @@ Tabs.AutoAttack = {
   tabTargets : function (){
     var t = Tabs.AutoAttack;
 
-    document.getElementById('pbatConfigL').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatConfigL').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatConfigL').style.color = "white"; 
-    document.getElementById('pbatConfigG').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatConfigG').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatConfigG').style.color = "white"; 
-    document.getElementById('pbatStats').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatStats').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatStats').style.color = "white"; ;
-    document.getElementById('pbatMaps').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatMaps').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatMaps').style.color = "white"; ;
 
     t.contentType = 2;
@@ -2881,13 +2886,13 @@ Tabs.AutoAttack = {
 //*** Attacks Tab - Maps Sub-tab ***
   tabMaps : function(){
     var t = Tabs.AutoAttack;
-    document.getElementById('pbatConfigL').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatConfigL').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatConfigL').style.color = "white"; 
-    document.getElementById('pbatConfigG').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatConfigG').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatConfigG').style.color = "white"; 
-    document.getElementById('pbatStats').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatStats').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatStats').style.color = "white"; ;
-    document.getElementById('pbatTargets').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbatTargets').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbatTargets').style.color = "white";
 
     t.contentType = 4;
@@ -4546,7 +4551,7 @@ Tabs.Build = {
                             return;
                         }
                     }
-                }                   
+                }  
                 
                 var bl = []; // Concatenated array of buildings
                 for (var p in Data.options.autoBuild.buildingEnable[ic]){
@@ -4586,45 +4591,16 @@ Tabs.Build = {
                         bCapped = true;
                         bType = bl[i].type;
                     }
-
-                       // var cap = t.getBuildingCap (ic, bl[i].type);
-                        //if (bl[i].level < cap) {
-                        //    t.doBuild (bl[i], city);
-                        //    bBuilt = true;
-                        //    Data.options.tJobs.push(bl[i]);
-                        //    break;
-                        //}
-                        //else {
-                        //    bCapped = true;
-                        //    bType = bl[i].type;
-                        //}
                 }
                 
                 if (bCapped) {
+                    // This only displays the first capped building
+                    // To be consistent with research, we will need to sort the list, find out when the type 
+                    // changes and calculate if all the buildings are capped
                     t.dispFeedback ("Building capped");
                     var bldgIdx = t.getBuildingIndex (ic, bType);
                     document.getElementById ('pbbldcap_' + ic + '_' + bldgIdx).style.backgroundColor = "red";
                 }
-                
-                
-               //if (bBuilt == false && bCapped == true) {
-                    // The nice way (and consistent with the other cap UI for training)
-                    // to show this is to hilight the capped building input in red
-               //     var bldgIdx = t.getBuildingIndex(ic, bType);
-               //     t.dispFeedback("Building capped");
-               //     document.getElementById('pbbldcap_' + ic + '_' + bldgIdx).style.backgroundColor = "red";
-                //}
-                
-                //if (bBuilt)
-                    // If we built something, we need to refetch the city before starting a new cycle 
-                    // to make sure the build jobs are not stale. Otherwise we could end up scheduling a 
-                    // build job for a building that just completed - possibly using up a grant!
-                    // Another way to avoid this problem is to keep a list of jobs we have started (copying the
-                    // job) and then updating the build level in bl before it ever gets to the cap check
-                    // As we are compiling bl, if we see a discrepancy we can call fetchCity on a timer
-                    // If the copy level matches our bl level, then we can splice out the copy. This should be
-                    // a very short list (with three cities, it should ever only contain 3 items).
-                 //   Seed.fetchCity (city.id, 1000);
             } 
             else {
                 // We have a job running
@@ -4642,10 +4618,20 @@ Tabs.Build = {
                         Data.options.tJobs.push(bJob);
                         actionLog("Putting build job in persistent data");
                     }
+                    else {
+                        // Keep a consistent display                
+                        var cityType = (city.type == "Capital") ? 'Capitol' : city.type;
+                        var msg = kBuildingLevel + (bJob.level) +' '+ bJob.type + kAt + cityType;
+                        t.dispFeedback (msg);
+                    }
                 }
             }
             if (t.doRecheck) {
                 Seed.fetchSeed();
+                t.doRecheck = false;
+                clearTimeout(t.buildTimer);
+                t.buildTimer = setInterval (t.buildTick, 20000);
+                t.dispFeedback ("Completion errors: waiting 20 seconds to try again");               
             }      
        } 
     }); 
@@ -4676,6 +4662,7 @@ Tabs.Build = {
             }
             t.dispFeedback (building.type + ': ' + rslt.errmsg);
             //t.buildTimer = setTimeout (t.buildTick, 20000);
+            t.doRecheck = true;
             return;
         }
     });
@@ -4877,7 +4864,7 @@ Tabs.Train = {
     document.getElementById('pbtrnConfig').innerHTML = m;
 
     // Hilite the sub-tabs correctly
-    document.getElementById('pbttConfigTrain').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbttConfigTrain').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbttConfigTrain').style.color = "white";
 
     t.contentType = 0;
@@ -4912,7 +4899,7 @@ Tabs.Train = {
     var t = Tabs.Train;
     
      // Hilite the sub-tabs correctly
-    document.getElementById('pbttTrain').style.backgroundColor = "#0044a0"; 
+    document.getElementById('pbttTrain').style.backgroundColor = BUTTON_BGCOLOR; 
     document.getElementById('pbttTrain').style.color = "white";
 
     t.contentType = 1;
@@ -6539,6 +6526,8 @@ Tabs.Research = {
     function checked (evt){
         var rId = evt.target.id.split ('_');
         Data.options.autoResearch.researchEnable[rId[1]][rId[2]] = evt.target.checked;
+        if (Data.options.autoResearch.enabled)
+            Tabs.Research.researchTick();     
     }
 
     function researchDisplayCap (listIdx){
@@ -6564,7 +6553,7 @@ Tabs.Research = {
         Data.options.autoResearch.researchCap[rId[1]][rId[2]] = evt.target[evt.target.selectedIndex].value;
         evt.target.style.backgroundColor = '';  
         if (Data.options.autoResearch.enabled)
-            Tabs.Research.researchTimer = setTimeout (Tabs.Research.researchTick, 500);     
+            Tabs.Research.researchTick();     
     }
   },
   
@@ -7360,30 +7349,36 @@ Tabs.Research = {
         
             // Is there a research job in persistent data?
             for (var i=0; i<Data.options.rJobs.length; i++) {
-                if (Data.options.rJobs[i].done) {
-                    // Yes, has the job completed?
-                    Data.options.rJobs.splice(i,1);
-                    Seed.fetchSeed();
-                    clearTimeout (t.researchTimer);
-                    t.researchTimer = setInterval (t.researchTick, 5000);
-                    return;
-                }
-                else if (!Data.options.rJobs[i].duration) {
-                    // Yes, has the job completed?
-                    // If there is no duration, the job has completed
-                    Data.options.rJobs.splice(i,1);
-                    Seed.fetchSeed();
-                    clearTimeout (t.researchTimer);
-                    t.researchTimer = setInterval (t.researchTick, 5000);
-                    return;
-                }
-                else if (Data.options.rJobs[i].run_at + Data.options.rJobs[i].duration > serverTime()) {
-                    // The job has completed
-                    Data.options.rJobs.splice(i,1);
-                    Seed.fetchSeed();
-                    clearTimeout (t.researchTimer);
-                    t.researchTimer = setInterval (t.researchTick, 5000);
-                    return;
+                if (Data.options.rJobs[i]) {
+                    if (Data.options.rJobs[i].done ||
+                        !Data.options.rJobs[i].duration ||
+                        Data.options.rJobs[i].run_at + Data.options.rJobs[i].duration > serverTime()) {
+                        // Yes, has the job completed?
+                        Data.options.rJobs.splice(i,1);
+                        Seed.fetchSeed();
+                        clearTimeout (t.researchTimer);
+                        t.researchTimer = setInterval (t.researchTick, 5000);
+                        return;
+                    }
+                    /*
+                    else if (!Data.options.rJobs[i].duration) {
+                        // Yes, has the job completed?
+                        // If there is no duration, the job has completed
+                        Data.options.rJobs.splice(i,1);
+                        Seed.fetchSeed();
+                        clearTimeout (t.researchTimer);
+                        t.researchTimer = setInterval (t.researchTick, 5000);
+                        return;
+                    }
+                    else if (Data.options.rJobs[i].run_at + Data.options.rJobs[i].duration > serverTime()) {
+                        // The job has completed
+                        Data.options.rJobs.splice(i,1);
+                        Seed.fetchSeed();
+                        clearTimeout (t.researchTimer);
+                        t.researchTimer = setInterval (t.researchTick, 5000);
+                        return;
+                    }
+                    */
                 }
             }
             
@@ -7488,6 +7483,215 @@ Tabs.Research = {
         }
     });
   }, 
+}
+/*********************************** End Research **********************************/
+
+/***********************************   Jobs Tab   **********************************/
+Tabs.Jobs = {
+	tabOrder : JOBS_TAB_ORDER,
+	tabLabel : kJobs,
+	cont : null,
+	timer : null,
+	capitalResearch : ['Agriculture', 'Woodcraft', 'Masonry', 'Alloys', 'Clairvoyance', 'Rapid Deployment', 'Weapons Calibration', 'Metallurgy', 'Medicine', 'Dragonry', 'Levitation', 'Mercantilism', 'Aerial Combat'],
+    contentType   : 0, // 0 = info, 1 = train, 2 = build, 3 = research, these should be enums but Javascript doesn't support that type
+  
+	init : function (div){
+		var t = Tabs.Jobs;
+		t.cont = div;
+		div.innerHTML =  '<TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
+			<INPUT class=button type=submit value="Info" id=pbjobInfo></INPUT>\
+			<INPUT class=button type=submit value="Build" id=pbjobBuild></INPUT>\
+			<INPUT class=button type=submit value="Research" id=pbjobResearch></INPUT>\
+			<INPUT class=button type=submit value="Train" id=pbjobTrain></INPUT>\
+			</TD></TR></TABLE>\
+			<DIV id=pbjobContent style="padding-top:5px; height:480px; max-height:480px; overflow-y:auto;"></div>';
+			
+		document.getElementById('pbjobInfo').addEventListener ('click', t.tabJobInfo, false);
+		document.getElementById('pbjobTrain').addEventListener ('click', t.tabJobTrain, false);	
+		document.getElementById('pbjobBuild').addEventListener ('click', t.tabJobBuild, false);
+		document.getElementById('pbjobResearch').addEventListener ('click', t.tabJobResearch, false);
+		
+		t.contentType = Data.options.jobsTab;
+		// t.tabJobInfo();
+	},
+
+	show : function (){
+		var t = Tabs.Jobs;
+		
+        switch (t.contentType) {
+            case 0: t.tabJobInfo(); break;
+            case 1: t.tabJobTrain(); break;
+            case 2: t.tabJobBuild(); break;
+            case 3: t.tabJobResearch(); break;
+        }
+	},
+	
+	hide : function (){
+		var t = Tabs.Jobs;
+		clearTimeout (t.timer);
+	},
+	
+    onUnload : function (){
+        var t = Tabs.AutoAttack;
+        logit ('===============  Tabs.Jobs.onUnload');
+        Data.options.jobsTab = t.contentType;
+  },
+
+	tabJobInfo : function (){
+		var t = Tabs.Jobs;
+        document.getElementById('pbjobBuild').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobBuild').style.color = "white"; 
+        document.getElementById('pbjobResearch').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobResearch').style.color = "white"; 
+        document.getElementById('pbjobTrain').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobTrain').style.color = "white"; 
+
+        t.contentType = 0;
+	    document.getElementById('pbjobInfo').style.backgroundColor = "#eed"; 
+        document.getElementById('pbjobInfo').style.color = "black";
+        
+		clearTimeout (t.timer);
+		var city = Seed.s.cities[0];
+		var m = '<DIV class=pbTitle>Information</DIV>';
+		m += cityTitle(0);
+		m += '<TABLE class=pbTabPad>' + dispBuildingJob(0) + dispResearchJob(0) + dispTrainingJobs(0) + '</td></tr></table>';
+  
+		// outposts ...
+		if (Seed.s.cities.length > 0){
+			for (var i=1; i<Seed.s.cities.length; i++){
+				m += '<DIV class=short></div>'+ cityTitle(i) + '<TABLE class=pbTabPad>' + dispBuildingJob(i) + dispTrainingJobs(i) + '</td></tr></table>';
+			}
+		}
+    
+		document.getElementById('pbjobContent').innerHTML = m; 
+		t.timer = setTimeout (t.tabJobInfo, 1000);
+    	
+		// Display build queue
+		function dispBuildingJob (cityIdx){
+            var m = '<TR><TD class=pbTabLeft>'+ kBuilding +'</td>';
+            var job = getBuildingJob (cityIdx);
+            // TODO: very rare occurance: Error: job.building is null
+            if (job && job.job.run_at > serverTime()) {
+            // Don't show negative values - not pleasant user interface. To be truly nice, if the time is less than zero, we should reset 
+            // the build timer. For now, that is done by the Build tab's notification process
+                m += '<TD>'+ job.building.type +' level '+ job.job.level +'</td><TD>'+ timestr(job.job.run_at - serverTime(), true) +'</td></tr>';
+            }
+             else
+                m += '<TD colspan=2><SPAN class=boldRed>NONE</span></td></tr>';
+            return m;
+		}
+	
+		// Display research queue
+		function dispResearchJob (cityIdx){
+            var m = '<TR><TD class=pbTabLeft>'+ kResearch +'</td>';
+            var job = getResearchJob (cityIdx);
+            if (job && job.run_at > serverTime())
+                m += '<TD>'+ job.research_type +' level '+ job.level +'</td><TD>'+ timestr(job.run_at - serverTime(), true) +'</td></tr>';
+            else
+                m += '<TD colspan=2><SPAN class=boldRed>NONE</span></td></tr>';
+            return m;
+		}
+	
+		// Display training queues
+		function dispTrainingJobs (cityIdx){
+            var m = '', last = serverTime(), trains = [];
+            for (var i=0; i<Seed.s.cities[cityIdx].jobs.length; i++)
+                if (Seed.s.cities[cityIdx].jobs[i].queue=='units' && Seed.s.cities[cityIdx].jobs[i].unit_type && Seed.s.cities[cityIdx].jobs[i].run_at > last)
+            
+            trains.push (Seed.s.cities[cityIdx].jobs[i]);
+            trains.sort(function(a,b){return a.run_at-b.run_at});
+        
+            for (var i=0; i<trains.length; i++){
+                var left='', tot='', timeRemaining = 0;
+                if (i==0)
+                    left = kTraining;
+                else if (i==trains.length-1) {
+                    timeRemaining = (trains[i].run_at-serverTime() > 0) ? trains[i].run_at-serverTime() : 0;
+                    tot = ' &nbsp <B>('+ timestrShort(timeRemaining) +')</b>';
+                }
+                
+                timeRemaining = (trains[i].run_at-last > 0) ? trains[i].run_at-last : 0;
+                m += '<TR><TD class=pbTabLeft>'+ left +'</td><TD>'+ trains[i].quantity +' '+ trains[i].unit_type +' </td><TD> '
+                  + timestr(timeRemaining, true) + tot + '</td></tr>';
+                last = trains[i].run_at;
+            }      
+            return m;
+		}
+		
+        function cityTitle (cityIdx){
+            var city = Seed.s.cities[cityIdx];
+            // Outposts are always defending (until further notice)
+            var wallStatus = '';
+            var alliance_name = (Seed.s.alliance) ? Seed.s.alliance.name : '';
+            if (cityIdx == 0)
+                wallStatus = (Seed.s.cities[cityIdx].defended) ? '<font class="defending">'+ kDefending +'</font>' : '<font class="hiding">'+ kSanctuary +'</font>';
+            else
+                wallStatus = '<font class="defending">'+ kDefending +'</font>';
+      
+            return '<div class=pbSubtitle><TABLE class=pbTab><TR><TD>'+ kCityNumber + (cityIdx+1) +'</td><TD align=center>'+ city.type +'</td><TD align=right>'+ city.x +','+ city.y + ' ' + alliance_name +'</td><TD width=220px align=right>'+ wallStatus +'</td></tr></table></div>';
+        }
+	},
+  
+	tabJobTrain : function (){
+		var t = Tabs.Jobs;
+   	    document.getElementById('pbjobInfo').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobInfo').style.color = "white";
+        document.getElementById('pbjobBuild').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobBuild').style.color = "white"; 
+        document.getElementById('pbjobResearch').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobResearch').style.color = "white"; 
+
+        t.contentType = 1;
+        document.getElementById('pbjobTrain').style.backgroundColor = "#eed"; 
+        document.getElementById('pbjobTrain').style.color = "black"; 
+       
+		clearTimeout (t.timer);
+		var m = '<DIV class=pbTitle>Auto Train</div>';
+		document.getElementById('pbjobContent').innerHTML = m;	
+	},
+  
+	refresh : function (){
+		var t = Tabs.Jobs;
+		Seed.fetchSeed (t.showStuff());  
+	},
+
+	tabJobBuild : function (){
+		var t = Tabs.Jobs;
+	    document.getElementById('pbjobInfo').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobInfo').style.color = "white"; 
+        document.getElementById('pbjobResearch').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobResearch').style.color = "white"; 
+        document.getElementById('pbjobTrain').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobTrain').style.color = "white"; 
+
+        t.contentType = 2;
+        document.getElementById('pbjobBuild').style.backgroundColor = "#eed"; 
+        document.getElementById('pbjobBuild').style.color = "black"; 
+    
+		clearTimeout (t.timer);
+		var m = '<DIV class=pbTitle>Auto Build</div>';
+		document.getElementById('pbjobContent').innerHTML = m;	
+
+	},
+  
+	tabJobResearch : function (){
+		var t = Tabs.Jobs;	
+	    document.getElementById('pbjobInfo').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobInfo').style.color = "white"; 
+        document.getElementById('pbjobBuild').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobBuild').style.color = "white"; 
+        document.getElementById('pbjobTrain').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById('pbjobTrain').style.color = "white"; 
+
+        t.contentType = 3;
+        document.getElementById('pbjobResearch').style.backgroundColor = "#eed"; 
+        document.getElementById('pbjobResearch').style.color = "black"; 
+
+		clearTimeout (t.timer);
+		
+		var m = '<DIV class=pbTitle>Auto Research</div>';
+		document.getElementById('pbjobContent').innerHTML = m;	
+	},
 }
 
 /*********************************** Options Tab ***********************************/
@@ -7651,16 +7855,25 @@ var Map = {
     ret.done = false;
     t.callback (ret);  
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    setTimeout (function(){new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:3 }, t.got, false);}, MAP_DELAY);
+    setTimeout (function(){new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), version:3 }, t.got, false);}, MAP_DELAY);
  },
-
+    
   normalize : function (x){
     if (x > 750)
       x -= 750;
     if (x < 0)
       x += 750;
     return x;
-  },   
+  },  
+
+     
+  normalize : function (x){
+    if (x > 750)
+      x -= 750;
+    if (x < 0)
+      x += 750;
+    return x;
+  },  
 }
 
 
