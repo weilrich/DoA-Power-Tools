@@ -1,4 +1,4 @@
-Version: 07115012a
+Version: 07115012b
 
 Info
 07062011b Info feature: Added the alliance name to the city title
@@ -33,7 +33,9 @@ job7: mino, at
 TBD: show individual time for completion in status with total time next to city name
 07122100a Training feature: use the manifest in Seed, if available, to check requirements. If the manifest is not available, log a warning and use the defaults.
 Note: items are not part of the requirements section, e.g. Respirators
-   
+07152011b Training bug: Renamed checkReqs to checkTrainReqs. Fixed
+07152011b Training bug: Missed function to check caps when moving training to jobs tab. Fixed
+  
 Auto-Collect
 07042011b Was generating server errors spuriously because 'p' was not declared as a var before it was used. Fixed.
 

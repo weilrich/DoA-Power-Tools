@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110715a';
+var Version = '20110715b';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -1110,7 +1110,8 @@ var Seed = {
     
   init : function (callback){
     var t = Seed;
-	t.fetchReqs(callback);
+	t.fetchReqs();
+	//t.fetchReqs(callback);
     t.fetchSeed(callback);
     setInterval (t.tick, 1000);
   },
@@ -3469,11 +3470,12 @@ var AutoCollect = {
     Data.options.autoCollect.enabled = onOff;
     // Always collect on startup
     if (onOff){
-      //var time = Data.options.autoCollect.delay - serverTime() + Data.options.autoCollect.lastTime;
-      //if (time <= 0)
+      var time = Data.options.autoCollect.delay - serverTime() + Data.options.autoCollect.lastTime;
+      if (time <= 0)
         t.doit ();
-      //else
+      else
         t.timer = setTimeout (t.doit, time*1000);
+        //t.timer = setTimeout (t.doit, 1000);
     }
   },
   
@@ -6571,7 +6573,47 @@ Tabs.Jobs = {
 
         return level;
     },
-  
+    
+    // Return the total number troops of the specified type adding in the qty about to 
+    // be produced. If this number is less than the cap, return zero     
+    getTroopCap : function(troopType, qty){
+        var t = Tabs.Jobs;
+        var cap = 0;
+        var completedTroops = 0;
+        var marchingTroops = 0;
+    
+        // Get the cap set for this troop type
+        for (var i=0; i<t.allTroops.length;i++)
+            if (troopType == t.allTroops[i]) {
+                cap = Data.options.troopCap.city[0].troopType[i];
+                break;
+            }
+        
+        // If there is no cap, we are done
+        if (cap == 0)
+            return cap;
+    
+        // Find the number of troops still in the city    
+        for (var p in Seed.s.cities[0].units)
+            if (p == troopType) {
+                completedTroops = Seed.s.cities[0].units[p];
+                break;
+            }
+    
+        // Find additional troops in marches
+        for (var p in Seed.marches) {
+            for (var q in Seed.marches[p].units)
+                if (q == troopType)
+                    marchingTroops += Seed.marches[p].units[q];
+        }
+
+        // Find troops in training jobs
+        for (var i=0; i< Seed.s.cities.length; i++)
+            var job = getTrainJob(0);
+               
+        return ((completedTroops + marchingTroops + qty) > cap) ? (completedTroops + marchingTroops + qty) : 0;
+    },
+    
     // Returns the user set building cap or zero if the cap has not been set
     getBuildingCap : function (cityIdx, buildingType){
         var t = Tabs.Jobs;
@@ -8780,7 +8822,7 @@ Tabs.Jobs = {
                             break;
                     }
                     if (troopQty > 0) {
-                        var ret = t.checkReqs(troopType, troopQty, i, j, troopsLength);
+                        var ret = t.checkTrainReqs(troopType, troopQty, i, j, troopsLength);
                         if (t.contentType == 1) t.dispFeedback (ret.msg);
                         if (ret.trainable) {
                             t.doTrain(troopType, troopQty, i);
@@ -8878,7 +8920,7 @@ Tabs.Jobs = {
                         break;
                 }
                 if (troopQty > 0) {
-                    var ret = t.checkReqs(troopType, troopQty, i, j, troopsLength);
+                    var ret = t.checkTrainReqs(troopType, troopQty, i, j, troopsLength);
                     if (t.contentType == 1) t.dispFeedback (ret.msg);
                     if (ret.trainable) {
                         var d = {tType:troopType, tQty:troopQty, cityIdx:i, troopIdx:j, tLen:troopsLength};
