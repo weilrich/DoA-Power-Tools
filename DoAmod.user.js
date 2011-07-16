@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110714a';
+var Version = '20110715a';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -3118,8 +3118,14 @@ function objAddTo (o, name, val){
     o[name] += val;
 }
 
-
-
+function getBuildingById (cityIdx, bId){
+    var b = Seed.s.cities[cityIdx].buildings;
+    for (var i=0; i<b.length;i++)
+        if (b[i].id == bId)
+            return b[i].type;
+            
+    return '';
+}
 
 var Buildings = {
   getList : function (cityIdx, type){
@@ -3501,85 +3507,87 @@ Tabs.Info = {
       <TABLE width=100%><TR><TD><INPUT class=greenButton type=submit value='+ kRefresh +' id=pbinfRefresh></input>\
       </td><TD align=right><SPAN id=pbinfGmt></span></td></tr></table><DIV id=pbinfCont></div>';
     document.getElementById('pbinfRefresh').addEventListener ('click', t.refresh, false);
-    t.showStuff();
+    //t.showStuff();
   },
 
   show : function (){
     var t = Tabs.Info;
-    t.showStuff();
+    t.timer = setInterval (t.showStuff, 1000);
   },
   hide : function (){
     var t = Tabs.Info;
     clearTimeout (t.timer);
   },
 
-  showStuff : function (){
-    var t = Tabs.Info;
-    clearTimeout (t.timer);
-    //logit (inspect (Seed.s, 8, 1));
+    showStuff : function (){
+        var t = Tabs.Info;
+        //clearTimeout (t.timer);
+        //logit (inspect (Seed.s, 8, 1));
     
-    var city = Seed.s.cities[0];
-    var m = cityTitle(0);
-    m += '<TABLE style="margin-top:3px" width=100%>\
-      <TR bgcolor=#dde align=center><TD style="border-right: 1px solid; border-bottom: 1px solid;"><B>'+ kTroops +'</b></td><TD style="border-bottom: 1px solid; padding-left:7px"><B>'+ kGenerals +'</b></td></tr>\
-      <TR valign=top align=center><TD width=50% style="border-right: 1px solid;">';
+        var city = Seed.s.cities[0];
+        var m = cityTitle(0);
+        m += '<TABLE style="margin-top:3px" width=100%>\
+              <TR bgcolor=#dde align=center><TD style="border-right: 1px solid; border-bottom: 1px solid;"><B>'+ kTroops +'</b></td>\
+              <TD style="border-bottom: 1px solid; padding-left:7px"><B>'+ kGenerals +'</b></td></tr>\
+              <TR valign=top align=center><TD width=50% style="border-right: 1px solid;">';
       
-    // Troops
-    m += '<TABLE class=pbTabPad>';
-    for (var i=0; i<Names.troops.names.length; i++){
-      var name = Names.troops.names[i][1];
-      if (name==kGreatDragon || name==kWaterDragon || name==kStoneDragon)
-        continue;
-      var num = city.units[name];
-      if (!num)
-        num = 0;
-      var marchNum = 0;
-      for (p in city.marches)
-        for (q in city.marches[p].units)
-            if (q == name)
-                marchNum += city.marches[p].units[q];
-      var marchStr = (marchNum > 0) ? '<B>(' + marchNum + ')</b>' : '';
-      m += '<TR><TD class=pbTabLeft>'+ name +':</td><TD align=right>'+ num +'</td><TD align=right>'+ marchStr +'</td></tr>';
-    }
-    m += '</table></td><TD width=50% style=" padding-left:7px">';
+        // Troops
+        m += '<TABLE class=pbTabPad>';
+        for (var i=0; i<Names.troops.names.length; i++){
+            var name = Names.troops.names[i][1];
+            if (name==kGreatDragon || name==kWaterDragon || name==kStoneDragon) continue;
+            var num = city.units[name];
+            if (!num) num = 0;
+            var marchNum = 0;
+            for (var p in city.marches)
+                for (var q in city.marches[p].units)
+                    if (q == name)
+                        marchNum += city.marches[p].units[q];
+                        
+            var marchStr = (marchNum > 0) ? '<B>(' + marchNum + ')</b>' : '';
+            m += '<TR><TD class=pbTabLeft>'+ name +':</td><TD align=right>'+ num +'</td><TD align=right>'+ marchStr +'</td></tr>';
+        }
+        m += '</table></td><TD width=50% style=" padding-left:7px">';
     
-    // Generals
-    m += '<TABLE class=pbTabPad>';
-    for (var ig=0; ig<city.generals.length; ig++){
-    
-      if (Seed.numMarches)
-         for (pm in Seed.marches)
-            // The general object will be null if the march is a transport
-         	if (Seed.marches[pm].march_type != "Transport")
-                try {
-           		   if (city.generals[ig].name == Seed.marches[pm].general.first_name)
-   		               loc = Seed.marches[pm].x + ',' + Seed.marches[pm].y;
-                }
-                catch (e) {
-                    actionLog('Err: general first_name not available' + e.name + ' ' + e.message);
-                }
+        // Generals
+        m += '<TABLE class=pbTabPad>';
+        var loc = '';
+        for (var ig=0; ig<city.generals.length; ig++){
+            if (Seed.numMarches)
+                for (var pm in Seed.marches)
+                    // The general object will be null if the march is a transport
+                    if (Seed.marches[pm].march_type != "Transport")
+                        try {
+           		           if (city.generals[ig].name == Seed.marches[pm].general.first_name)
+   		                       loc = Seed.marches[pm].x + ',' + Seed.marches[pm].y;
+                        }
+                        catch (e) {
+                            actionLog('Err: general first_name not available' + e.name + ' ' + e.message);
+                        }
              
-      m += '<TR><TD align=right>'+ city.generals[ig].name +' ('+ city.generals[ig].rank +')</td><TD width=75%>'+ (city.generals[ig].busy?loc:'') +'</td></tr>';
-    }
-      m += '</table></td></tr></table><BR><TABLE class=pbTabPad>\
-        <TR><TD class=pbTabLeft>'+ kMarches +'</td><TD>'+ Seed.numMarches +'</td></tr>'
-        + dispBuildingJob(0) + dispResearchJob(0) + dispTrainingJobs(0) + '</td></tr></table>';
+            m += '<TR><TD align=right>'+ city.generals[ig].name +' ('+ city.generals[ig].rank +')</td><TD width=75%>'+ (city.generals[ig].busy?loc:'') +'</td></tr>';
+        }
+        
+        m += '</table></td></tr></table><BR><TABLE class=pbTabPad>\
+              <TR><TD class=pbTabLeft>'+ kMarches +'</td><TD>'+ Seed.numMarches +'</td></tr></table>'
+//        + dispBuildingJob(0) + dispResearchJob(0) + dispTrainingJobs(0) + '</td></tr></table>';
   
-    // outposts ...
-    if (Seed.s.cities.length > 0){
-      for (var i=1; i<Seed.s.cities.length; i++){
-        m += '<DIV class=short></div>'+ cityTitle(i) + '<TABLE class=pbTabPad>'
-          + dispBuildingJob(i) + dispTrainingJobs(i) + '</td></tr></table>';
-      }
-    }
+        // outposts ...
+        if (Seed.s.cities.length > 0){
+            for (var i=1; i<Seed.s.cities.length; i++){
+                m += '<DIV class=short></div>'+ cityTitle(i) + '<TABLE class=pbTabPad><TR><TD></td></tr></table>'
+//          + dispBuildingJob(i) + dispTrainingJobs(i) + '</td></tr></table>';
+            }
+        }
     
-    // Marches, building, research, training
-    document.getElementById('pbinfCont').innerHTML = m; 
-    var now = new Date();  
-    now.setTime(now.getTime() + (now.getTimezoneOffset()*60000));
-    document.getElementById('pbinfGmt').innerHTML = now.toTimeString().substring (0,8) +' GMT';
-    t.timer = setTimeout (t.showStuff, 1000);
-    
+        // Marches, building, research, training
+        document.getElementById('pbinfCont').innerHTML = m; 
+        
+        var now = new Date();  
+        now.setTime(now.getTime() + (now.getTimezoneOffset()*60000));
+        document.getElementById('pbinfGmt').innerHTML = now.toTimeString().substring (0,8) +' GMT';
+ 
+/*   
     function dispBuildingJob (cityIdx){
       var m = '<TR><TD class=pbTabLeft>'+ kBuilding +'</td>';
       var job = getBuildingJob (cityIdx);
@@ -3626,23 +3634,21 @@ Tabs.Info = {
       }      
       return m;
     }
-    
-    function cityTitle (cityIdx){
-      var city = Seed.s.cities[cityIdx];
-      // Outposts are always defending (until further notice)
-      var wallStatus = '';
-      var alliance_name = (Seed.s.alliance) ? Seed.s.alliance.name : '';
-      if (cityIdx == 0)
-        wallStatus = (Seed.s.cities[cityIdx].defended) ? '<font class="defending">'+ kDefending +'</font>' : '<font class="hiding">'+ kSanctuary +'</font>';
-      else
-        wallStatus = '<font class="defending">'+ kDefending +'</font>';
+*/    
+        function cityTitle (cityIdx){
+            var city = Seed.s.cities[cityIdx];
+            // Outposts are always defending (until further notice)
+            var wallStatus = '';
+            var alliance_name = (Seed.s.alliance) ? Seed.s.alliance.name : '';
+            if (cityIdx == 0)
+                wallStatus = (Seed.s.cities[cityIdx].defended) ? '<font class="defending">'+ kDefending +'</font>' : '<font class="hiding">'+ kSanctuary +'</font>';
+            else
+                wallStatus = '<font class="defending">'+ kDefending +'</font>';
       
-      return '<div class=pbSubtitle><TABLE class=pbTab><TR><TD>'+ kCityNumber + (cityIdx+1) +'</td><TD align=center>'+ city.type +'</td><TD align=right>'+ city.x +','+ city.y + ' ' + alliance_name +'</td><TD width=220px align=right>'+ wallStatus +'</td></tr></table></div>';
-    }
-  },
+            return '<div class=pbSubtitle><TABLE class=pbTab><TR><TD>'+ kCityNumber + (cityIdx+1) +'</td><TD align=center>'+ city.type +'</td><TD align=right>'+ city.x +','+ city.y + ' ' + alliance_name +'</td><TD width=220px align=right>'+ wallStatus +'</td></tr></table></div>';
+        }
+    },
 
-
-  
   refresh : function (){
     var t = Tabs.Info;
     Seed.fetchSeed (t.showStuff());  
@@ -4094,579 +4100,7 @@ function MarchTracker (){
   this.setReportDelete = function (onOff){
   }
   this.setTroopLossListener = function (listener){
-  }
-  
-  
-}
-
-
-//******************************** BUILD Tab *****************************
-
-Tabs.Build = {
-  tabOrder      : BUILD_TAB_ORDER,
-  tabLabel      : kBuild,
-  cont          : null,
-  buildTimer    : null,
-  statTimer     : null,
-  capitolCity   : [kHome, kGarrison, kScienceCenter, kMetalsmith, kOfficerQuarter, kMusterPoint, kRookery, kStorageVault, kTheater, kSentinel, kFactory, kFortress, kDragonKeep, kWall],
-  capitolField  : [kMine, kFarm, kLumbermill, kQuarry],
-  outpostCity   : [kTrainingCamp, kHome, kSilo, kMusterPoint, kDragonKeep, kWall],
-  outpostField  : [kMine, kFarm, kLumbermill, kQuarry],
-  
-  init : function (div){
-    var t = Tabs.Build;
-    t.cont = div;
-    for (var i=0; i<Seed.s.cities.length; i++)
-      if (!Data.options.autoBuild.buildingEnable[i])
-        Data.options.autoBuild.buildingEnable[i] = {};
-    
-    for (var i=0; i<Seed.s.cities.length; i++)
-      if (!Data.options.autoBuild.buildCap[i])
-        Data.options.autoBuild.buildCap[i] = {};
-        
-    var m = '<DIV class=pbTitle>'+ kAutoUpgradeBuildings +'</div>\
-      <DIV class=pbStatBox><CENTER><INPUT id=pbbldOnOff type=submit\></center>\
-      <DIV id=pbbldBldStat></div> <BR> <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>\
-      <DIV id=pbbldConfig class=pbInput>';
-    
-    var el = [], listC = [], listF = [];
-    
-    for (var i=0; i<Seed.s.cities.length; i++){
-      if (i==0){
-        listC = t.capitolCity;
-        listF = t.capitolField;
-      } 
-      else {
-        listC = t.outpostCity;
-        listF = t.outpostField;
-      }
-      // The seed object contains a wealth of information including alliance membership, number of people in the alliance, facebook ids of each member,
-      // the ol's information (in alliances and alliance_membership), the s object contains all the buildings for the cities, whether or not the city is
-      // on defense, the list of generals, what and where the dragon is, a list of jobs (e.g. research, building, troops training and pending training, current marches)
-      // the marches alone say where the troops are, whether or not they are returning or attacking, general assigned, etc.
-      var city = Seed.s.cities[i];
-      m += '<DIV class=pbSubtitle>'+ kCityNumber + (i+1) +' ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
-      for (var ii=0; ii<listC.length; ii++){
-        m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listC[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listC[ii]]?'CHECKED':'') +' /></td><TD>'+ listC[ii] +'</td>'+ buildDisplayCap(i,ii) +'</tr>';  
-        el.push('pbbldcb_'+ i +'_'+ listC[ii]);
-      }
-      m += '</table></td><TD><TABLE class=pbTab>';  
-      for (var ii=0; ii<listF.length; ii++){
-        m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listF[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listF[ii]]?'CHECKED':'') +' /></td><TD>'+ listF[ii] +'</td>'+ buildDisplayCap(i,(listC.length + ii)) +'</tr>';  
-        el.push('pbbldcb_'+ i +'_'+ listF[ii]);
-      }
-      m += '</table></td></tr></table>';
-    }    
-    m += '</div>';
-    div.innerHTML = m;
-    
-    // Add the event listeners for each city's building types
-    for (var i=0; i<el.length; i++)
-      document.getElementById(el[i]).addEventListener('click', checked, false);
-      
-    // Add the event listeners for each city's building type caps
-    // And restore the persistent data since it has to be done in the same loop
-    for (var i=0; i<Seed.s.cities.length; i++) {
-        var len = (i==0) ? (t.capitolCity.length + t.capitolField.length) : (t.outpostCity.length + t.outpostField.length);
-        for (var ii=0;ii<len; ii++) {
-            var selectMenu = document.getElementById('pbbldcap_'+ i + '_' + ii);
-            try {
-                if (!Data.options.autoBuild.buildCap[i][ii]) {
-                    var capitolB = t.capitolCity.concat(t.capitolField);
-                    var outpostB = t.outpostCity.concat(t.outpostField);                    
-                    var currentLowestBuildingLevel = t.getCurrentLowestBuildingLevel(i, (i==0)? capitolB[ii] : outpostB[ii]);
-                    selectMenu.selectedIndex = currentLowestBuildingLevel;
-                    Data.options.autoBuild.buildCap[i][ii] = currentLowestBuildingLevel;
-                }
-                else {
-                    // Why 2? Because the building cap starts at 2, not zero :)
-                    selectMenu.selectedIndex = Data.options.autoBuild.buildCap[i][ii];
-                    selectMenu.options[Data.options.autoBuild.buildCap[i][ii]].selected = true;
-                }
-            }
-            catch (e) {
-            }
-            selectMenu.addEventListener('change', changeBuildCap, false);
-        }
-    }
-      
-    t.setEnable (Data.options.autoBuild.enabled);
-    document.getElementById('pbbldOnOff').addEventListener ('click', function (){
-      t.setEnable (!Data.options.autoBuild.enabled);
-    }, false);
-    
-    function checked (evt){
-      var id = evt.target.id.split ('_');
-      var cityId = Seed.s.cities[id[1]].id;
-      Data.options.autoBuild.buildingEnable[id[1]][id[2]] = evt.target.checked;
-      if (Data.options.autoBuild.enabled && evt.target.checked)
-        t.buildTick();  
-    }
-
-    function buildDisplayCap (cityIdx, listIdx){
-        var m = '<TD><SELECT id="pbbldcap_' + cityIdx +'_'+ listIdx +'"<option value="1">1</option>\
-                 <option value="0">0</option>\
-                 <option value="1">1</option>\
-                 <option value="2">2</option>\
-                 <option value="3">3</option>\
-                 <option value="4">4</option>\
-                 <option value="5">5</option>\
-                 <option value="6">6</option>\
-                 <option value="7">7</option>\
-                 <option value="8">8</option>\
-                 <option value="9">9</option>\
-                 <option value="10">10</option>\
-                 <option value="11">11</option>\
-                 </select></td>';
-        return m;
-    }
-    
-    // Add to persistent storage
-    function changeBuildCap (evt) {
-        var bId = evt.target.id.split ('_');
-        Data.options.autoBuild.buildCap[bId[1]][bId[2]] = evt.target[evt.target.selectedIndex].value;
-        evt.target.style.backgroundColor = ''; 
-        if (Data.options.autoBuild.enabled)
-            t.buildTick();      
-    }
-  },
-  
-  hide : function (){
-    var t = Tabs.Build;
-    clearTimeout (t.statTimer);
-  },
-  show : function (){
-    var t = Tabs.Build;
-    t.statTimer = setInterval (t.statTick, 1000);
-  },
-  
-  setEnable : function (onOff){
-    var t = Tabs.Build;
-    var but = document.getElementById('pbbldOnOff');
-    Data.options.autoBuild.enabled = onOff;
-    if (onOff){
-      but.value = kAutoBuildOn;
-      but.className = 'butAttackOn';
-      t.buildTimer = setInterval (t.buildTick, 4000);
-    } 
-    else {
-      but.value = kAutoBuildOff;
-      but.className = 'butAttackOff';
-      clearTimeout (t.buildTimer);
-      Data.options.tJobs.length = 0;
-    }
-  },
-  
-  // Every 1 seconds
-  statFetch : false,
-  statTick : function (){
-    var t = Tabs.Build;
-    var m = '<TABLE class=pbTabPad>';
-    var len = Data.options.tJobs.length;
-    
-    for (var i=0; i<Seed.s.cities.length; i++){
-        var city = Seed.s.cities[i];
-        var job = getBuildJob (i);
-        if (Data.options.tJobs.length == 0 && job) {
-            // the Seed is out of sync, the job should be deleted
-            deleteBuildJob (i, job);
-            job = null;
-        }
-        m += '<TR><TD>'+ kCityNumber + (i+1) +'</td><TD>';
-        if (job == null)
-            m += kIdle +'</td></tr>';
-        else {
-            var b = Buildings.getById(i, job.city_building_id);
-            var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
-            if (timeRemaining == 0) {
-                // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
-                m += 'awaiting job completion notification...</td><TD></td><TD></td></tr>';
-                deleteBuildJob (i, job);
-                if (t.statFetch == false) {
-                    Seed.fetchSeed();
-                    t.statFetch = true;
-                }
-            }
-            else {
-                m += kBuilding1 +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ b.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
-                t.StatFetch = false;
-            }
-        }
-    }
-    document.getElementById('pbbldBldStat').innerHTML = m +'</table>';
-  },
-  
-  dispFeedback : function (msg){
-    document.getElementById('pbbldFeedback').innerHTML = new Date().toTimeString().substring (0,8) +' '+  msg;
-  },
-
-  getCurrentLowestBuildingLevel : function (cityIdx, buildingType){
-    var t = Tabs.Build, level = 12;
-    
-    // This can be missing if the user has not done any research
-    // implying a research level of zero
-    try {
-        var b = Seed.s.cities[cityIdx].buildings;
-        for (var i=0; i<b.length; i++)
-            if (b[i].type == buildingType)
-                if (b[i].level < level)
-                    level = b[i].level; 
-    }
-    catch (e) {
-    }  
-
-    return level;
-  },
-  
-  getBuildingCap : function (cityIdx, buildingType){
-    var t = Tabs.Build;
-    var cap = 0;
-    var cityType =  (cityIdx == 0) ? t.capitolCity : t.outpostCity;
-    cityType =  (cityIdx == 0) ? cityType.concat(t.capitolField) : cityType.concat(t.outpostField);
-    
-    for (var i=0; i < cityType.length; i++) {
-        if (cityType[i] == buildingType) {
-            try {
-                cap = (Data.options.autoBuild.buildCap[0][i]) ? Data.options.autoBuild.buildCap[0][i] : 0; 
-                break;
-            }
-            catch (e) {
-            }  
-        }
-    }
-
-    return cap;
-  },
-  
-  getBuildingIndex : function (cityIdx, buildingType){
-    var t = Tabs.Build, bldgIdx = 0;
-    var cityType =  (cityIdx == 0) ? t.capitolCity : t.outpostCity;
-    cityType =  (cityIdx == 0) ? cityType.concat(t.capitolField) : cityType.concat(t.outpostField);
-    
-    for (var i=0; i < cityType.length; i++)
-        if (cityType[i] == buildingType) { 
-            bldgIdx = i;
-            break;
-        }
-    return bldgIdx;
-  },
-  
-  // This would be simple if only one building of each type existed, but you may build multiple garrisons/training camps
-  // So we have to look through the entire list and use an additional parameter to specify the building level needed
-  // Returns zero if the specified building is not found
-  getLowestBuildingLevel : function(cityIdx, buildingType){
-
-    var buildings = Seed.s.cities[cityIdx].buildings;
-    var lowest = 12;
-    var bFound = false;
-      for (var p=0; p<buildings.length;p++) 
-        if (buildings[p].type == buildingType) {
-            bFound = true; 
-            if (buildings[p].level < lowest)
-                lowest = buildings[p].level;
-        }
-    return (bFound) ? lowest : 0;
-  },
-  
-  checkStandardReqs : function(cityIdx, buildingType, defFood, defLumber, defMetal, defStone) {
-    var t = Tabs.Build;        
-    var buildingLevel = t.getLowestBuildingLevel(cityIdx, buildingType);
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    if (buildingLevel == 0)
-        m += ' ' + buildingType;
-   
-    var food    = defFood * Math.pow(2,buildingLevel + 1);
-    var lumber  = defLumber * Math.pow(2,buildingLevel + 1);
-    var metal   = defMetal * Math.pow(2,buildingLevel + 1);
-    var stone   = defStone * Math.pow(2,buildingLevel + 1);
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.building[buildingType];
-        food = seedReqs.level[buildingLevel + 1].resources['food'];
-        lumber = seedReqs.level[buildingLevel + 1].resources['wood'];
-        metal = seedReqs.level[buildingLevel + 1].resources['ore'];
-        stone = seedReqs.level[buildingLevel + 1].resources['stone'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {buildable:false, msg:[]};
-    var buildCap = t.getBuildingCap(cityIdx, buildingType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (buildingLevel >= buildCap) m += '<TD>&nbsp; Cap limit '+ buildCap +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
-
-    if (m.length == 0) {
-        ret.buildable = true;
-        ret.msg = 'Building:' + kLevel1 + ' ' + (buildingLevel + 1) + ' ' + buildingType;
-    }
-    else {
-        ret.buildable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;  
-
-  },
-
-  checkGoldReqs : function(cityIdx, buildingType, defFood, defLumber, defMetal, defStone, defGold) {
-    var t = Tabs.Build;        
-    var buildingLevel = t.getLowestBuildingLevel(cityIdx, buildingType);
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    if (buildingLevel == 0)
-        m += ' ' + buildingType;
-   
-    var food    = defFood * Math.pow(2,buildingLevel + 1);
-    var lumber  = defLumber * Math.pow(2,buildingLevel + 1);
-    var metal   = defMetal * Math.pow(2,buildingLevel + 1);
-    var stone   = defStone * Math.pow(2,buildingLevel + 1);
-    var gold    = defGold * Math.pow(2,buildingLevel + 1);
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.building[buildingType];
-        food    = seedReqs.level[buildingLevel + 1].resources['food'];
-        lumber  = seedReqs.level[buildingLevel + 1].resources['wood'];
-        metal   = seedReqs.level[buildingLevel + 1].resources['ore'];
-        stone   = seedReqs.level[buildingLevel + 1].resources['stone'];
-        gold    = seedReqs.level[buildingLevel + 1].resources['gold'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {buildable:false, msg:[]};
-    var buildCap = t.getBuildingCap(cityIdx, buildingType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (buildingLevel >= buildCap) m += '<TD>&nbsp; Cap limit '+ buildCap +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
-
-    if (m.length == 0) {
-        ret.buildable = true;
-        ret.msg = 'Building:' + kLevel1 + ' ' + (buildingLevel + 1) + ' ' + buildingType;
-    }
-    else {
-        ret.buildable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;  
-  },
-
-  checkReqs : function(cityIdx, buildingType){
-
-    var t = Tabs.Build;
-    switch (buildingType) {
-        case kHome:             return t.checkStandardReqs(cityIdx, buildingType, 50, 300, 150, 200);
-        case kGarrison:         return t.checkStandardReqs(cityIdx, buildingType, 250, 1200, 500, 1500);
-        case kScienceCenter:    return t.checkStandardReqs(cityIdx, buildingType, 120, 1250, 200, 1500);
-        case kMetalsmith:       return t.checkStandardReqs(cityIdx, buildingType, 125, 1000, 1200, 600);
-        case kOfficerQuarter:   return t.checkStandardReqs(cityIdx, buildingType, 400, 2500, 700, 1200);
-        case kMusterPoint:      return t.checkStandardReqs(cityIdx, buildingType, 100, 600, 250, 2000);
-        case kRookery:          return t.checkGoldReqs(cityIdx, buildingType, 1200, 2000, 1000, 800, 800);
-        case kStorageVault:     return t.checkStandardReqs(cityIdx, buildingType, 100, 1500, 300, 1000);
-        case kTheater:          return t.checkStandardReqs(cityIdx, buildingType, 300, 2000, 400, 1000);
-        case kSentinel:         return t.checkStandardReqs(cityIdx, buildingType, 150, 1000, 300, 3000);
-        case kFactory:          return t.checkStandardReqs(cityIdx, buildingType, 150, 1500, 1500, 500);
-        case kFortress:         return t.checkStandardReqs(cityIdx, buildingType, 200, 300, 100, 2500);
-        case kDragonKeep:       return t.checkGoldReqs(cityIdx, buildingType, 400, 2500, 700, 1200, 1500);
-        case kWall:             return t.checkStandardReqs(cityIdx, buildingType, 3000, 1500, 500, 10000);
-        case kMine:             return t.checkStandardReqs(cityIdx, buildingType, 210, 600, 200, 500);
-        case kFarm:             return t.checkStandardReqs(cityIdx, buildingType, 50, 300, 150, 200);
-        case kLumbermill:       return t.checkStandardReqs(cityIdx, buildingType, 100, 100, 300, 250);
-        case kQuarry:           return t.checkStandardReqs(cityIdx, buildingType, 180, 500, 400, 150);
-        case kTrainingCamp:     return t.checkGoldReqs(cityIdx, buildingType, 350, 1300, 600, 1900, 975);
-        case kSilo:             return t.checkStandardReqs(cityIdx, buildingType, 250, 1200, 500, 1500);
-
-    }  
-  },
-  
-  // TBD - this function is suspect
-  // auto-building displays very odd behavior when multiple buildings are selected
-  // for example, in the main city if I select quarries, farms, mines, and timbermills all to be built
-  // auto-build will start building one type of building even though others are lower level (i.e. mine->5 while lumbermill is still at 3)
-  // The algorithm for getting the lowest level building may not be working correctly
-  // New approach 07072011b
-  // Calculate the completion time by examining the job record for any job running
-  errorCount : 0,
-  doRecheck  : false,
-  buildTick : function (){
-    var t = Tabs.Build;
-
-    if (!Data.options.autoBuild.enabled)
-        return;
-      
-    Seed.notifyOnUpdate(function(){   
-        for (var ic=0; ic<Seed.s.cities.length; ic++ ){
-            var city = Seed.s.cities[ic];
-            var cityId = city.id;
-            var bJob = getBuildJob (ic);
-            if (bJob == null){     // city not currently building
-                
-                // Yes, is there a job in persistent data in in this city?
-                for (var i=0; i<Data.options.tJobs.length; i++) {
-                    if (Data.options.tJobs[i].city_id == cityId) {
-                        // We check three different modes of completion:
-                        // 1. the done flag
-                        // 2. the duration
-                        // 3. the run_at + duration compared to serverTime()
-                        
-                        // Yes, has the job completed (1)?
-                        if (Data.options.tJobs[i].done) {
-                            Data.options.tJobs.splice(i,1)
-                            Seed.fetchSeed ();
-                            clearTimeout (t.buildTimer);
-                            t.BuildTimer = setInterval (t.buildTick, 4000);
-                            return;
-                        }
-                        else if (!Data.options.tJobs[i].duration) {
-                            // Yes, has the job completed (2)?
-                            // If there is no duration, the job has completed
-                            Data.options.tJobs.splice(i,1)
-                            Seed.fetchSeed ();
-                            clearTimeout (t.buildTimer);
-                            t.buildTimer = setInterval (t.buildTick, 4000);
-                            return;
-                        }
-                        else if (Data.options.tJobs[i].run_at + Data.options.tJobs[i].duration > serverTime()) {
-                            // Yes, has the job completed (3)?
-                            // Yes, the job should be done. Wait at least 4 seconds for updated information
-                            // We might be able to use the remaining duration in the calculations for either
-                            // fetchCity or setInterval...
-                            //Seed.fetchCity (city.id, 1000);
-                            Data.options.tJobs.splice(i,1); // Remove the record
-                            Seed.fetchSeed ();
-                            clearTimeout (t.buildTimer);
-                            t.buildTimer = setInterval (t.buildTick, 4000);
-                            return;
-                        }
-                    }
-                }  
-                
-                var bl = []; // Concatenated array of buildings
-                for (var p in Data.options.autoBuild.buildingEnable[ic]){
-                    // Is this building type enabled for autobuild?
-                    if (Data.options.autoBuild.buildingEnable[ic][p])
-                        bl = bl.concat (Buildings.getList (ic, p));
-                }
-                    
-                // Change: we want to iterate over each buildings comparing the level to the cap. If the cap has not
-                // been reached, call doBuild
-                var bBuilt = false;
-                var bCapped = false;
-                var bType = '';
-                var len = bl.length;
-                
-                for (var i=0; i<len; i++) {
-                    var cap = t.getBuildingCap (ic, bl[i].type);
-                    if (bl[i].level < cap) {
-                        // Change 07122011a: Check requirements, skip if they are not met
-                        // Caps are check in the requirements
-                        var ret = t.checkReqs(ic, bl[i].type);
-                        t.dispFeedback (ret.msg);
-                        if (ret.buildable) {
-                            t.doBuild (bl[i], city);
-                            bBuilt = true;
-                            Data.options.tJobs.push(bl[i]);
-                            bCapped = false;
-                            break;
-                        }
-                        else {
-                            // Error condition prevents building, try again later
-                            doRecheck = true;
-                            break;
-                        }
-                    }
-                    else {
-                        bCapped = true;
-                        bType = bl[i].type;
-                    }
-                }
-                
-                if (bCapped) {
-                    // This only displays the first capped building
-                    // To be consistent with research, we will need to sort the list, find out when the type 
-                    // changes and calculate if all the buildings are capped
-                    t.dispFeedback ("Building capped");
-                    var bldgIdx = t.getBuildingIndex (ic, bType);
-                    document.getElementById ('pbbldcap_' + ic + '_' + bldgIdx).style.backgroundColor = "red";
-                }
-            } 
-            else {
-                // We have a job running
-                // Look at the job record
-                if (bJob) {
-                    var jFound = false;
-                    // Look for the job in our persistent data
-                    for (var i=0; i<Data.options.tJobs.length; i++) {
-                        if (bJob.city_building_id == Data.options.tJobs[i].city_building_id) {
-                            jFound = true;
-                        }   
-                    }
-                    // If the job is not in persistent data, put it there
-                    if (!jFound) {
-                        Data.options.tJobs.push(bJob);
-                        actionLog("Putting build job in persistent data");
-                    }
-                    else {
-                        // Keep a consistent display                
-                        var cityType = (city.type == "Capital") ? 'Capitol' : city.type;
-                        var msg = kBuildingLevel + (bJob.level) +' '+ bJob.type + kAt + cityType;
-                        t.dispFeedback (msg);
-                    }
-                }
-            }
-            if (t.doRecheck) {
-                Seed.fetchSeed();
-                t.doRecheck = false;
-                clearTimeout(t.buildTimer);
-                t.buildTimer = setInterval (t.buildTick, 20000);
-                t.dispFeedback ("Completion errors: waiting 20 seconds to try again");               
-            }      
-       } 
-    }); 
-  },
-  
-  doBuild : function (building, city){
-    var t = Tabs.Build;
-    var cityType = (city.type == "Capital") ? 'Capitol' : city.type;
-    var msg = kBuildingLevel + (building.level+1) +' '+ building.type + kAt + cityType;
-    
-    t.dispFeedback (msg);
-    
-    Ajax.buildingUpgrade (city.id, building.id, function (rslt){
-      //logit ('BUILD RESULT: '+ inspect (rslt, 7, 1)); 
-        if (rslt.ok){
-            t.errorCount = 0;
-            actionLog (msg);
-            //t.buildTimer = setTimeout (t.buildTick, 8000);
-            return;
-        } 
-        else {
-            Seed.fetchSeed();
-            actionLog (building.type + ': ' + rslt.errmsg);
-            if (++t.errorCount > 3){
-                t.dispFeedback (kTooManyBuildErrs);
-                t.setEnable (false);
-                return;
-            }
-            t.dispFeedback (building.type + ': ' + rslt.errmsg);
-            //t.buildTimer = setTimeout (t.buildTick, 20000);
-            t.doRecheck = true;
-            return;
-        }
-    });
-  },
+  } 
 }
 
     function deleteResearchJob(job){
@@ -4696,7 +4130,8 @@ Tabs.Build = {
         }
         return null;
     }
- 
+
+/*
 //********************************   Train Tab *****************************
 Tabs.Train = {
   tabOrder      : TRAIN_TAB_ORDER,
@@ -4719,29 +4154,6 @@ Tabs.Train = {
 
    
     // Initialize autoTrain
-/*    if (Data.options.autoTrain == false) {
-        Data.options.autoTrain.enabled = false;
-        Data.options.autoTrain.city = []
-        Data.options.autoTrain.city.troopType = [];
-        for (var c=0; c<Seed.s.cities.length; c++)
-            for (var tt=0; tt<t.outpost2Troops.length; tt++)
-                Data.options.autoTrain.city[c].troopType[tt] = {};        
-    }
-    
-	//if (!Data.options.autoTrain.city) {
-		Data.options.autoTrain.city = [];
-		for (var c=0; c<Seed.s.cities.length; c++)
-			Data.options.autoTrain.city[c] = {};
-	//}
-	
-	for (var c=0; c<Seed.s.cities.length; c++) {
-		if (!Data.options.autoTrain.city[c].troopType) {
-			Data.options.autoTrain.city[c].troopType = [];
-			for (tt=0; tt<t.outpost2Troops.length; tt++)
-				Data.options.autoTrain.city[c].troopType[tt] = {};
-		}
-	}
-*/
 	for (var c=0; c<Seed.s.cities.length; c++)
 		if (!Data.options.autoTrain.city[c])
 			Data.options.autoTrain.city[c] = {};
@@ -6425,7 +5837,7 @@ Tabs.Train = {
 		});
 	},
 }
-
+*/
 function getTrainJob (cityIdx){
 	var cid = Seed.s.cities[cityIdx].id;
 	var jobs = Seed.jobs[cid];
@@ -6436,1083 +5848,109 @@ function getTrainJob (cityIdx){
 	return null;
 }
 
-//******************************** Research Tab *****************************
-// Notes: We don't really need the double array because research is only allowed in the Capitol
-// but it's here just in case they ever decide to allow another research facility
-//
-// RapidDeployment
-// Levitation
-// Mercantilism
-// Clairvoyance
-// Ballistics = Weapons Calibration
-// Medicine
-// Agriculture
-// Mining = Alloys
-// Masonry
-// Dragonry
-// Woodcraft
-// Metallurgy
-// AerialCombat
-//
-Tabs.Research = {
-  tabOrder          : RESEARCH_TAB_ORDER,
-  tabLabel          : kResearch,
-  cont              : null,
-  researchTimer     : null,
-  statTimer         : null,
-  capitolResearch   : {Agriculture:'Agriculture', Woodcraft:'Woodcraft', Masonry:'Masonry', Mining:'Alloys', Clairvoyance:'Clairvoyance', RapidDeployment:'Rapid Deployment', Ballistics:'Weapons Calibration', Metallurgy:'Metallurgy', Medicine:'Medicine', Dragonry:'Dragonry', Levitation:'Levitation', Mercantilism:'Mercantilism', AerialCombat:'Aerial Combat'},
-  researchIdx       : {Agriculture:0, Woodcraft:1, Masonry:2, Mining:3, Clairvoyance:4, RapidDeployment:5, Ballistics:6, Metallurgy:7, Medicine:8, Dragonry:9, Levitation:10, Mercantilism:11, AerialCombat:12},
-  
-  init : function (div){
-    var t = Tabs.Research;
-    t.cont = div;
-        
-    // Initialization
-    for (var i=0; i<Seed.s.cities.length; i++) {
-		if (!Data.options.autoResearch.researchEnable[i])
-            Data.options.autoResearch.researchEnable[i] = {};
-        if (!Data.options.autoResearch.researchCap[i])
-            Data.options.autoResearch.researchCap[i] = {};
-    }
-        
-    var m = '<DIV class=pbTitle>'+ kAutoResearch +'</div>\
-      <DIV class=pbStatBox><CENTER><INPUT id=pbresOnOff type=submit\></center>\
-      <DIV id=pbresStat></div> <BR> <DIV id=pbresFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>\
-      <DIV id=pbresConfig class=pbInput>';
-    
-    var el = [];
-    var city = Seed.s.cities[0];
-    
-    m += '<DIV class=pbSubtitle>'+ kCityNumber +'1 ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
-    var i=0;
-    for (var p in t.capitolResearch){
-        m += '<TR><TD><INPUT type=checkbox id="pbrescb_'+ 0 + '_' +t.capitolResearch[p] +'" '+ (Data.options.autoResearch.researchEnable[0][t.capitolResearch[p]]?'CHECKED':'') +' /></td><TD>'+ t.capitolResearch[p] +'</td><TD>'+ researchDisplayCap(i) +'</td></tr>';  
-        el.push('pbrescb_' + 0 + '_' +t.capitolResearch[p]);
-        ++i;
-    }
-    m += '</table></td><TD><TABLE class=pbTab>';  
-    m += '</div>';
-    div.innerHTML = m;
-    
-    // Add the event listeners for the research types
-    for (var i=0; i<el.length; i++)
-        document.getElementById(el[i]).addEventListener('click', checked, false);
-      
-    // Add the event listeners for the research caps
-    // And restore the persistent data since it has to be done in the same loop
-    var ii = 0;
-    for (var p in t.capitolResearch) {
-        var selectMenu = document.getElementById('pbrescap_'+ 0 + '_' +ii);
-        try {
-            if (!Data.options.autoResearch.researchCap[0][ii]) {
-                var currentResearchLevel = t.getCurrentResearchLevel(p);
-                selectMenu.selectedIndex = currentResearchLevel;
-                Data.options.autoResearch.researchCap[0][ii] = currentResearchLevel;
-            }
-            else {
-                selectMenu.selectedIndex = Data.options.autoResearch.researchCap[0][ii];
-                selectMenu.options[Data.options.autoResearch.researchCap[0][ii]].selected = true;
-            }
-        }
-        catch (e) {
-        }
-        selectMenu.addEventListener('change', changeResearchCap, false);
-        ++ii;
-    }
-      
-    t.setEnable (Data.options.autoResearch.enabled);
-    document.getElementById('pbresOnOff').addEventListener ('click', function (){t.setEnable (!Data.options.autoResearch.enabled);}, false);
-    
-    function checked (evt){
-        var rId = evt.target.id.split ('_');
-        Data.options.autoResearch.researchEnable[rId[1]][rId[2]] = evt.target.checked;
-        if (Data.options.autoResearch.enabled)
-            Tabs.Research.researchTick();     
-    }
-
-    function researchDisplayCap (listIdx){
-        var m = '<TD><SELECT id="pbrescap_' + 0 + '_' + listIdx +'"<option value="1">1</option>\
-                 <option value="0">0</option>\
-                 <option value="1">1</option>\
-                 <option value="2">2</option>\
-                 <option value="3">3</option>\
-                 <option value="4">4</option>\
-                 <option value="5">5</option>\
-                 <option value="6">6</option>\
-                 <option value="7">7</option>\
-                 <option value="8">8</option>\
-                 <option value="9">9</option>\
-                 <option value="10">10</option>\
-                 </select></td>';
-        return m;
-    }
-    
-    // Add to persistent storage
-    function changeResearchCap (evt) {
-        var rId = evt.target.id.split ('_');
-        Data.options.autoResearch.researchCap[rId[1]][rId[2]] = evt.target[evt.target.selectedIndex].value;
-        evt.target.style.backgroundColor = '';  
-        if (Data.options.autoResearch.enabled)
-            Tabs.Research.researchTick();     
-    }
-  },
-  
-  hide : function (){
-    var t = Tabs.Research;
-    clearTimeout (t.statTimer);
-  },
-  show : function (){
-    var t = Tabs.Research;
-    t.statTimer = setInterval(t.statTick, 5000);
-  },
-  
-  setEnable : function (onOff){
-    var t = Tabs.Research;
-    var but = document.getElementById('pbresOnOff');
-
-    Data.options.autoResearch.enabled = onOff;
-    if (onOff){
-      but.value = kAutoResearchOn;
-      but.className = 'butAttackOn';
-      t.researchTimer = setInterval(t.researchTick, 5000);
-    } 
-    else {
-      but.value = kAutoResearchOff;
-      but.className = 'butAttackOff';
-      clearTimeout (t.researchTimer);
-      Data.options.rJobs.length = 0;
-    }
-  },
-  
-  // Every 5 seconds
-  statFetch : false,
-  statTick : function (){
-    var t = Tabs.Research, m = '<TABLE class=pbTabPad>', city = Seed.s.cities[0];
-    var job = getResearchJob (0);
-    
-    m += '<TR><TD>'+ kCityNumber +' 1</td><TD>';
-
-    if (job == null)
-        m += kIdle +'</td></tr>';
-    else {
-        var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
-        if (timeRemaining == 0) {
-            m += 'Awaiting job completion notification...</td><TD></td><TD></td></tr>';
-            deleteResearchJob(job);
-            if (t.statFetch == false) {
-                Seed.fetchSeed();
-                t.statFetch = true;
-            }
-        }    
-        else {
-            // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
-            m += kResearch +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ t.resUITranslate (job.research_type) +'</td><TD>'+ timeRemaining  +'</td></tr>';
-            t.statFetch = false;
-        }
-    }
-
-    document.getElementById('pbresStat').innerHTML = m +'</table>';
-    //t.statTimer = setTimeout (t.statTick, 5000);
-  },
-  
-  dispFeedback : function (msg){
-    document.getElementById('pbresFeedback').innerHTML = new Date().toTimeString().substring (0,8) +' '+  msg;
-  },
-
-  getCurrentResearchLevel : function (researchType){
-    var t = Tabs.Research, level = 0;
-    
-    // This can be missing if the user has not done any research
-    // implying a research level of zero
-    try {
-        if (researchType == 'Rapid Deployment')
-            researchType = 'RapidDeployment';
-        if (researchType == 'Weapons Calibration')
-            researchType = 'Ballistics';
-        if (researchType == 'Aerial Combat')
-            researchType = 'AerialCombat';
-        // Note: Alloys is completely missing from the research list in the Seed
-        level = (Seed.s.research[researchType]) ? Seed.s.research[researchType] : 0; 
-    }
-    catch (e) {
-    }  
-
-    return level;
-  },
-  
-  getItem : function(itemType){
-    var items = Seed.s.items;
-    var ret = 0;
-    for (var p in items) {
-        if (p == itemType){
-            ret = items[p];
-            break;
-        }
-    }
-    return ret;
-  },
-  
-  getResearchCap : function (researchType){
-    var t = Tabs.Research;
-    var cap = 0;
-    var resType = t.capitolResearch;
-     
-    for (var p in resType) {
-        //if (resType[p] == researchType) {
-        if (p == researchType) {
-            try {
-                cap = (Data.options.autoResearch.researchCap[0][t.researchIdx[researchType]]) ? Data.options.autoResearch.researchCap[0][t.researchIdx[researchType]] : 0; 
-                break;
-            }
-            catch (e) {
-            }  
-        }
-    }
-    return cap;
-  },
-  
-
-  // This would be simple if only one building of each type existed, but you may build multiple garrisons/training camps
-  // So we have to look through the entire list and use an additional parameter to specify the building level needed
-  // Returns zero if the specified building is not the at the required level
-  getBuildingLevel : function(cityIdx, buildingType, buildingLevel){
-   var buildings = Seed.s.cities[cityIdx].buildings;
-    var ret = 0;
-    for (var p=0; p<buildings.length;p++) {
-        if (buildings[p].type == buildingType && buildings[p].level >= buildingLevel){
-            ret = buildings[p].level;
-            break;
-        }
-    }
-    return ret;
-  },
-  
-  getResearchIndex : function (researchType){
-    var t = Tabs.Research;
-    return t.researchIdx[researchType];
-  },
-  
-  checkAgricultureReqs : function() {
-    var t = Tabs.Research;
-    var researchType = 'Agriculture';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 500 * Math.pow(2,researchLevel +1);
-    var food = 250 * Math.pow(2,researchLevel + 1);
-    var metal = 100 * Math.pow(2,researchLevel + 1);
-    var farmLevel = researchLevel + 1;
-    var scienceCenterLevel = researchLevel;          
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        food = seedReqs.level[researchLevel + 1].resources['food'];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        metal = seedReqs.level[researchLevel + 1].resources['ore'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-        farmLevel = seedReqs.level[researchLevel + 1].buildings['Farm'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (t.getBuildingLevel(0, 'Farm', farmLevel) == 0) m += '<TD>&nbsp;Farm '+ farmLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret; 
-  },
-  
-  checkWoodcraftingReqs : function() {
-    var t = Tabs.Research;
-    var researchType = 'Woodcraft';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 1200 * Math.pow(2,researchLevel +1);
-    var lumber = 500 * Math.pow(2,researchLevel + 1);
-    var metal = 100 * Math.pow(2,researchLevel + 1);
-    var millLevel = researchLevel + 1;
-    var scienceCenterLevel = researchLevel;          
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        lumber = seedReqs.level[researchLevel + 1].resources['wood'];
-        metal = seedReqs.level[researchLevel + 1].resources['ore'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-        millLevel = seedReqs.level[researchLevel + 1].buildings['Lumbermill'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (t.getBuildingLevel(0, 'Lumbermill', millLevel) == 0) m += '<TD>&nbsp;Lumbermill '+ millLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret; 
-  },
-  
-  checkMasonryReqs : function() {
-    var t = Tabs.Research;
-    var researchType = 'Masonry';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 1500 * Math.pow(2,researchLevel +1);
-    var stone = 500 * Math.pow(2,researchLevel + 1);
-    var metal = 200 * Math.pow(2,researchLevel + 1);
-    var quarryLevel = researchLevel + 1;
-    var scienceCenterLevel = researchLevel;          
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        stone = seedReqs.level[researchLevel + 1].resources['stone'];
-        metal = seedReqs.level[researchLevel + 1].resources['ore'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-        quarryLevel = seedReqs.level[researchLevel + 1].buildings['Quarry'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (t.getBuildingLevel(0, 'Quarry', quarryLevel) == 0) m += '<TD>&nbsp;Quarry '+ quarryLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;
-  },
-  
-  checkMiningReqs : function() {
-    var t = Tabs.Research;
-    var researchType = 'Mining';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 2000 * Math.pow(2,researchLevel +1);
-    var metal = 800 * Math.pow(2,researchLevel + 1);
-    var mineLevel = researchLevel + 1;
-    var scienceCenterLevel = researchLevel;          
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        metal = seedReqs.level[researchLevel + 1].resources['ore'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-        mineLevel = seedReqs.level[researchLevel + 1].buildings['Mine'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (t.getBuildingLevel(0, 'Mine', mineLevel) == 0) m += '<TD>&nbsp;Mine '+ mineLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;
-  },
-  
-  checkClairvoyanceReqs : function() {
-    var t = Tabs.Research;
-    var researchType = 'Clairvoyance';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 2000 * Math.pow(2,researchLevel + 1);
-    var food = 2400 * Math.pow(2,researchLevel + 1);
-    var scienceCenterLevel = researchLevel;          
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        food = seedReqs.level[researchLevel + 1].resources['food'];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;wood '+ (gold - city.resources.gold) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret; 
-  },
-
-  checkRapidDeploymentReqs : function() {
-    var t = Tabs.Research;
-    var researchType = 'RapidDeployment';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 600 * Math.pow(2,researchLevel + 1);
-    var food = 3000 * Math.pow(2,researchLevel + 1);
-    var scienceCenterLevel = researchLevel;          
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        food = seedReqs.level[researchLevel + 1].resources['food'];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;wood '+ (gold - city.resources.gold) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret; 
-  },
-  
-  checkBallisticsReqs : function() {
-    var t = Tabs.Research;
-    var researchType = 'Ballistics';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 5000 * Math.pow(2,researchLevel +1);
-    var stone = 500 * Math.pow(2,researchLevel + 1);
-    var metal = 600 * Math.pow(2,researchLevel + 1);
-    var lumber = 800 * Math.pow(2,researchLevel + 1);
-    var woodcraftLevel = 4;
-    var scienceCenterLevel = researchLevel;          
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        stone = seedReqs.level[researchLevel + 1].resources['stone'];
-        metal = seedReqs.level[researchLevel + 1].resources['ore'];
-        lumber = seedReqs.level[researchLevel + 1].resources['wood'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-        woodcraftLevel = seedReqs.level[researchLevel + 1].research['Woodcraft'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (t.getCurrentResearchLevel('Woodcraft') < woodcraftLevel) m += '<TD>&nbsp;Woodcraft '+ woodcraftLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;
-  },
-  
-  checkMetallurgyReqs : function() {
-    // alloys, science center, metalsmith, garrison, metals, food, lumber, stone, gold
-    var t = Tabs.Research;
-    var researchType = 'Metallurgy';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var food = 800 * Math.pow(2,researchLevel +1);
-    var gold = 3500 * Math.pow(2,researchLevel +1);
-    var stone = 200 * Math.pow(2,researchLevel + 1);
-    var metal = 3000 * Math.pow(2,researchLevel + 1);
-    var lumber = 150 * Math.pow(2,researchLevel + 1);
-    var miningLevel = researchLevel;
-    var scienceCenterLevel = researchLevel;  
-    var metalsmithLevel = researchLevel;
-    var garrisonLevel = 2;        
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        food = seedReqs.level[researchLevel + 1].resources['food'];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        stone = seedReqs.level[researchLevel + 1].resources['stone'];
-        metal = seedReqs.level[researchLevel + 1].resources['ore'];
-        lumber = seedReqs.level[researchLevel + 1].resources['wood'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-        metalsmithLevel = seedReqs.level[researchLevel + 1].buildings['Metalsmith'];
-        garrisonLevel = seedReqs.level[researchLevel + 1].buildings['Garrison'];
-        miningLevel = seedReqs.level[researchLevel + 1].research['Mining'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (t.getBuildingLevel(0, 'Metalsmith', metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
-    if (t.getBuildingLevel(0, 'Garrison', garrisonLevel) == 0) m += '<TD>&nbsp;Garrison '+ garrisonLevel +'</td>';
-    if (t.getCurrentResearchLevel('Mining') < miningLevel) m += '<TD>&nbsp;Alloys '+ miningLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;
-  },
-  
-  checkMedicineReqs : function() {
-    var t = Tabs.Research;
-    var researchType = 'Medicine';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 3600 * Math.pow(2,researchLevel +1);
-    var food = 1500 * Math.pow(2,researchLevel + 1);
-    var scienceCenterLevel = researchLevel;          
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        food = seedReqs.level[researchLevel + 1].resources['food'];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret; 
-  },
-  
-  checkDragonryReqs : function() {
-  // science center, rookery, gold, food, metals
-    var t = Tabs.Research;
-    var researchType = 'Dragonry';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 5000 * Math.pow(2,researchLevel +1);
-    var food = 2500 * Math.pow(2,researchLevel + 1);
-    var metal = 1000 * Math.pow(2,researchLevel + 1);
-    var scienceCenterLevel = researchLevel; 
-    var rookeryLevel = researchLevel;         
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        food = seedReqs.level[researchLevel + 1].resources['food'];
-        metal = seedReqs.level[researchLevel + 1].resources['ore'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-        rookeryLevel = seedReqs.level[researchLevel + 1].buildings['Rookery'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (t.getBuildingLevel(0, 'Rookery', rookeryLevel) == 0) m += '<TD>&nbsp;Rookery '+ rookeryLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret; 
-  },
-  
-  checkLevitationReqs : function() {
-  // woodcraft, science center, gold, lumber, metals
-    var t = Tabs.Research;
-    var researchType = 'Levitation';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 5000 * Math.pow(2,researchLevel +1);
-    var lumber = 2000 * Math.pow(2,researchLevel + 1);
-    var metal = 2000 * Math.pow(2,researchLevel + 1);
-    var scienceCenterLevel = researchLevel + 1; 
-    var woodcraftLevel = researchLevel + 1;         
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        lumber = seedReqs.level[researchLevel + 1].resources['wood'];
-        metal = seedReqs.level[researchLevel + 1].resources['ore'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-        woodcraftLevel = seedReqs.level[researchLevel + 1].research['Woodcraft'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (t.getCurrentResearchLevel('Woodcraft') < woodcraftLevel) m += '<TD>&nbsp;Woodcraft '+ woodcraftLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret; 
-  },
-  
-  checkMercantilismReqs : function() {
-  // levitation, science center, factory, gold, food, lumber, metals, stone
-    var t = Tabs.Research;
-    var researchType = 'Mercantilism';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 3500 * Math.pow(2,researchLevel +1);
-    var food = 800 * Math.pow(2,researchLevel +1);
-    var lumber = 150 * Math.pow(2,researchLevel + 1);
-    var metal = 3000 * Math.pow(2,researchLevel + 1);
-    var stone = 200 * Math.pow(2,researchLevel + 1);
-    var scienceCenterLevel = researchLevel + 1; 
-    var factoryLevel = researchLevel + 1; 
-    var levitationLevel = researchLevel + 1;         
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        food = seedReqs.level[researchLevel + 1].resources['food'];
-        lumber = seedReqs.level[researchLevel + 1].resources['wood'];
-        metal = seedReqs.level[researchLevel + 1].resources['ore'];
-        stone = seedReqs.level[researchLevel + 1].resources['stone'];
-        scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
-        factoryLevel = seedReqs.level[researchLevel + 1].buildings['Factory'];
-        levitationLevel = seedReqs.level[researchLevel + 1].research['Levitation'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (metal - city.resources.stone) +'</td>';
-    if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
-    if (t.getBuildingLevel(0, 'Factory', factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
-    if (t.getCurrentResearchLevel('Levitation') < levitationLevel) m += '<TD>&nbsp;Levitation '+ levitationLevel +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;
-  },
-  
-  checkAerialCombatReqs : function() {
-  // dragonry, dragons keep, gold, food, dragon armor (items)
-    var t = Tabs.Research;
-    var researchType = 'AerialCombat';
-    var researchLevel = t.getCurrentResearchLevel(researchType);
-    var gold = 3500 * Math.pow(2,researchLevel +1);
-    var food = 2500 * Math.pow(2,researchLevel +1);
-    var dragonskeepLevel = 8; 
-    var dragonryLevel = 8;
-    var bodyArmor = 1;
-    var clawGuards = 1;
-    var dragonHelmet = 1;
-    var tailGuard = 1;
-    // Check for all 4 pieces of dragon armor ...         
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var city    = Seed.s.cities[0];
-
-    try {
-        var seedReqs = Seed.requirements.research[researchType];
-        gold = seedReqs.level[researchLevel + 1].resources['gold'];
-        food = seedReqs.level[researchLevel + 1].resources['food'];
-        dragonskeepLevel = seedReqs.level[researchLevel + 1].buildings['DragonsKeep'];
-        dragonryLevel = seedReqs.level[researchLevel + 1].research['Dragonry'];
-        bodyArmor - seedReqs.level[researchLevel + 1].items['GreatDragonBodyArmor'];
-        clawGuards - seedReqs.level[researchLevel + 1].items['GreatDragonClawGuards'];
-        dragonHelmet - seedReqs.level[researchLevel + 1].items['GreatDragonHelmet'];
-        tailGuard - seedReqs.level[researchLevel + 1].items['GreatDragonTailGuard'];
-    }
-    catch(e){
-        actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var ret = {researchable:false, msg:[]};
-    var researchCap = t.getResearchCap(researchType);
-    
-    // If the building is capped, are we about to exceed the limit?
-    if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
-    if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (t.getBuildingLevel(0, 'DragonsKeep', dragonskeepLevel) == 0) m += '<TD>&nbsp;Dragons Keep '+ dragonskeepLevel +'</td>';
-    if (t.getCurrentResearchLevel('Dragonry') < dragonryLevel) m += '<TD>&nbsp;Dragonry '+ dragonryLevel +'</td>';
-    if (t.getItem(kGDBodyArmor) == 0) m += '<TD>&nbsp;Body Armor ' + bodyArmor +'</td>';
-    if (t.getItem(kGDClawGuards) == 0) m += '<TD>&nbsp;Claw Guards ' + bodyArmor +'</td>';
-    if (t.getItem(kGDHelmet) == 0) m += '<TD>&nbsp;Helmet ' + bodyArmor +'</td>';
-    if (t.getItem(kGDTailGuard) == 0) m += '<TD>&nbsp;Tail Guard ' + bodyArmor +'</td>';
-    if (m.length == 0) {
-        ret.researchable = true;
-        ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
-    }
-    else {
-        ret.researchable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;
-  },
-  
-  checkReqs : function (researchType){
-
-    var t = Tabs.Research;
-    switch(researchType) {
-        case 'Agriculture':     return t.checkAgricultureReqs();
-        case 'Woodcraft':       return t.checkWoodcraftReqs();
-        case 'Masonry':         return t.checkMasonryReqs();
-        case 'Mining':          return t.checkMiningReqs();
-        case 'Clairvoyance':    return t.checkClairvoyanceReqs();
-        case 'RapidDeployment': return t.checkRapidDeploymentReqs();
-        case 'Ballistics':      return t.checkBallisticsReqs();
-        case 'Metallurgy':      return t.checkMetallurgyReqs();     
-        case 'Medicine':        return t.checkMedicineReqs();
-        case 'Dragonry':        return t.checkDragonryReqs();
-        case 'Levitation':      return t.checkLevitationReqs();
-        case 'Mercantilism':    return t.checkMercantilismReqs();
-        case 'AerialCombat':    return t.checkAerialCombatReqs();
-    }
-  },
-  
-  // Research heartbeat
-  errorCount : 0,
-  doRecheck : false,
-  researchTick : function (){
-
-    var t = Tabs.Research;
-    if (!Data.options.autoResearch.enabled)
-        return;
-//    Data.options.rJobs.length = 0;
-//    return;
-      
-    Seed.notifyOnUpdate(function(){
-        var nothingToDo = true;
-        var rJob = getResearchJob (0);
-        var city = Seed.s.cities[0];
-        var cityId = city.id;
-            
-        if (rJob == null){     // no research being done yet
-        
-            // Is there a research job in persistent data?
-            for (var i=0; i<Data.options.rJobs.length; i++) {
-                if (Data.options.rJobs[i]) {
-                    if (Data.options.rJobs[i].done ||
-                        !Data.options.rJobs[i].duration ||
-                        Data.options.rJobs[i].run_at + Data.options.rJobs[i].duration > serverTime()) {
-                        // Yes, has the job completed?
-                        Data.options.rJobs.splice(i,1);
-                        Seed.fetchSeed();
-                        clearTimeout (t.researchTimer);
-                        t.researchTimer = setInterval (t.researchTick, 5000);
-                        return;
-                    }
-                    /*
-                    else if (!Data.options.rJobs[i].duration) {
-                        // Yes, has the job completed?
-                        // If there is no duration, the job has completed
-                        Data.options.rJobs.splice(i,1);
-                        Seed.fetchSeed();
-                        clearTimeout (t.researchTimer);
-                        t.researchTimer = setInterval (t.researchTick, 5000);
-                        return;
-                    }
-                    else if (Data.options.rJobs[i].run_at + Data.options.rJobs[i].duration > serverTime()) {
-                        // The job has completed
-                        Data.options.rJobs.splice(i,1);
-                        Seed.fetchSeed();
-                        clearTimeout (t.researchTimer);
-                        t.researchTimer = setInterval (t.researchTick, 5000);
-                        return;
-                    }
-                    */
-                }
-            }
-            
-            for (var p in Data.options.autoResearch.researchEnable[0]) {
-                if (Data.options.autoResearch.researchEnable[0][p] == true){
-                
-                    var researchType = '';
-                    for (var rType in t.capitolResearch) 
-                        if (p == t.capitolResearch[rType]) {
-                            researchType = rType;
-                            break;
-                        }
-                            
-                    var level = t.getCurrentResearchLevel (researchType);
-                    var cap = t.getResearchCap (researchType);
-                    var rBuilt = false;
-                    var rCapped = false;
-                    if (level < cap) {
-                        var ret = t.checkReqs (researchType);
-                        t.dispFeedback (ret.msg);
-                        if (ret.researchable) {
-                            t.doResearch(researchType, level);
-                            rBuilt = true;
-                            Data.options.rJobs.push(rJob);
-                            rCapped = false;
-                            break;
-                        }
-                        else {
-                            doRecheck = true;
-                            break;
-                        }
-                    }
-                    else {
-                        // We are capped
-                        rCapped = true;
-                    }
-                }
-                if (rCapped) {
-                    t.dispFeedback ("Research capped");
-                    var resIdx = t.getResearchIndex (researchType);
-                    document.getElementById('pbrescap_' + 0 + '_' + resIdx).style.backgroundColor = "red";
-                }
-            }
-        } 
-        else {
-            // We have a job running
-            // Look at the record
-            if (rJob) {
-                var jFound = false;
-                // Look for the job in persistent data
-                for (var i=0; i<Data.options.rJobs.length; i++) {
-                    // Check the rJob structure for a field called city_research_id or some such (like the building)
-                    // Otherwise, double-check that the ids match
-                    if (rJob.id == Data.options.rJobs[i].id) {
-                        jFound = true;
-                    }
-                }
-                // If the job is not in persistent data, put it there
-                if (!jFound) {
-                    Data.options.rJobs.push(rJob);
-                    actionLog("Putting research job in persistent data");
-                }
-            }
-        }
-        if (t.doRecheck) {
-            Seed.fetchSeed();
-        }
-    }); 
-  },
-   
-  resUITranslate : function (researchType){
-      var t = Tabs.Research;
-      for (var p in t.capitolResearch)
-        if (p == researchType) 
-            return t.capitolResearch[p];
-  },
-  
-  doResearch : function (researchType, researchLevel){
-    var t = Tabs.Research;
-    var city = Seed.s.cities[0];
-    var msg = kResearch +' '+ kLevel1 +' ' +(researchLevel+1) +' '+ t.resUITranslate (researchType);
-    t.dispFeedback (msg);
-    actionLog('Research started: '+ researchType +' ' +researchLevel);
-    Ajax.researchStart (city.id, researchType, function (rslt){
-      //logit ('RESEARCH RESULT: '+ inspect (rslt, 7, 1));       
-        if (rslt.ok){
-            t.errorCount = 0;
-            actionLog (msg);
-            return;
-        } 
-        else {
-            Seed.fetchSeed();
-            actionLog (kResearchErr+ rslt.errmsg);
-            if (++t.errorCount > 3){
-                t.dispFeedback (kTooManyResearchErrs);
-                t.setEnable (false);
-                t.errorCount = 0;
-                return;
-            }
-            t.dispFeedback (kResearchErr + rslt.errmsg);
-            return;
-        }
-    });
-  }, 
-}
-/*********************************** End Research **********************************/
-
 /***********************************   Jobs Tab   **********************************/
 Tabs.Jobs = {
-	tabOrder : JOBS_TAB_ORDER,
-	tabLabel : kJobs,
-	cont : null,
-	timer : null,
+	tabOrder        : JOBS_TAB_ORDER,
+	tabLabel        : kJobs,
+	cont            : null,
+	timer           : null,
+    buildTimer      : null,
+    buildStatTimer  : null,
+    researchTimer   : null,
+    resStatTimer    : null,
+    trainTimer      : null,
+    trainStatTimer  : null,
+    capitolTroops   : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror'],
+    outpost1Troops  : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop'],
+    outpost2Troops  : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'StoneTroop'],
+    outpost3Troops  : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'FireTroop'],
+    allTroops       : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop', 'StoneTroop'],
+    selectedQ       : kMinHousing,
+    trainJobs       : [],
+    capitolResearch : {Agriculture:'Agriculture', Woodcraft:'Woodcraft', Masonry:'Masonry', Mining:'Alloys', Clairvoyance:'Clairvoyance', RapidDeployment:'Rapid Deployment', Ballistics:'Weapons Calibration', Metallurgy:'Metallurgy', Medicine:'Medicine', Dragonry:'Dragonry', Levitation:'Levitation', Mercantilism:'Mercantilism', AerialCombat:'Aerial Combat'},
+    researchIdx     : {Agriculture:0, Woodcraft:1, Masonry:2, Mining:3, Clairvoyance:4, RapidDeployment:5, Ballistics:6, Metallurgy:7, Medicine:8, Dragonry:9, Levitation:10, Mercantilism:11, AerialCombat:12},
+    capitolCity     : [kHome, kGarrison, kScienceCenter, kMetalsmith, kOfficerQuarter, kMusterPoint, kRookery, kStorageVault, kTheater, kSentinel, kFactory, kFortress, kDragonKeep, kWall],
+    capitolField    : [kMine, kFarm, kLumbermill, kQuarry],
+    outpostCity     : [kTrainingCamp, kHome, kSilo, kMusterPoint, kDragonKeep, kWall],
+    outpostField    : [kMine, kFarm, kLumbermill, kQuarry],
 	capitalResearch : ['Agriculture', 'Woodcraft', 'Masonry', 'Alloys', 'Clairvoyance', 'Rapid Deployment', 'Weapons Calibration', 'Metallurgy', 'Medicine', 'Dragonry', 'Levitation', 'Mercantilism', 'Aerial Combat'],
-    contentType   : 0, // 0 = info, 1 = train, 2 = build, 3 = research, these should be enums but Javascript doesn't support that type
-  
+    contentType     : 0, // 0 = info, 1 = train, 2 = build, 3 = research, these should be enums but Javascript doesn't support that type
+    trainContentType: 0, // 0 = train, 1 = config
+    
 	init : function (div){
 		var t = Tabs.Jobs;
+		
+		// Tab initialization
 		t.cont = div;
 		div.innerHTML =  '<TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
 			<INPUT class=button type=submit value="Info" id=pbjobInfo></INPUT>\
+			<INPUT class=button type=submit value="Train" id=pbjobTrain></INPUT>\
 			<INPUT class=button type=submit value="Build" id=pbjobBuild></INPUT>\
 			<INPUT class=button type=submit value="Research" id=pbjobResearch></INPUT>\
-			<INPUT class=button type=submit value="Train" id=pbjobTrain></INPUT>\
 			</TD></TR></TABLE>\
-			<DIV id=pbjobContent style="padding-top:5px; height:480px; max-height:480px; overflow-y:auto;"></div>';
+			<DIV id=pbjobContent style="padding-top:5px; height:700px; max-height:700px; overflow-y:auto;"></div>';
 			
 		document.getElementById('pbjobInfo').addEventListener ('click', t.tabJobInfo, false);
 		document.getElementById('pbjobTrain').addEventListener ('click', t.tabJobTrain, false);	
 		document.getElementById('pbjobBuild').addEventListener ('click', t.tabJobBuild, false);
 		document.getElementById('pbjobResearch').addEventListener ('click', t.tabJobResearch, false);
 		
+		// Restore the views
 		t.contentType = Data.options.jobsTab;
-		// t.tabJobInfo();
+		t.trainContentType = Data.options.trainTab;
+
+        // Training initialization
+        for (var c=0; c<Seed.s.cities.length; c++)
+            if (!Data.options.autoTrain.city[c])
+                Data.options.autoTrain.city[c] = {};
+	
+	   for (var c=0; c<Seed.s.cities.length; c++) {
+            if (!Data.options.autoTrain.city[c].troopType) {
+			     Data.options.autoTrain.city[c].troopType = [];
+			     for (tt=0; tt<t.capitolTroops.length; tt++)
+                    Data.options.autoTrain.city[c].troopType[tt] = {};
+            }
+	   }
+               
+	   // Training troopCap
+        if (Data.options.troopCap == false) {
+            Data.options.troopCap.city = []
+            Data.options.troopCap.city.troopType = [];
+            for (var c=0; c<Seed.s.cities.length; c++)
+                for (var tt=0; tt<t.allTroops.length; tt++)
+                    Data.options.troopCap.city[c].troopType[tt] = {};        
+        }
+    
+	   if (!Data.options.troopCap.city) {
+            Data.options.troopCap.city = [];
+            for (var c=0; c<Seed.s.cities.length; c++)
+                Data.options.troopCap.city[c] = {};
+	   }
+	
+        for (var c=0; c<Seed.s.cities.length; c++) {
+            if (!Data.options.troopCap.city[c].troopType) {
+                Data.options.troopCap.city[c].troopType = [];
+                for (tt=0; tt<t.allTroops.length; tt++)
+                    Data.options.troopCap.city[c].troopType[tt] = {};
+            }
+	   }
+	   
+        // Build initilization
+        for (var i=0; i<Seed.s.cities.length; i++)
+            if (!Data.options.autoBuild.buildingEnable[i])
+                Data.options.autoBuild.buildingEnable[i] = {};
+    
+        for (var i=0; i<Seed.s.cities.length; i++)
+            if (!Data.options.autoBuild.buildCap[i])
+                Data.options.autoBuild.buildCap[i] = {};
+                
+        // Research initialization
+        for (var i=0; i<Seed.s.cities.length; i++) {
+            if (!Data.options.autoResearch.researchEnable[i])
+                Data.options.autoResearch.researchEnable[i] = {};
+            if (!Data.options.autoResearch.researchCap[i])
+                Data.options.autoResearch.researchCap[i] = {};
+        }
 	},
 
 	show : function (){
@@ -7528,15 +5966,25 @@ Tabs.Jobs = {
 	
 	hide : function (){
 		var t = Tabs.Jobs;
-		clearTimeout (t.timer);
+		t.clearTimers();
 	},
 	
     onUnload : function (){
-        var t = Tabs.AutoAttack;
+        var t = Tabs.Jobs;
         logit ('===============  Tabs.Jobs.onUnload');
         Data.options.jobsTab = t.contentType;
-  },
+        Data.options.trainTab = t.trainContentType;
+        Data.options.trainQChoice = t.selectedQ;
+    },
 
+    clearTimers : function (){
+        var t = Tabs.Jobs;
+		clearTimeout (t.timer);
+		clearTimeout (t.trainStatTimer);
+		clearTimeout (t.buildStatTimer);
+		clearTimeout (t.resStatTimer);
+    },
+    
 	tabJobInfo : function (){
 		var t = Tabs.Jobs;
         document.getElementById('pbjobBuild').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
@@ -7550,7 +5998,10 @@ Tabs.Jobs = {
 	    document.getElementById('pbjobInfo').style.backgroundColor = "#eed"; 
         document.getElementById('pbjobInfo').style.color = "black";
         
-		clearTimeout (t.timer);
+        // Timers
+		t.clearTimers();
+		t.timer = setInterval (t.tabJobInfo, 1000);
+		
 		var city = Seed.s.cities[0];
 		var m = '<DIV class=pbTitle>Information</DIV>';
 		m += cityTitle(0);
@@ -7564,7 +6015,6 @@ Tabs.Jobs = {
 		}
     
 		document.getElementById('pbjobContent').innerHTML = m; 
-		t.timer = setTimeout (t.tabJobInfo, 1000);
     	
 		// Display build queue
 		function dispBuildingJob (cityIdx){
@@ -7645,9 +6095,40 @@ Tabs.Jobs = {
         document.getElementById('pbjobTrain').style.backgroundColor = "#eed"; 
         document.getElementById('pbjobTrain').style.color = "black"; 
        
-		clearTimeout (t.timer);
-		var m = '<DIV class=pbTitle>Auto Train</div>';
-		document.getElementById('pbjobContent').innerHTML = m;	
+		t.clearTimers();
+		t.trainStatTimer = setInterval(t.trainStatTick, 1000);
+
+	   // Create status ticker
+        var m = '<DIV class=pbTitle>'+ kAutoTrain +'</div>\
+                 <DIV class=pbStatBox style="margin-bottom: 5px !important"><CENTER><INPUT id=pbtrnOnOff type=submit\></center>\
+                 <DIV id=pbtrnTrnStat style="height:165px; max-height: 165px; overflow:auto;"></div> <BR>\
+                 <DIV id=pbtrnFeedback style="font-weight:bold; border: 1px solid green; padding: 2px 0px 2px 2px; height:34px"></div>  </div>\
+                 <TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
+                 <INPUT class=button type=submit value='+ kTrain +' id=pbttTrain></input>\
+                 <INPUT class=button type=submit value='+ kConfig +' id=pbttConfigTrain></input></td></tr></table>\
+                 <DIV id=pbtrnConfig style="padding-top: 5px; overflow:auto;"class=pbInput>';
+        
+        document.getElementById('pbjobContent').innerHTML = m;
+      
+ 	  // Add event listener for auto on/off button
+        document.getElementById('pbtrnOnOff').addEventListener ('click', function (){ t.setTrainEnable (!Data.options.autoTrain.enabled);}, false);
+        document.getElementById('pbttTrain').addEventListener ('click', t.tabTrain, false);
+        document.getElementById('pbttConfigTrain').addEventListener ('click', t.tabConfigTrain, false);
+    
+        switch (t.trainContentType) {
+            case 0: t.tabTrain(); break;
+            case 1: t.tabConfigTrain(); break;
+        }
+
+        window.addEventListener ('unload', t.onUnload, false);
+        t.setTrainEnable (Data.options.autoTrain.enabled);	
+        t.selectedQ = Data.options.trainQChoice;
+	
+	   // Display error message
+        function dispError (msg){
+            var dial = new ModalDialog (t.cont, 300, 150, '', true);
+            dial.getContentDiv().innerHTML = msg;
+        }	
 	},
   
 	refresh : function (){
@@ -7668,10 +6149,115 @@ Tabs.Jobs = {
         document.getElementById('pbjobBuild').style.backgroundColor = "#eed"; 
         document.getElementById('pbjobBuild').style.color = "black"; 
     
-		clearTimeout (t.timer);
-		var m = '<DIV class=pbTitle>Auto Build</div>';
-		document.getElementById('pbjobContent').innerHTML = m;	
+        // Timers
+        t.clearTimers();
+        t.buildStatTimer = setInterval (t.buildStatTick, 1000); // start the build statistics timer
 
+		//var m = '<DIV class=pbTitle>Auto Build</div>';
+		//document.getElementById('pbjobContent').innerHTML = m;	
+
+        var m = '<DIV class=pbTitle>'+ kAutoUpgradeBuildings +'</div>\
+                 <DIV class=pbStatBox><CENTER><INPUT id=pbbldOnOff type=submit\></center>\
+                 <DIV id=pbbldBldStat></div> <BR> <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>\
+                 <DIV id=pbbldConfig class=pbInput>';
+    
+        var el = [], listC = [], listF = [];
+    
+        for (var i=0; i<Seed.s.cities.length; i++){
+            if (i==0){
+                listC = t.capitolCity;
+                listF = t.capitolField;
+            } 
+            else {
+                listC = t.outpostCity;
+                listF = t.outpostField;
+            }
+            // The seed object contains a wealth of information including alliance membership, number of people in the alliance, facebook ids of each member,
+            // the ol's information (in alliances and alliance_membership), the s object contains all the buildings for the cities, whether or not the city is
+            // on defense, the list of generals, what and where the dragon is, a list of jobs (e.g. research, building, troops training and pending training, current marches)
+            // the marches alone say where the troops are, whether or not they are returning or attacking, general assigned, etc.
+            var city = Seed.s.cities[i];
+            m += '<DIV class=pbSubtitle>'+ kCityNumber + (i+1) +' ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+            for (var ii=0; ii<listC.length; ii++){
+                m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listC[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listC[ii]]?'CHECKED':'') +' /></td><TD>'+ listC[ii] +'</td>'+ buildDisplayCap(i,ii) +'</tr>';  
+                el.push('pbbldcb_'+ i +'_'+ listC[ii]);
+            }
+            m += '</table></td><TD><TABLE class=pbTab>';  
+            for (var ii=0; ii<listF.length; ii++){
+                m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listF[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listF[ii]]?'CHECKED':'') +' /></td><TD>'+ listF[ii] +'</td>'+ buildDisplayCap(i,(listC.length + ii)) +'</tr>';  
+                el.push('pbbldcb_'+ i +'_'+ listF[ii]);
+            }
+            m += '</table></td></tr></table>';
+        }    
+        m += '</div>';
+        document.getElementById('pbjobContent').innerHTML = m;
+    
+        // Add the event listeners for each city's building types
+        for (var i=0; i<el.length; i++)
+            document.getElementById(el[i]).addEventListener('click', checked, false);
+      
+        // Add the event listeners for each city's building type caps
+        // And restore the persistent data since it has to be done in the same loop
+        for (var i=0; i<Seed.s.cities.length; i++) {
+            var len = (i==0) ? (t.capitolCity.length + t.capitolField.length) : (t.outpostCity.length + t.outpostField.length);
+            for (var ii=0;ii<len; ii++) {
+                var selectMenu = document.getElementById('pbbldcap_'+ i + '_' + ii);
+                try {
+                    if (!Data.options.autoBuild.buildCap[i][ii]) {
+                        var capitolB = t.capitolCity.concat(t.capitolField);
+                        var outpostB = t.outpostCity.concat(t.outpostField);                    
+                        var lowestBuildingLevel = t.getCurrentLowestBuildingLevel(i, (i==0)? capitolB[ii] : outpostB[ii]);
+                        selectMenu.selectedIndex = lowestBuildingLevel;
+                        Data.options.autoBuild.buildCap[i][ii] = lowestBuildingLevel;
+                    }
+                    else {
+                        selectMenu.selectedIndex = Data.options.autoBuild.buildCap[i][ii];
+                        selectMenu.options[Data.options.autoBuild.buildCap[i][ii]].selected = true;
+                    }
+                }
+                catch (e) {
+                }
+                selectMenu.addEventListener('change', changeBuildCap, false);
+            }
+        }
+      
+        t.setBuildEnable (Data.options.autoBuild.enabled);
+        document.getElementById('pbbldOnOff').addEventListener ('click', function (){t.setBuildEnable (!Data.options.autoBuild.enabled);}, false);
+    
+        function checked (evt){
+            var id = evt.target.id.split ('_');
+            var cityId = Seed.s.cities[id[1]].id;
+            Data.options.autoBuild.buildingEnable[id[1]][id[2]] = evt.target.checked;
+            if (Data.options.autoBuild.enabled && evt.target.checked)
+                t.buildTick();  
+        }
+
+        function buildDisplayCap (cityIdx, listIdx){
+            var m = '<TD><SELECT id="pbbldcap_' + cityIdx +'_'+ listIdx +'"<option value="1">1</option>\
+                 <option value="0">0</option>\
+                 <option value="1">1</option>\
+                 <option value="2">2</option>\
+                 <option value="3">3</option>\
+                 <option value="4">4</option>\
+                 <option value="5">5</option>\
+                 <option value="6">6</option>\
+                 <option value="7">7</option>\
+                 <option value="8">8</option>\
+                 <option value="9">9</option>\
+                 <option value="10">10</option>\
+                 <option value="11">11</option>\
+                 </select></td>';
+            return m;
+        }
+    
+        // Add to persistent storage
+        function changeBuildCap (evt) {
+            var bId = evt.target.id.split ('_');
+            Data.options.autoBuild.buildCap[bId[1]][bId[2]] = evt.target[evt.target.selectedIndex].value;
+            evt.target.style.backgroundColor = ''; 
+            if (Data.options.autoBuild.enabled)
+                t.buildTick();      
+        }
 	},
   
 	tabJobResearch : function (){
@@ -7687,18 +6273,2948 @@ Tabs.Jobs = {
         document.getElementById('pbjobResearch').style.backgroundColor = "#eed"; 
         document.getElementById('pbjobResearch').style.color = "black"; 
 
-		clearTimeout (t.timer);
-		
-		var m = '<DIV class=pbTitle>Auto Research</div>';
-		document.getElementById('pbjobContent').innerHTML = m;	
+        // Timers
+		t.clearTimers();
+        t.resStatTimer = setInterval (t.resStatTick, 1000); // start the research statistics timer
+        
+        var m = '<DIV class=pbTitle>'+ kAutoResearch +'</div>\
+                 <DIV class=pbStatBox><CENTER><INPUT id=pbresOnOff type=submit\></center>\
+                 <DIV id=pbresStat></div> <BR> <DIV id=pbresFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>\
+                 <DIV id=pbresConfig class=pbInput>';
+    
+        var el = [];
+        var city = Seed.s.cities[0];
+    
+        m += '<DIV class=pbSubtitle>'+ kCityNumber +'1 ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+        var i=0;
+        for (var p in t.capitolResearch){
+            m += '<TR><TD><INPUT type=checkbox id="pbrescb_'+ 0 + '_' +t.capitolResearch[p] +'" '+ (Data.options.autoResearch.researchEnable[0][t.capitolResearch[p]]?'CHECKED':'') +' /></td><TD>'+ t.capitolResearch[p] +'</td><TD>'+ researchDisplayCap(i) +'</td></tr>';  
+            el.push('pbrescb_' + 0 + '_' +t.capitolResearch[p]);
+            ++i;
+        }
+        m += '</table></td><TD><TABLE class=pbTab>';  
+        m += '</div>';
+		document.getElementById('pbjobContent').innerHTML = m;
+    
+        // Add the event listeners for the research types
+        for (var i=0; i<el.length; i++)
+            document.getElementById(el[i]).addEventListener('click', checked, false);
+      
+        // Add the event listeners for the research caps
+        // And restore the persistent data since it has to be done in the same loop
+        var ii = 0;
+        for (var p in t.capitolResearch) {
+            var selectMenu = document.getElementById('pbrescap_'+ 0 + '_' +ii);
+            try {
+                if (!Data.options.autoResearch.researchCap[0][ii]) {
+                    var currentResearchLevel = t.getCurrentResearchLevel(p);
+                    selectMenu.selectedIndex = currentResearchLevel;
+                    Data.options.autoResearch.researchCap[0][ii] = currentResearchLevel;
+                }
+                else {
+                    selectMenu.selectedIndex = Data.options.autoResearch.researchCap[0][ii];
+                    selectMenu.options[Data.options.autoResearch.researchCap[0][ii]].selected = true;
+                }
+            }
+            catch (e) {
+            }
+            selectMenu.addEventListener('change', changeResearchCap, false);
+            ++ii;
+        }
+      
+        t.setResearchEnable (Data.options.autoResearch.enabled);
+        document.getElementById('pbresOnOff').addEventListener ('click', function (){t.setResearchEnable (!Data.options.autoResearch.enabled);}, false);
+    
+        function checked (evt){
+            var rId = evt.target.id.split ('_');
+            Data.options.autoResearch.researchEnable[rId[1]][rId[2]] = evt.target.checked;
+            if (Data.options.autoResearch.enabled)
+                t.researchTick();     
+        }
+
+        function researchDisplayCap (listIdx){
+            var m = '<TD><SELECT id="pbrescap_' + 0 + '_' + listIdx +'"<option value="1">1</option>\
+                 <option value="0">0</option>\
+                 <option value="1">1</option>\
+                 <option value="2">2</option>\
+                 <option value="3">3</option>\
+                 <option value="4">4</option>\
+                 <option value="5">5</option>\
+                 <option value="6">6</option>\
+                 <option value="7">7</option>\
+                 <option value="8">8</option>\
+                 <option value="9">9</option>\
+                 <option value="10">10</option>\
+                 </select></td>';
+            return m;
+        }
+    
+        // Add to persistent storage
+        function changeResearchCap (evt) {
+            var rId = evt.target.id.split ('_');
+            Data.options.autoResearch.researchCap[rId[1]][rId[2]] = evt.target[evt.target.selectedIndex].value;
+            evt.target.style.backgroundColor = '';  
+            if (Data.options.autoResearch.enabled)
+                t.researchTick();     
+        }	
 	},
+
+    setTrainEnable : function (onOff){
+        var t = Tabs.Jobs;
+        var but = document.getElementById('pbtrnOnOff');
+        Data.options.autoTrain.enabled = onOff;
+        if (onOff){
+            but.value = kAutoOn;
+            but.className = 'butAttackOn';
+            t.trainTimer = setInterval(function() {t.trainTick(0) }, 3000);
+        } 
+        else {
+            but.value = kAutoOff;
+            but.className = 'butAttackOff';
+            t.dispFeedback(""); // Erase previous feedback
+            clearTimeout (t.trainTimer);
+        }
+    },
+  	
+    setBuildEnable : function (onOff){
+        var t = Tabs.Jobs;
+        var but = document.getElementById('pbbldOnOff');
+        Data.options.autoBuild.enabled = onOff;
+        if (onOff){
+            but.value = kAutoBuildOn;
+            but.className = 'butAttackOn';
+            t.buildTimer = setInterval (t.buildTick, 4000);
+        } 
+        else {
+            but.value = kAutoBuildOff;
+            but.className = 'butAttackOff';
+            clearTimeout (t.buildTimer);
+            Data.options.tJobs.length = 0;
+        }
+    },
+
+    setResearchEnable : function (onOff){
+        var t = Tabs.Jobs;
+        var but = document.getElementById('pbresOnOff');
+
+        Data.options.autoResearch.enabled = onOff;
+        if (onOff){
+            but.value = kAutoResearchOn;
+            but.className = 'butAttackOn';
+            t.researchTimer = setInterval(t.researchTick, 5000);
+        } 
+        else {
+            but.value = kAutoResearchOff;
+            but.className = 'butAttackOff';
+            clearTimeout (t.researchTimer);
+            Data.options.rJobs.length = 0;
+        }
+    },
+
+    trainStatTick : function (){
+        var t = Tabs.Jobs;
+        var statElement = document.getElementById('pbtrnTrnStat');
+        if (statElement != null) statElement.innerHTML = trainTable('train');
+    },
+      
+    // Build statistics - timer set to fire every 1 seconds
+    // Calls getBuildJob(), deleteBuildJob(), Buildings.getById(), Seed.fetchSeed(), serverTime()
+    buildStatFetch : false,
+    buildStatTick : function (){
+        var t = Tabs.Jobs;
+        var m = '<TABLE class=pbTabPad>';
+        var len = Data.options.tJobs.length;
+    
+        for (var i=0; i<Seed.s.cities.length; i++){
+            var city = Seed.s.cities[i];
+            var job = getBuildJob (i);
+            if (Data.options.tJobs.length == 0 && job) {
+                // the Seed is out of sync, the job should be deleted
+                deleteBuildJob (i, job);
+                job = null;
+            }
+            m += '<TR><TD>'+ kCityNumber + (i+1) +'</td><TD>';
+            if (job == null)
+                m += kIdle +'</td></tr>';
+            else {
+                var b = Buildings.getById(i, job.city_building_id);
+                var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
+                if (timeRemaining == 0) {
+                    // If we have a job and the timeRemaining is negative or zero we delete the job
+                    // and fetch the Seed - although this does not always work because the server
+                    // is laggy and may not return the correct information
+                    m += 'awaiting job completion notification...</td><TD></td><TD></td></tr>';
+                    deleteBuildJob (i, job);
+                    if (t.statFetch == false) {
+                        Seed.fetchSeed();
+                        t.buildStatFetch = true;
+                    }
+                }
+                else {
+                    m += kBuilding1 +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ b.type  +'</td><TD>'+ timeRemaining  +'</td></tr>';
+                    t.buildStatFetch = false;
+                }
+            }
+        }
+        document.getElementById('pbbldBldStat').innerHTML = m +'</table>';
+    },
+
+    // Build statistics - timer set to fire every 1 seconds
+    // Calls getResearchJob(), deleteResearchJob(), Seed.fetchSeed(), resUITranslate(), serverTime()
+    resStatFetch : false,
+    resStatTick : function (){
+        var t = Tabs.Jobs, m = '<TABLE class=pbTabPad>', city = Seed.s.cities[0];
+        var job = getResearchJob (0);
+    
+        m += '<TR><TD>'+ kCityNumber +' 1</td><TD>';
+
+        if (job == null)
+            m += kIdle +'</td></tr>';
+        else {
+            var timeRemaining = ((job.run_at - serverTime()) > 0) ? timestr(job.run_at - serverTime()) : 0;
+            if (timeRemaining == 0) {
+                m += 'Awaiting job completion notification...</td><TD></td><TD></td></tr>';
+                deleteResearchJob(job);
+                if (t.resStatFetch == false) {
+                    Seed.fetchSeed();
+                    t.resStatFetch = true;
+                }
+            }    
+            else {
+                // Bug: If we have a job and the timeRemaining is negative or zero we should delete the job
+                m += kResearch +'</td><TD>'+ kLevel1 +' '+ job.level +' '+ t.resUITranslate (job.research_type) +'</td><TD>'+ timeRemaining  +'</td></tr>';
+                t.resStatFetch = false;
+            }
+        }
+
+        document.getElementById('pbresStat').innerHTML = m +'</table>';
+        //t.statTimer = setTimeout (t.statTick, 5000);
+    },
+
+    // Modified to work with jobs
+    dispFeedback : function (msg){
+        var t = Tabs.Jobs;
+        var elementId = '';   
+
+        switch(t.contentType) {
+            case 0: break;
+            case 1: elementId = 'pbtrnFeedback'; break;
+            case 2: elementId = 'pbbldFeedback'; break;
+            case 3: elementId = 'pbresFeedback'; break;
+        } 
+        
+        if (elementId)
+            if (msg == '')
+                document.getElementById(elementId).innerHTML = msg; 
+            else
+                document.getElementById(elementId).innerHTML = new Date().toTimeString().substring (0,8) +' '+  msg;       
+    },
+
+    // Returns level == 12 if the building is missing
+    getCurrentLowestBuildingLevel : function (cityIdx, buildingType){
+        var t = Tabs.Jobs, level = 12;
+    
+        // The building can be missing if it has not been built yet
+        try {
+            var b = Seed.s.cities[cityIdx].buildings;
+            for (var i=0; i<b.length; i++)
+                if (b[i].type == buildingType)
+                    if (b[i].level < level)
+                        level = b[i].level; 
+        }
+        catch (e) {
+        }  
+
+        return level;
+    },
+
+    // Given the city index number and the building type, returns the
+    // lowest level building of the specified type or zero if the building
+    // is not found (may not have been built)
+    // TBD: Check to see if this is needed anymore - we now use getCurrentLowestBuildingLevel() 
+    // see above
+    getLowestBuildingLevel : function(cityIdx, buildingType){
+        var buildings = Seed.s.cities[cityIdx].buildings;
+        var lowest = 12;
+        var bFound = false;
+        
+        for (var p=0; p<buildings.length;p++) 
+            if (buildings[p].type == buildingType) {
+                bFound = true; 
+                if (buildings[p].level < lowest)
+                    lowest = buildings[p].level;
+            }
+            
+        return (bFound) ? lowest : 0;
+    },
+
+    // Returns the current research level or zero if the user has not
+    // researched this type yet
+    // TBD - remove the if statements, make sure that the type passed
+    // is UI convolved
+    getCurrentResearchLevel : function (researchType){
+        var t = Tabs.Jobs, level = 0;
+    
+        // This can be missing if the user has not done any research
+        // implying a research level of zero
+        try {
+            if (researchType == 'Rapid Deployment')
+                researchType = 'RapidDeployment';
+            if (researchType == 'Weapons Calibration')
+                researchType = 'Ballistics';
+            if (researchType == 'Aerial Combat')
+                researchType = 'AerialCombat';
+            level = (Seed.s.research[researchType]) ? Seed.s.research[researchType] : 0; 
+        }
+        catch (e) {
+        }  
+
+        return level;
+    },
+  
+    // Returns the user set building cap or zero if the cap has not been set
+    getBuildingCap : function (cityIdx, buildingType){
+        var t = Tabs.Jobs;
+        var cap = 0;
+        var cityType =  (cityIdx == 0) ? t.capitolCity : t.outpostCity;
+        cityType =  (cityIdx == 0) ? cityType.concat(t.capitolField) : cityType.concat(t.outpostField);
+    
+        for (var i=0; i < cityType.length; i++) {
+            if (cityType[i] == buildingType) {
+                try {
+                    cap = (Data.options.autoBuild.buildCap[0][i]) ? Data.options.autoBuild.buildCap[0][i] : 0; 
+                    break;
+                }
+                catch (e) {
+                }  
+            }
+        }
+
+        return cap;
+    },
+  
+    // Returns the user set research cap or zero if the cap has not been set
+    getResearchCap : function (researchType){
+        var t = Tabs.Jobs;
+        var cap = 0;
+        var resType = t.capitolResearch;
+     
+        for (var p in resType) {
+            //if (resType[p] == researchType) {
+            if (p == researchType) {
+                try {
+                    cap = (Data.options.autoResearch.researchCap[0][t.researchIdx[researchType]]) ? Data.options.autoResearch.researchCap[0][t.researchIdx[researchType]] : 0; 
+                    break;
+                }
+                catch (e) {
+                }  
+            }
+        }
+        return cap;
+    },
+    
+    // Returns the quantity of the specified item type or zero if 
+    // the item type is not found
+    // Used by the research job
+    getItem : function(itemType){
+        var items = Seed.s.items;
+        var ret = 0;
+        for (var p in items) {
+            if (p == itemType){
+                ret = items[p];
+                break;
+            }
+        }
+        return ret;
+    },
+
+    resUITranslate : function (researchType){
+        var t = Tabs.Jobs;
+        for (var p in t.capitolResearch)
+            if (p == researchType) 
+                return t.capitolResearch[p];
+    },
+  
+    // Given the city index number and building type, returns the index
+    // of the specified building type
+    getBuildingIndex : function (cityIdx, buildingType){
+        var t = Tabs.Jobs, bldgIdx = 0;
+        var cityType =  (cityIdx == 0) ? t.capitolCity : t.outpostCity;
+        cityType =  (cityIdx == 0) ? cityType.concat(t.capitolField) : cityType.concat(t.outpostField);
+    
+        for (var i=0; i < cityType.length; i++)
+            if (cityType[i] == buildingType) { 
+                bldgIdx = i;
+                break;
+            }
+        return bldgIdx;
+    },
+    
+    // Used by research jobs
+    // This would be simple if only one building of each type existed, but you may build multiple garrisons/training camps
+    // So we have to look through the entire list and use an additional parameter to specify the building level needed
+    // Returns zero if the specified building is not the at the required level
+    getBuildingLevel : function(cityIdx, buildingType, buildingLevel){
+        var buildings = Seed.s.cities[cityIdx].buildings;
+        var ret = 0;
+        for (var p=0; p<buildings.length;p++) {
+            if (buildings[p].type == buildingType && buildings[p].level >= buildingLevel){
+                ret = buildings[p].level;
+                break;
+            }
+        }
+        return ret;
+    },
+  
+    // Return the index number of the research type
+    getResearchIndex : function (researchType){
+        var t = Tabs.Jobs;
+        return t.researchIdx[researchType];
+    },
+
+    // Training - Get the remainin queue length
+    getRemainingQueue : function (ic, queueType){
+        var city = Seed.s.cities[ic];
+        var jobs = city.jobs;
+        var maxQueueLength = city.figures.queue_lengths.units;
+        var usedQueue = 0;
+        // Count the number of jobs in the queue
+        for (var i=0; i<jobs.length; i++) {
+            if (jobs[i].queue == queueType) ++usedQueue;
+        }
+        return maxQueueLength - usedQueue;
+    },
+  
+    checkPorterReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Food: 40
+    // Garrison Level: 1
+    // Idle Population: 1
+    // Lumber: 150
+    // Metals: 10
+    // Upkeep: 2 food
+        
+        var t = Tabs.Jobs;    
+        var food = troopQty * 40;
+        var garrisonLevel = 1;
+        var idlePop = troopQty * 1;
+        var lumber = troopQty * 150;
+        var metal = troopQty * 10;
+        var upkeep = troopQty * 2;
+        var city = Seed.s.cities[0];
+        var troopType = 'Porter';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kPorter, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+    
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m += '<TD>&nbsp;training queue</td>';
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty + ' ' + kPorter +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+   
+    checkConscriptReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Food: 80
+    // Garrison Level: 1
+    // Idle Population: 1
+    // Lumber: 100
+    // Metals: 50
+    // Upkeep: 3 food
+        
+        var t = Tabs.Jobs;    
+        var food = troopQty * 80;
+        var garrisonLevel = 1;
+        var idlePop = troopQty * 1;
+        var lumber = troopQty * 100;
+        var metal = troopQty * 50;
+        var upkeep = troopQty * 3;
+        var city = Seed.s.cities[0];
+        var troopType = 'Conscript';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kConscript, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+    
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m += '<TD>&nbsp;training queue</td>';
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kConscript +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+  
+    checkSpyReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Clairvoyance: 1
+    // Food: 120
+    // Garrison Level: 2
+    // Idle Population: 1
+    // Lumber: 200
+    // Metals: 150
+    // Upkeep: 5 food
+        
+        var t = Tabs.Jobs;    
+        var food = troopQty * 120;
+        var garrisonLevel = 1;
+        var idlePop = troopQty * 1;
+        var lumber = troopQty * 200;
+        var metal = troopQty * 150;
+        var upkeep = troopQty * 5;
+        var clairvoyanceLevel = 1;
+        var city = Seed.s.cities[0];
+        var troopType = 'Spy';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            clairvoyanceLevel = seedReqs.research['Clairvoyance'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kSpy, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m += '<TD>&nbsp;training queue</td>';
+        if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel + '</td>';
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kSpies +' eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;       
+    },
+  
+    checkHalberdsmanReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Metallurgy: 1
+    // Food: 150
+    // Garrison Level: 2
+    // Idle Population: 1
+    // Lumber: 500
+    // Metals: 100
+    // Upkeep: 6 food
+        
+        var t = Tabs.Jobs;    
+        var food = troopQty * 150;
+        var garrisonLevel = 1;
+        var idlePop = troopQty * 1;
+        var lumber = troopQty * 500;
+        var metal = troopQty * 100;
+        var upkeep = troopQty * 6;
+        var metallurgyLevel = 1;
+        var city = Seed.s.cities[0];
+        var troopType = 'Halberdsman';
+    
+        try {
+        var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            metallurgyLevel = seedReqs.research['Metallurgy'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kHalberdsman, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
+        if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kHalberdsmen +' eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;       
+    },
+
+    checkMinotaurReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Metallurgy: 1
+    // Metalsmith: 1
+    // Food: 200
+    // Garrison Level: 3
+    // Idle Population: 1
+    // Lumber: 150
+    // Metals: 400
+    // Upkeep: 7 food
+        
+        var t = Tabs.Jobs;    
+        var food = troopQty * 200;
+        var garrisonLevel = 3;
+        var idlePop = troopQty * 1;
+        var lumber = troopQty * 150;
+        var metal = troopQty * 400;
+        var upkeep = troopQty * 7;
+        var metallurgyLevel = 1;
+        var metalsmithLevel = 1;
+        var city = Seed.s.cities[0];
+        var troopType = 'Minotaur';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            metallurgyLevel = seedReqs.research['Metallurgy'];
+            metalsmithLevel = seedReqs.research['Metalsmith'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kMinotaur, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
+        if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
+        if (Seed.s.research.Metalsmith < metalsmithLevel) m += '<TD>&nbsp;Metalsmith ' + metalsmithLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kMinotaur +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;          
+    },
+
+    checkLongbowmanReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Weapons Calibration: 1
+    // Food: 300
+    // Garrison Level: 4
+    // Idle Population: 2
+    // Lumber: 350
+    // Metals: 300
+    // Upkeep: 9 food
+    
+        var t = Tabs.Jobs;    
+        var food = troopQty * 300;
+        var garrisonLevel = 4;
+        var idlePop = troopQty * 2;
+        var lumber = troopQty * 350;
+        var metal = troopQty * 300;
+        var upkeep = troopQty * 9;
+        var weaponCalibrationLevel = 1;
+        var city = Seed.s.cities[0];
+        var troopType = 'Longbowman';
+       
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            weaponCalibrationLevel = seedReqs.research['Ballistics'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+        
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kLongbowman, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
+        if (Seed.s.research.WeaponsCalibration < weaponCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponCalibrationLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kLongbowmen +' eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+  
+    checkSwiftStrikeDragonReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Dragonry: 2
+    // Rapid Deployment: 1
+    // Rookery: 1
+    // Food: 1000
+    // Garrison Level: 5
+    // Idle Population: 3
+    // Lumber: 600
+    // Metals: 500
+    // Upkeep: 18 food
+        
+        var t = Tabs.Jobs;    
+        var food = troopQty * 1000;
+        var garrisonLevel = 5;
+        var idlePop = troopQty * 3;
+        var lumber = troopQty * 600;
+        var metal = troopQty * 500;
+        var upkeep = troopQty * 18;
+        var dragonryLevel = 2;
+        var rapidDeploymentLevel = 1;
+        var rookeryLevel = 1;
+        var city = Seed.s.cities[0];
+        var troopType = 'SwiftStrikeDragon';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            rookeryLevel = seedReqs.buildings['Rookery'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kSwiftStrikeDragon, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (t.getBuildingLevel(0, kRookery, rookeryLevel) == 0) m += '<TD>&nbsp;Rookery '+ rookeryLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
+        if (Seed.s.research.Dragonry < dragonryLevel) m += '<TD>&nbsp;Dragonry ' + dragonryLevel +'</td>'; 
+        if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kSwiftStrikeDragon +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret; 
+    },
+  
+    checkBattleDragonReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Dragonry: 3
+    // Rapid Deployment: 5
+    // Rookery: 5
+    // Food: 1000
+    // Garrison Level: 7
+    // Idle Population: 6
+    // Lumber: 500
+    // Metals: 2500
+    // Upkeep: 35 food
+       
+        var t = Tabs.Jobs;    
+        var food = troopQty * 1000;
+        var garrisonLevel = 7;
+        var idlePop = troopQty * 6;
+        var lumber = troopQty * 500;
+        var metal = troopQty * 2500;
+        var upkeep = troopQty * 35;
+        var dragonryLevel = 3;
+        var rapidDeploymentLevel = 5;
+        var rookeryLevel = 5;
+        var metalsmithLevel = 5;
+        var city = Seed.s.cities[0];
+        var troopType = 'BattleDragon';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            rookeryLevel = seedReqs.buildings['Rookery'];
+            metalsmithLevel = seedReqs.buildings['Metalsmith'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
+            dragonryLevel = seedReqs.research['Dragonry'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kBattleDragon, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
+        if (t.getBuildingLevel(0, kRookery, rookeryLevel) == 0) m += '<TD>&nbsp;Rookery '+ rookeryLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
+        if (Seed.s.research.Dragonry < dragonryLevel) m += '<TD>&nbsp;Dragonry ' + dragonryLevel +'</td>'; 
+        if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kBattleDragon +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;     
+    },
+ 
+    checkArmoredTransportReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Factory: 3
+    // Levitation: 3
+    // Food: 600
+    // Garrison Level: 6
+    // Idle Population: 4
+    // Lumber: 1500
+    // Metals: 350
+    // Upkeep: 10 food
+    
+        var t = Tabs.Jobs;    
+        var food = troopQty * 600;
+        var garrisonLevel = 6;
+        var idlePop = troopQty * 4;
+        var lumber = troopQty * 1500;
+        var metal = troopQty * 350;
+        var upkeep = troopQty * 10;
+        var factoryLevel = 3;
+        var levitationLevel = 3;
+        var city = Seed.s.cities[0];
+        var troopType = 'ArmoredTransport';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            factoryLevel = seedReqs.buildings['Factory'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            levitationLevel = seedReqs.research['Levitation'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kArmoredTransport, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (t.getBuildingLevel(0, kFactory, factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ ((lumber - city.resources.wood)) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ ((metal - city.resources.ore)) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
+        if (Seed.s.research.Levitation < levitationLevel) m += '<TD>&nbsp;Levitation ' + levitationLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kArmoredTransport +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+  
+    checkGiantReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Clairvoyance: 3
+    // Factory: 7
+    // Metallurgy: 8
+    // Metalsmith: 5
+    // Food: 4000
+    // Garrison Level: 9
+    // Idle Population: 8
+    // Lumber: 6000
+    // Metals: 1500
+    // Upkeep: 100 food
+    
+        var t = Tabs.Jobs;    
+        var food = troopQty * 4000;
+        var garrisonLevel = 8;
+        var idlePop = troopQty * 8;
+        var lumber = troopQty * 6000;
+        var metal = troopQty * 1500;
+        var upkeep = troopQty * 100;
+        var factoryLevel = 7;
+        var metalsmithLevel = 7;
+        var clairvoyanceLevel = 3;
+        var metallurgyLevel = 8;
+        var city = Seed.s.cities[0];
+        var troopType = 'Giant';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            factoryLevel = seedReqs.buildings['Factory'];
+            metalsmithLevel = seedReqs.buildings['Metalsmith'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            clairvoyanceLevel = seedReqs.research['Clairvoyance'];
+            metallurgyLevel = seedReqs.research['Metallurgy'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kGiant, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (t.getBuildingLevel(0, kFactory, factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
+        if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
+        if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kGiant +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+
+    checkFireMirrorReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Weapons Calibration: 10
+    // Factory: 9
+    // Metallurgy: 10
+    // Food: 5000
+    // Garrison Level: 10
+    // Idle Population: 10
+    // Lumber: 5000
+    // Metals: 1200
+    // Stone: 8000
+    // Upkeep: 250 food
+    
+        var t = Tabs.Jobs;    
+        var food = troopQty * 5000;
+        var garrisonLevel = 10;
+        var idlePop = troopQty * 10;
+        var lumber = troopQty * 5000;
+        var metal = troopQty * 1200;
+        var stone = troopQty * 8000;
+        var upkeep = troopQty * 250;
+        var factoryLevel = 9;
+        var metallurgyLevel = 10;
+        var weaponsCalibrationLevel = 10;
+        var city = Seed.s.cities[0];
+        var troopType = 'FireMirror';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            factoryLevel = seedReqs.buildings['Factory'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            stone = troopQty * seedReqs.resources['stone'];
+            weaponsCalibrationLevel = seedReqs.research['Ballistics'];
+            metallurgyLevel = seedReqs.research['Metallurgy'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kFireMirror, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (ic == 0){ 
+            if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
+        }
+        else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
+        if (t.getBuildingLevel(0, kFactory, factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
+        if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
+        if (Seed.s.research.WeaponsCalibration < weaponsCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponsCalibrationLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kFireMirror +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+
+    checkAquaTroopReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Clairvoyance: 4
+    // Rapid Deployment: 8
+    // Factory: 7
+    // Metallurgy: 10
+    // Food: 4000
+    // TrainingCampe Level: 10
+    // Idle Population: 10
+    // Lumber: 5500
+    // Metals: 2500
+    // Stone: 7000
+    // Upkeep: 125 food
+    
+        var t = Tabs.Jobs;    
+        var food = troopQty * 5000;
+        var trainingCampLevel = 10;
+        var idlePop = troopQty * 10;
+        var lumber = troopQty * 5000;
+        var metal = troopQty * 1200;
+        var stone = troopQty * 8000;
+        var upkeep = troopQty * 250;
+        var factoryLevel = 7;
+        var metalsmithLevel = 7;
+        var rapidDeploymentLevel = 8;
+        var clairvoyanceLevel = 4;
+        var respiratorQty = troopQty;
+        var city = Seed.s.cities[0];
+        var troopType = 'AquaTroop';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            factoryLevel = seedReqs.buildings['Factory'];
+            metalsmithLevel = seedReqs.buildings['Metalsmith'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            stone = troopQty * seedReqs.resources['stone'];
+            rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
+            clairvoyanceLevel = seedReqs.research['Clairvoyance'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kAquaTroop, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
+        if (t.getBuildingLevel(0, kFactory, factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
+        if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
+        var availableRespirators = t.getItem(ic, kAquaTroopRespirator);
+        if (availableRespirators < respiratorQty) m += '<TD>&nbsp;Respirators '+ (respiratorQty - availableRespirators) +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
+        if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
+        if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kAquaTroop +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+ 
+    checkStoneTroopReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Clairvoyance: 5
+    // Metalsmith: 9
+    // Metallurgy: 10
+    // Masonry: 10
+    // Food: 3000
+    // TrainingCamp Level: 10
+    // Idle Population: 8
+    // Lumber: 4000
+    // Metals: 2000
+    // Stone: 8000
+    // Upkeep: 110 food
+    // Glowing Mandrake: 1
+    
+        var t = Tabs.Jobs;    
+        var food = troopQty * 3000;
+        var trainingCampLevel = 10;
+        var idlePop = troopQty * 8;
+        var lumber = troopQty * 4000;
+        var metal = troopQty * 2000;
+        var stone = troopQty * 8000;
+        var upkeep = troopQty * 100;
+        var metalsmithLevel = 9;
+        var metallurgyLevel = 9;
+        var masonryLevel = 10;
+        var clairvoyanceLevel = 5;
+        var mandrakeQty = troopQty;
+        var city = Seed.s.cities[0];
+        var troopType = 'StoneTroop';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['Garrison'];
+            factoryLevel = seedReqs.buildings['Factory'];
+            metalsmithLevel = seedReqs.buildings['Metalsmith'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            stone = troopQty * seedReqs.resources['stone'];
+            metallurgyLevel = seedReqs.research['Metallurgy'];
+            clairvoyanceLevel = seedReqs.research['Clairvoyance'];
+            masonryLevel = seedReqs.research['Masonry'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kStoneTroop, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
+        if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
+        var availableMandrakes = t.getItem(ic, kStoneTroopItem);
+        if (availableMandrakes < mandrakeQty) m += '<TD>&nbsp;Mandrakes '+ (mandrakeQty - availableMandrakes) +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
+        if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
+        if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
+        if (Seed.s.research.Masonry < masonryLevel) m += '<TD>&nbsp;Masonry ' + masonryLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kStoneTroop +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+
+    checkTrainReqs : function(troopType, troopQty, ic, count, troopsLength) {
+        var t = Tabs.Jobs;
+        var ret = {};
+        switch (troopType) {
+            case kPorter: ret = t.checkPorterReqs(troopQty, ic, count, troopsLength); break;
+            case kConscript: ret = t.checkConscriptReqs(troopQty, ic, count, troopsLength); break;
+            case kSpy: ret = t.checkSpyReqs(troopQty, ic, count, troopsLength); break;
+            case kHalberdsman: ret = t.checkHalberdsmanReqs(troopQty, ic, count, troopsLength); break;
+            case kMinotaur: ret = t.checkMinotaurReqs(troopQty, ic, count, troopsLength); break;
+            case kLongbowman: ret = t.checkLongbowmanReqs(troopQty, ic, count, troopsLength); break;
+            case kSwiftStrikeDragon: ret = t.checkSwiftStrikeDragonReqs(troopQty, ic, count, troopsLength); break;
+            case kBattleDragon: ret = t.checkBattleDragonReqs(troopQty, ic, count, troopsLength); break;
+            case kArmoredTransport: ret = t.checkArmoredTransportReqs(troopQty, ic, count, troopsLength); break;
+            case kGiant: ret = t.checkGiantReqs(troopQty, ic, count, troopsLength); break;
+            case kFireMirror: ret = t.checkFireMirrorReqs(troopQty, ic, count, troopsLength); break;
+            case kAquaTroop: ret = t.checkAquaTroopReqs(troopQty, ic, count, troopsLength); break;
+            case kStoneTroop: ret = t.checkStoneTroopReqs(troopQty, ic, count, troopsLength); break;
+        }
+        return ret;
+    },
+    
+    // Buildings are of two types. They use food, lumber, metal, stone and/or gold
+    // Standard buildings, the most common, do not use gold
+    // Calls getLowestBuildingLevel(), getBuildingCap(), actionLog()
+    // returns an object containing a Boolean to allow/disallow building and a message
+    checkStandardReqs : function(cityIdx, buildingType, defFood, defLumber, defMetal, defStone) {
+        var t = Tabs.Jobs;        
+        var buildingLevel = t.getLowestBuildingLevel(cityIdx, buildingType);
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        if (buildingLevel == 0)
+            m += ' ' + buildingType;
+   
+        var food    = defFood * Math.pow(2,buildingLevel + 1);
+        var lumber  = defLumber * Math.pow(2,buildingLevel + 1);
+        var metal   = defMetal * Math.pow(2,buildingLevel + 1);
+        var stone   = defStone * Math.pow(2,buildingLevel + 1);
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.building[buildingType];
+            food = seedReqs.level[buildingLevel + 1].resources['food'];
+            lumber = seedReqs.level[buildingLevel + 1].resources['wood'];
+            metal = seedReqs.level[buildingLevel + 1].resources['ore'];
+            stone = seedReqs.level[buildingLevel + 1].resources['stone'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {buildable:false, msg:[]};
+        var buildCap = t.getBuildingCap(cityIdx, buildingType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (buildingLevel >= buildCap) m += '<TD>&nbsp; Cap limit '+ buildCap +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+
+        if (m.length == 0) {
+            ret.buildable = true;
+            ret.msg = 'Building:' + kLevel1 + ' ' + (buildingLevel + 1) + ' ' + buildingType;
+        }
+        else {
+            ret.buildable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        
+        return ret;
+  },
+
+    // Buildings are of two types. They use food, lumber, metal, stone and/or gold
+    // Standard buildings, the most common, do not use gold
+    // Calls getLowestBuildingLevel(), getBuildingCap(), actionLog()
+    // returns an object containing a Boolean to allow/disallow building and a message
+    checkGoldReqs : function(cityIdx, buildingType, defFood, defLumber, defMetal, defStone, defGold) {
+        var t = Tabs.Jobs;        
+        var buildingLevel = t.getLowestBuildingLevel(cityIdx, buildingType);
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        if (buildingLevel == 0)
+            m += ' ' + buildingType;
+   
+        var food    = defFood * Math.pow(2,buildingLevel + 1);
+        var lumber  = defLumber * Math.pow(2,buildingLevel + 1);
+        var metal   = defMetal * Math.pow(2,buildingLevel + 1);
+        var stone   = defStone * Math.pow(2,buildingLevel + 1);
+        var gold    = defGold * Math.pow(2,buildingLevel + 1);
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.building[buildingType];
+            food    = seedReqs.level[buildingLevel + 1].resources['food'];
+            lumber  = seedReqs.level[buildingLevel + 1].resources['wood'];
+            metal   = seedReqs.level[buildingLevel + 1].resources['ore'];
+            stone   = seedReqs.level[buildingLevel + 1].resources['stone'];
+            gold    = seedReqs.level[buildingLevel + 1].resources['gold'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {buildable:false, msg:[]};
+        var buildCap = t.getBuildingCap(cityIdx, buildingType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (buildingLevel >= buildCap) m += '<TD>&nbsp; Cap limit '+ buildCap +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+
+        if (m.length == 0) {
+            ret.buildable = true;
+            ret.msg = 'Building:' + kLevel1 + ' ' + (buildingLevel + 1) + ' ' + buildingType;
+        }
+        else {
+            ret.buildable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        
+        return ret;  
+  },
+
+    // Check building requirements
+    // Calls checkStandardReqs() or checkGoldReqs()
+    // returns an object containing a Boolean value to indicate whether or not building shoudl proceed
+    // and a message
+    checkBuildReqs : function(cityIdx, buildingType){
+        var t = Tabs.Jobs;
+    
+        switch (buildingType) {
+            case kHome:             return t.checkStandardReqs(cityIdx, buildingType, 50, 300, 150, 200);
+            case kGarrison:         return t.checkStandardReqs(cityIdx, buildingType, 250, 1200, 500, 1500);
+            case kScienceCenter:    return t.checkStandardReqs(cityIdx, buildingType, 120, 1250, 200, 1500);
+            case kMetalsmith:       return t.checkStandardReqs(cityIdx, buildingType, 125, 1000, 1200, 600);
+            case kOfficerQuarter:   return t.checkStandardReqs(cityIdx, buildingType, 400, 2500, 700, 1200);
+            case kMusterPoint:      return t.checkStandardReqs(cityIdx, buildingType, 100, 600, 250, 2000);
+            case kRookery:          return t.checkGoldReqs(cityIdx, buildingType, 1200, 2000, 1000, 800, 800);
+            case kStorageVault:     return t.checkStandardReqs(cityIdx, buildingType, 100, 1500, 300, 1000);
+            case kTheater:          return t.checkStandardReqs(cityIdx, buildingType, 300, 2000, 400, 1000);
+            case kSentinel:         return t.checkStandardReqs(cityIdx, buildingType, 150, 1000, 300, 3000);
+            case kFactory:          return t.checkStandardReqs(cityIdx, buildingType, 150, 1500, 1500, 500);
+            case kFortress:         return t.checkStandardReqs(cityIdx, buildingType, 200, 300, 100, 2500);
+            case kDragonKeep:       return t.checkGoldReqs(cityIdx, buildingType, 400, 2500, 700, 1200, 1500);
+            case kWall:             return t.checkStandardReqs(cityIdx, buildingType, 3000, 1500, 500, 10000);
+            case kMine:             return t.checkStandardReqs(cityIdx, buildingType, 210, 600, 200, 500);
+            case kFarm:             return t.checkStandardReqs(cityIdx, buildingType, 50, 300, 150, 200);
+            case kLumbermill:       return t.checkStandardReqs(cityIdx, buildingType, 100, 100, 300, 250);
+            case kQuarry:           return t.checkStandardReqs(cityIdx, buildingType, 180, 500, 400, 150);
+            case kTrainingCamp:     return t.checkGoldReqs(cityIdx, buildingType, 350, 1300, 600, 1900, 975);
+            case kSilo:             return t.checkStandardReqs(cityIdx, buildingType, 250, 1200, 500, 1500);
+        }  
+    },
+
+    checkAgricultureReqs : function() {
+        var t = Tabs.Jobs;
+        var researchType = 'Agriculture';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 500 * Math.pow(2,researchLevel +1);
+        var food = 250 * Math.pow(2,researchLevel + 1);
+        var metal = 100 * Math.pow(2,researchLevel + 1);
+        var farmLevel = researchLevel + 1;
+        var scienceCenterLevel = researchLevel;          
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            food = seedReqs.level[researchLevel + 1].resources['food'];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            metal = seedReqs.level[researchLevel + 1].resources['ore'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+            farmLevel = seedReqs.level[researchLevel + 1].buildings['Farm'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (t.getBuildingLevel(0, 'Farm', farmLevel) == 0) m += '<TD>&nbsp;Farm '+ farmLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret; 
+    },
+  
+    checkWoodcraftingReqs : function() {
+        var t = Tabs.Jobs;
+        var researchType = 'Woodcraft';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 1200 * Math.pow(2,researchLevel +1);
+        var lumber = 500 * Math.pow(2,researchLevel + 1);
+        var metal = 100 * Math.pow(2,researchLevel + 1);
+        var millLevel = researchLevel + 1;
+        var scienceCenterLevel = researchLevel;          
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            lumber = seedReqs.level[researchLevel + 1].resources['wood'];
+            metal = seedReqs.level[researchLevel + 1].resources['ore'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+            millLevel = seedReqs.level[researchLevel + 1].buildings['Lumbermill'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (t.getBuildingLevel(0, 'Lumbermill', millLevel) == 0) m += '<TD>&nbsp;Lumbermill '+ millLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret; 
+    },
+  
+    checkMasonryReqs : function() {
+        var t = Tabs.Jobs;
+        var researchType = 'Masonry';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 1500 * Math.pow(2,researchLevel +1);
+        var stone = 500 * Math.pow(2,researchLevel + 1);
+        var metal = 200 * Math.pow(2,researchLevel + 1);
+        var quarryLevel = researchLevel + 1;
+        var scienceCenterLevel = researchLevel;          
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            stone = seedReqs.level[researchLevel + 1].resources['stone'];
+            metal = seedReqs.level[researchLevel + 1].resources['ore'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+            quarryLevel = seedReqs.level[researchLevel + 1].buildings['Quarry'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (t.getBuildingLevel(0, 'Quarry', quarryLevel) == 0) m += '<TD>&nbsp;Quarry '+ quarryLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;
+    },
+  
+    checkMiningReqs : function() {
+        var t = Tabs.Jobs;
+        var researchType = 'Mining';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 2000 * Math.pow(2,researchLevel +1);
+        var metal = 800 * Math.pow(2,researchLevel + 1);
+        var mineLevel = researchLevel + 1;
+        var scienceCenterLevel = researchLevel;          
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            metal = seedReqs.level[researchLevel + 1].resources['ore'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+            mineLevel = seedReqs.level[researchLevel + 1].buildings['Mine'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (t.getBuildingLevel(0, 'Mine', mineLevel) == 0) m += '<TD>&nbsp;Mine '+ mineLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;
+    },
+  
+    checkClairvoyanceReqs : function() {
+        var t = Tabs.Jobs;
+        var researchType = 'Clairvoyance';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 2000 * Math.pow(2,researchLevel + 1);
+        var food = 2400 * Math.pow(2,researchLevel + 1);
+        var scienceCenterLevel = researchLevel;          
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            food = seedReqs.level[researchLevel + 1].resources['food'];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;wood '+ (gold - city.resources.gold) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret; 
+    },
+
+    checkRapidDeploymentReqs : function() {
+        var t = Tabs.Jobs;
+        var researchType = 'RapidDeployment';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 600 * Math.pow(2,researchLevel + 1);
+        var food = 3000 * Math.pow(2,researchLevel + 1);
+        var scienceCenterLevel = researchLevel;          
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            food = seedReqs.level[researchLevel + 1].resources['food'];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;wood '+ (gold - city.resources.gold) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret; 
+    },
+  
+    checkBallisticsReqs : function() {
+        var t = Tabs.Jobs;
+        var researchType = 'Ballistics';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 5000 * Math.pow(2,researchLevel +1);
+        var stone = 500 * Math.pow(2,researchLevel + 1);
+        var metal = 600 * Math.pow(2,researchLevel + 1);
+        var lumber = 800 * Math.pow(2,researchLevel + 1);
+        var woodcraftLevel = 4;
+        var scienceCenterLevel = researchLevel;          
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            stone = seedReqs.level[researchLevel + 1].resources['stone'];
+            metal = seedReqs.level[researchLevel + 1].resources['ore'];
+            lumber = seedReqs.level[researchLevel + 1].resources['wood'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+            woodcraftLevel = seedReqs.level[researchLevel + 1].research['Woodcraft'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (t.getCurrentResearchLevel('Woodcraft') < woodcraftLevel) m += '<TD>&nbsp;Woodcraft '+ woodcraftLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;
+    },
+  
+    checkMetallurgyReqs : function() {
+        // alloys, science center, metalsmith, garrison, metals, food, lumber, stone, gold
+        var t = Tabs.Jobs;
+        var researchType = 'Metallurgy';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var food = 800 * Math.pow(2,researchLevel +1);
+        var gold = 3500 * Math.pow(2,researchLevel +1);
+        var stone = 200 * Math.pow(2,researchLevel + 1);
+        var metal = 3000 * Math.pow(2,researchLevel + 1);
+        var lumber = 150 * Math.pow(2,researchLevel + 1);
+        var miningLevel = researchLevel;
+        var scienceCenterLevel = researchLevel;  
+        var metalsmithLevel = researchLevel;
+        var garrisonLevel = 2;        
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            food = seedReqs.level[researchLevel + 1].resources['food'];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            stone = seedReqs.level[researchLevel + 1].resources['stone'];
+            metal = seedReqs.level[researchLevel + 1].resources['ore'];
+            lumber = seedReqs.level[researchLevel + 1].resources['wood'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+            metalsmithLevel = seedReqs.level[researchLevel + 1].buildings['Metalsmith'];
+            garrisonLevel = seedReqs.level[researchLevel + 1].buildings['Garrison'];
+            miningLevel = seedReqs.level[researchLevel + 1].research['Mining'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (t.getBuildingLevel(0, 'Metalsmith', metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
+        if (t.getBuildingLevel(0, 'Garrison', garrisonLevel) == 0) m += '<TD>&nbsp;Garrison '+ garrisonLevel +'</td>';
+        if (t.getCurrentResearchLevel('Mining') < miningLevel) m += '<TD>&nbsp;Alloys '+ miningLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;
+    },
+  
+    checkMedicineReqs : function() {
+        var t = Tabs.Jobs;
+        var researchType = 'Medicine';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 3600 * Math.pow(2,researchLevel +1);
+        var food = 1500 * Math.pow(2,researchLevel + 1);
+        var scienceCenterLevel = researchLevel;          
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            food = seedReqs.level[researchLevel + 1].resources['food'];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret; 
+    },
+  
+    checkDragonryReqs : function() {
+        // science center, rookery, gold, food, metals
+        var t = Tabs.Jobs;
+        var researchType = 'Dragonry';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 5000 * Math.pow(2,researchLevel +1);
+        var food = 2500 * Math.pow(2,researchLevel + 1);
+        var metal = 1000 * Math.pow(2,researchLevel + 1);
+        var scienceCenterLevel = researchLevel; 
+        var rookeryLevel = researchLevel;         
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            food = seedReqs.level[researchLevel + 1].resources['food'];
+            metal = seedReqs.level[researchLevel + 1].resources['ore'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+            rookeryLevel = seedReqs.level[researchLevel + 1].buildings['Rookery'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (t.getBuildingLevel(0, 'Rookery', rookeryLevel) == 0) m += '<TD>&nbsp;Rookery '+ rookeryLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret; 
+    },
+  
+    checkLevitationReqs : function() {
+        // woodcraft, science center, gold, lumber, metals
+        var t = Tabs.Jobs;
+        var researchType = 'Levitation';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 5000 * Math.pow(2,researchLevel +1);
+        var lumber = 2000 * Math.pow(2,researchLevel + 1);
+        var metal = 2000 * Math.pow(2,researchLevel + 1);
+        var scienceCenterLevel = researchLevel + 1; 
+        var woodcraftLevel = researchLevel + 1;         
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            lumber = seedReqs.level[researchLevel + 1].resources['wood'];
+            metal = seedReqs.level[researchLevel + 1].resources['ore'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+            woodcraftLevel = seedReqs.level[researchLevel + 1].research['Woodcraft'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (t.getCurrentResearchLevel('Woodcraft') < woodcraftLevel) m += '<TD>&nbsp;Woodcraft '+ woodcraftLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret; 
+    },
+  
+    checkMercantilismReqs : function() {
+        // levitation, science center, factory, gold, food, lumber, metals, stone
+        var t = Tabs.Jobs;
+        var researchType = 'Mercantilism';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 3500 * Math.pow(2,researchLevel +1);
+        var food = 800 * Math.pow(2,researchLevel +1);
+        var lumber = 150 * Math.pow(2,researchLevel + 1);
+        var metal = 3000 * Math.pow(2,researchLevel + 1);
+        var stone = 200 * Math.pow(2,researchLevel + 1);
+        var scienceCenterLevel = researchLevel + 1; 
+        var factoryLevel = researchLevel + 1; 
+        var levitationLevel = researchLevel + 1;         
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            food = seedReqs.level[researchLevel + 1].resources['food'];
+            lumber = seedReqs.level[researchLevel + 1].resources['wood'];
+            metal = seedReqs.level[researchLevel + 1].resources['ore'];
+            stone = seedReqs.level[researchLevel + 1].resources['stone'];
+            scienceCenterLevel = seedReqs.level[researchLevel + 1].buildings['ScienceCenter'];
+            factoryLevel = seedReqs.level[researchLevel + 1].buildings['Factory'];
+            levitationLevel = seedReqs.level[researchLevel + 1].research['Levitation'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (metal - city.resources.stone) +'</td>';
+        if (t.getBuildingLevel(0, 'ScienceCenter', scienceCenterLevel) == 0) m += '<TD>&nbsp;Science Center '+ scienceCenterLevel +'</td>';
+        if (t.getBuildingLevel(0, 'Factory', factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
+        if (t.getCurrentResearchLevel('Levitation') < levitationLevel) m += '<TD>&nbsp;Levitation '+ levitationLevel +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;
+    },
+  
+    checkAerialCombatReqs : function() {
+        // dragonry, dragons keep, gold, food, dragon armor (items)
+        var t = Tabs.Jobs;
+        var researchType = 'AerialCombat';
+        var researchLevel = t.getCurrentResearchLevel(researchType);
+        var gold = 3500 * Math.pow(2,researchLevel +1);
+        var food = 2500 * Math.pow(2,researchLevel +1);
+        var dragonskeepLevel = 8; 
+        var dragonryLevel = 8;
+        var bodyArmor = 1;
+        var clawGuards = 1;
+        var dragonHelmet = 1;
+        var tailGuard = 1;
+        // Check for all 4 pieces of dragon armor ...         
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var city    = Seed.s.cities[0];
+
+        try {
+            var seedReqs = Seed.requirements.research[researchType];
+            gold = seedReqs.level[researchLevel + 1].resources['gold'];
+            food = seedReqs.level[researchLevel + 1].resources['food'];
+            dragonskeepLevel = seedReqs.level[researchLevel + 1].buildings['DragonsKeep'];
+            dragonryLevel = seedReqs.level[researchLevel + 1].research['Dragonry'];
+            bodyArmor - seedReqs.level[researchLevel + 1].items['GreatDragonBodyArmor'];
+            clawGuards - seedReqs.level[researchLevel + 1].items['GreatDragonClawGuards'];
+            dragonHelmet - seedReqs.level[researchLevel + 1].items['GreatDragonHelmet'];
+            tailGuard - seedReqs.level[researchLevel + 1].items['GreatDragonTailGuard'];
+        }
+        catch(e){
+            actionLog('Building: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var ret = {researchable:false, msg:[]};
+        var researchCap = t.getResearchCap(researchType);
+    
+        // If the building is capped, are we about to exceed the limit?
+        if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
+        if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (t.getBuildingLevel(0, 'DragonsKeep', dragonskeepLevel) == 0) m += '<TD>&nbsp;Dragons Keep '+ dragonskeepLevel +'</td>';
+        if (t.getCurrentResearchLevel('Dragonry') < dragonryLevel) m += '<TD>&nbsp;Dragonry '+ dragonryLevel +'</td>';
+        if (t.getItem(kGDBodyArmor) == 0) m += '<TD>&nbsp;Body Armor ' + bodyArmor +'</td>';
+        if (t.getItem(kGDClawGuards) == 0) m += '<TD>&nbsp;Claw Guards ' + bodyArmor +'</td>';
+        if (t.getItem(kGDHelmet) == 0) m += '<TD>&nbsp;Helmet ' + bodyArmor +'</td>';
+        if (t.getItem(kGDTailGuard) == 0) m += '<TD>&nbsp;Tail Guard ' + bodyArmor +'</td>';
+        if (m.length == 0) {
+            ret.researchable = true;
+            ret.msg = 'Researching:' + kLevel1 + ' ' + (researchLevel + 1) + ' ' + researchType;
+        }
+        else {
+            ret.researchable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;
+    },
+  
+    checkResearchReqs : function (researchType){
+        var t = Tabs.Jobs;
+    
+        switch(researchType) {
+            case 'Agriculture':     return t.checkAgricultureReqs();
+            case 'Woodcraft':       return t.checkWoodcraftReqs();
+            case 'Masonry':         return t.checkMasonryReqs();
+            case 'Mining':          return t.checkMiningReqs();
+            case 'Clairvoyance':    return t.checkClairvoyanceReqs();
+            case 'RapidDeployment': return t.checkRapidDeploymentReqs();
+            case 'Ballistics':      return t.checkBallisticsReqs();
+            case 'Metallurgy':      return t.checkMetallurgyReqs();     
+            case 'Medicine':        return t.checkMedicineReqs();
+            case 'Dragonry':        return t.checkDragonryReqs();
+            case 'Levitation':      return t.checkLevitationReqs();
+            case 'Mercantilism':    return t.checkMercantilismReqs();
+            case 'AerialCombat':    return t.checkAerialCombatReqs();
+        }
+    },
+
+    // The training heartbeat
+    // Parameters:
+    //      ic - the city number (0 = capitol, 1 = outpost 1, 2 = outpost 2
+    //
+    // Calls Seed.notifyOnUpdate() to find completed training jobs for the specified city
+    // If the city number is the same as the number of cities, recurse with city number zero (the capitol)
+    // This is weird, how would trainTick get called with ic = 3? If it does not, and ic really is 2, then 
+    // there is a logic error: trainTick() should not recurse until it has finished calling () for
+    // outpost 2
+    // Also recurses (using setTimeout()) in three seconds if the call to getTrainJob() is not null. 
+    // This happens if a training job already exists for the specified city. In this case, ic is incremented first.
+    // Called from setTrainEnable() with a starting city of zero (capitol), attemptTrainShortQ() uses setTimeout() to call 
+    // trainTick() in two different places. First, it uses it to prevent all the jobs from queueing immediately
+    // but the logic is flawed on this because it calls loops calling getTrainJob(i) starting with the 
+    // capitol city, but the loop ends prematurely if getTrainJob() finds an active job. In the second case, it 
+    // uses setTimeout() to call trainTick() with the current city index if an one of the training jobs
+    // does not meet the requirements. This will retry the job on the next tick (3 seconds).
+    trainErrorCount : 0,
+    trainDoRecheck  : false,
+    trainTick : function (ic){
+        var t = Tabs.Jobs;
+
+        if (!Data.options.autoTrain.enabled)
+            return;
+      
+        if (ic == undefined)
+            ic = 0;	
+            
+        Seed.notifyOnUpdate(function(){ 
+            if (ic == Seed.s.cities.length) return;
+
+            // The length here is the number of troop types it is possible to train
+            switch (ic) {
+                case 0: troopsLength = t.capitolTroops.length; break;
+                case 1: troopsLength = t.outpost1Troops.length; break;
+                case 2: troopsLength = t.outpost2Troops.length; break;
+				break;		
+            }
+            
+            // Only check the job queue if we are in short queue mode
+            if (t.selectedQ == kMinHousing){
+                if (getTrainJob (ic) == null) 
+                    t.attemptTrainShortQ(ic, 0, troopsLength);
+                else 
+                    ic = ic + 1;
+            }
+            else 
+                t.attemptTrainLongQ(ic, 0, troopsLength);
+        }); 
+    },
+
+    // New approach 07072011b
+    // Calculate the completion time by examining the job record for any job running
+    // While auto-build is enabled, this function is called on a 4 second timer
+    // It resets the timer to 20 seconds if doBuild() has an error and fetches the Seed
+    // to get updated information
+    // It will turn off auto-build if the error count exceeds three
+    buildErrorCount      : 0,
+    doBuildRecheck  : false,
+    buildTick : function (){
+        var t = Tabs.Jobs;
+
+        if (!Data.options.autoBuild.enabled)
+            return;
+      
+        // Iterate over the cities for buildings in each
+        Seed.notifyOnUpdate(function(){   
+            for (var ic=0; ic<Seed.s.cities.length; ic++ ){
+                var city = Seed.s.cities[ic];
+                var cityId = city.id;
+                var bJob = getBuildJob (ic);
+                
+                if (bJob == null){     // city not currently building
+                
+                    // Yes, is there a job in persistent data in in this city?
+                    for (var i=0; i<Data.options.tJobs.length; i++) {
+                        if (Data.options.tJobs[i].city_id == cityId) {
+                            // We check three different modes of completion:
+                            // 1. the done flag
+                            // 2. the duration
+                            // 3. the run_at + duration compared to serverTime()
+                            if (Data.options.tJobs[i].done ||
+                                !Data.options.tJobs[i].duration ||
+                                Data.options.tJobs[i].run_at + Data.options.tJobs[i].duration > serverTime()) {
+                                
+                                Data.options.tJobs.splice(i,1)
+                                Seed.fetchSeed ();
+                                clearTimeout (t.buildTimer);
+                                t.BuildTimer = setInterval (t.buildTick, 4000);
+                                return;
+                            }
+                        }
+                    }  
+                
+                    // TBD: sort the array by building type and building level
+                    var bl = []; // Concatenated array of buildings
+                    var bldg = [];
+                    for (var p in Data.options.autoBuild.buildingEnable[ic]){
+                        // Is this building type enabled for autobuild?
+                        if (Data.options.autoBuild.buildingEnable[ic][p]){
+                            bldg = Buildings.getList (ic, p);
+                            bldg.sort (function(a,b){return a.level-b.level});
+                            bl = bl.concat (bldg);
+                        }
+                    }
+                    
+                    // Change: we want to iterate over each buildings comparing the level to the cap. If the cap has not
+                    // been reached, call doBuild
+                    var bBuilt = false, bCapped = false, bType = '', len = bl.length;
+                
+                    for (var i=0; i<len; i++) {
+                        var cap = t.getBuildingCap (ic, bl[i].type);
+                        if (bl[i].level < cap) {
+                            // Change 07122011a: Check requirements, skip if they are not met
+                            // Caps are check in the requirements
+                            var ret = t.checkBuildReqs(ic, bl[i].type);
+                            if (t.contentType == 2) t.dispFeedback (ret.msg);
+                            if (ret.buildable) {
+                                t.doBuild (bl[i], city);
+                                bBuilt = true;
+                                Data.options.tJobs.push(bl[i]);
+                                bCapped = false;
+                                break;
+                            }
+                            else {
+                                // Error condition prevents building, try again later
+                                t.doBuildRecheck = true;
+                                break;
+                            }
+                        }
+                        else {
+                            bCapped = true;
+                            bType = bl[i].type;
+                        }
+                    }
+                
+                    if (bCapped) {
+                        // This only displays the first capped building
+                        // To be consistent with research, we will need to sort the list, find out when the type 
+                        // changes and calculate if all the buildings are capped
+                        if (t.contentType == 2) t.dispFeedback ("Building capped");
+                        var bldgIdx = t.getBuildingIndex (ic, bType);
+                        document.getElementById ('pbbldcap_' + ic + '_' + bldgIdx).style.backgroundColor = "red";
+                    }
+                } 
+                else {
+                    // We have a job running
+                    // Look at the job record
+                    if (bJob) {
+                        var jFound = false;
+                        // Look for the job in our persistent data
+                        for (var i=0; i<Data.options.tJobs.length; i++) {
+                            if (bJob.city_building_id == Data.options.tJobs[i].city_building_id) {
+                                jFound = true;
+                            }   
+                        }
+                        // If the job is not in persistent data, put it there
+                        if (!jFound) {
+                            Data.options.tJobs.push(bJob);
+                            actionLog("Putting build job in persistent data");
+                        }
+                        else {
+                            // Keep a consistent display                
+                            var cityType = (city.type == "Capital") ? 'Capitol' : city.type;
+                            var bType = getBuildingById (ic, bJob.city_building_id);
+                            var msg = kBuildingLevel + (bJob.level) +' '+ bType + kAt + cityType;
+                            if (t.contentType == 2) t.dispFeedback (msg);
+                        }
+                    }
+                }
+                if (t.doBuildRecheck) {
+                    Seed.fetchSeed();
+                    t.doBuildRecheck = false;
+                    clearTimeout(t.buildTimer);
+                    t.buildTimer = setInterval (t.buildTick, 20000);
+                    if (t.contentType == 2) t.dispFeedback ("Completion errors: waiting 20 seconds to try again"); 
+                    return;              
+                }      
+            } 
+        }); 
+    },
+
+    // Research heartbeat
+    resErrorCount : 0,
+    doResRecheck  : false,
+    researchTick : function (){
+
+        var t = Tabs.Jobs;
+        if (!Data.options.autoResearch.enabled)
+            return;
+//      Data.options.rJobs.length = 0;
+//      return;
+      
+        Seed.notifyOnUpdate(function(){
+            var nothingToDo = true;
+            var rJob = getResearchJob (0);
+            var city = Seed.s.cities[0];
+            var cityId = city.id;
+            
+            if (rJob == null){     // no research being done yet
+        
+                // Is there a research job in persistent data?
+                for (var i=0; i<Data.options.rJobs.length; i++) {
+                    if (Data.options.rJobs[i]) {
+                        if (Data.options.rJobs[i].done ||
+                            !Data.options.rJobs[i].duration ||
+                            Data.options.rJobs[i].run_at + Data.options.rJobs[i].duration > serverTime()) {
+                            // Yes, has the job completed?
+                            Data.options.rJobs.splice(i,1);
+                            Seed.fetchSeed();
+                            clearTimeout (t.researchTimer);
+                            t.researchTimer = setInterval (t.researchTick, 5000);
+                            return;
+                        }
+                    }
+                }
+            
+                for (var p in Data.options.autoResearch.researchEnable[0]) {
+                    if (Data.options.autoResearch.researchEnable[0][p] == true){
+                
+                        var researchType = '';
+                        for (var rType in t.capitolResearch) 
+                            if (p == t.capitolResearch[rType]) {
+                                researchType = rType;
+                                break;
+                            }
+                            
+                        var level = t.getCurrentResearchLevel (researchType);
+                        var cap = t.getResearchCap (researchType);
+                        var rBuilt = false;
+                        var rCapped = false;
+                        if (level < cap) {
+                            var ret = t.checkResearchReqs (researchType);
+                            if (t.contentType == 3) t.dispFeedback (ret.msg);
+                            if (ret.researchable) {
+                                t.doResearch(researchType, level);
+                                rBuilt = true;
+                                Data.options.rJobs.push(rJob);
+                                rCapped = false;
+                                break;
+                            }
+                            else {
+                                t.doResRecheck = true;
+                                break;
+                            }
+                        }
+                        else {
+                            // We are capped
+                            rCapped = true;
+                        }
+                    }
+                    if (rCapped) {
+                        if (t.contentType == 3) t.dispFeedback ("Research capped");
+                        var resIdx = t.getResearchIndex (researchType);
+                        document.getElementById('pbrescap_' + 0 + '_' + resIdx).style.backgroundColor = "red";
+                    }
+                }
+            } 
+            else {
+                // We have a job running
+                // Look at the record
+                if (rJob) {
+                    var jFound = false;
+                    // Look for the job in persistent data
+                    for (var i=0; i<Data.options.rJobs.length; i++) {
+                        // Check the rJob structure for a field called city_research_id or some such (like the building)
+                        // Otherwise, double-check that the ids match
+                        if (rJob.id == Data.options.rJobs[i].id) {
+                            jFound = true;
+                        }
+                    }
+                    // If the job is not in persistent data, put it there
+                    if (!jFound) {
+                        Data.options.rJobs.push(rJob);
+                        actionLog("Putting research job in persistent data");
+                    }
+                }
+            }
+            if (t.doResRecheck) {
+                Seed.fetchSeed();
+                t.doResRecheck = false;
+                clearTimeout(t.researchTimer);
+                t.researchTimer = setInterval (t.researchTick, 20000);
+                if (t.contentType == 3) t.dispFeedback ("Completion errors: waiting 20 seconds to try again");               
+            }
+        }); 
+    },
+
+    // Parameters: 
+    //      ic - city index (0 = capitol, 1 = outpost 1, 2 = outpost 2)
+    //      count - error count
+    //      troopsLength - number of troops to be queued in this city
+    // Called from trainTick() and doTrain()
+    // trainTick() calls attemptTrainShortQ() when a city (ic) has no jobs in the queue
+    // doTrain() calls attemptTrainShortQ() after making the Ajax call and getting a succesful result
+    // doTrain() also calls Seed.fetchCity() (before calling attemptTrainShortQ()) to ensure that the data is current
+    // attemptTrainShortQ() will examine the training queues to determine when/if a new job should be sent to doTrain()
+    //
+    // Short queue training (minimum housing model)
+    //
+	attemptTrainShortQ : function (ic, count, troopsLength){
+		var t = Tabs.Jobs;
+		
+		// Attempt to train if no jobs are in the queue already for the specified city
+        // If any city has a job, set the recheck flag and reset the timer
+        // This ensures that we will check every city and only after rechecking all of them will
+        // we reset the timer if doRecheck is true
+        // Each city may have jobs and we now allow them to execute asynchronously
+        var doRecheck = false;
+        var i = 0;
+		for (i=0; i<Seed.s.cities.length; i++){
+            if (getTrainJob (i)) {
+                doRecheck = true;
+            }
+            else {
+                // Get the troop types and quantities to build
+                for (var j=0; j<Data.options.autoTrain.city[i].troopType.length; j++){
+                    var troopType = '', troopQty = 0, cap = 0;
+                    switch (i) {
+                        case 1:
+                            troopType = t.outpost1Troops[j];
+                            troopQty = Data.options.autoTrain.city[i].troopType[j];
+                            cap = t.getTroopCap(troopType, troopQty);
+                            try {
+                                if (cap) {
+                                    troopQty = 0;
+                                    if (t.contentType == 1) t.dispFeedback("Troops Capped");
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                                }
+                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                            catch (e) {
+                            }
+                            break;
+                        case 2:
+                            troopType = t.outpost2Troops[j];
+                            troopQty = Data.options.autoTrain.city[i].troopType[j];
+                            cap = t.getTroopCap(troopType, troopQty);
+                            try {
+                                if (cap) {
+                                    troopQty = 0;
+                                    if (t.contentType == 1) t.dispFeedback("Troops Capped");
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                                }
+                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                            catch (e) {
+                            }
+                            break;
+                        default:
+                            troopType = t.capitolTroops[j];
+                            troopQty = Data.options.autoTrain.city[i].troopType[j];
+                            cap = t.getTroopCap(troopType, troopQty);
+                            try {
+                                if (cap) {
+                                    troopQty = 0;
+                                    if (t.contentType == 1) t.dispFeedback("Troops Capped");
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                                }
+                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                            catch (e) {
+                            }
+                            break;
+                    }
+                    if (troopQty > 0) {
+                        var ret = t.checkReqs(troopType, troopQty, i, j, troopsLength);
+                        if (t.contentType == 1) t.dispFeedback (ret.msg);
+                        if (ret.trainable) {
+                            t.doTrain(troopType, troopQty, i);
+                        }
+                        else {
+                            // Error condition prevents training, try again later
+                            doRecheck = true;
+                            break;
+                        }
+                    } 
+                }
+            }
+        }
+        if (doRecheck) {
+            Seed.fetchSeed();
+            //t.trainTimer = setTimeout (function() {t.trainTick(i)}, 20000);
+        }		
+	},
+  
+    // Parameters: 
+    //      ic - city index (0 = capitol, 1 = outpost 1, 2 = outpost 2)
+    //      count - error count
+    //      troopsLength - number of troops to be queued in this city
+    // Called from trainTick() and doTrain()
+    // trainTick() calls attemptTrainLongtQ() when a city (ic) has no jobs in the queue
+    // doTrain() calls attemptTrainLongtQ() after making the Ajax call and getting a succesful result
+    // doTrain() also calls Seed.fetchCity() (before calling attemptTrainShortQ()) to ensure that the data is current
+    //
+    // Long queue training (minimum resource levels model)
+    //
+	attemptTrainLongQ : function (ic, count, troopsLength){
+		var t = Tabs.Jobs;
+		
+		// Attempt to train if no jobs are in the queue already for the specified city
+        // If any city has a job, set the recheck flag and reset the timer
+        // This ensures that we will check every city and only after rechecking all of them will
+        // we reset the timer if doRecheck is true
+        // Each city may have jobs and we now allow them to execute asynchronously
+        var doRecheck = false;
+        var i = 0;
+		for (i=0; i<Seed.s.cities.length; i++){
+            // Get the troop types and quantities to build
+            for (var j=0; j<Data.options.autoTrain.city[i].troopType.length; j++){
+                var troopType = '';
+                var troopQty = 0;
+                var cap = null;
+                switch (i) {
+                    case 1:
+                        troopType = t.outpost1Troops[j];
+                        troopQty = Data.options.autoTrain.city[i].troopType[j];
+                        cap = t.getTroopCap(troopType, troopQty);
+                        try {
+                            if (cap) {
+                                troopQty = 0;
+                                if (t.contentType == 1) t.dispFeedback("Troops Capped");
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            }
+                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                        catch (e) {
+                        }
+                        break;
+                    case 2:
+                        troopType = t.outpost2Troops[j];
+                        troopQty = Data.options.autoTrain.city[i].troopType[j];
+                        cap = t.getTroopCap(troopType, troopQty);
+                        try {
+                            if (cap) {
+                                troopQty = 0;
+                                if (t.contentType == 1) t.dispFeedback("Troops Capped");
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            }
+                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                        catch (e) {
+                        }
+                        break;
+                    default:
+                        troopType = t.capitolTroops[j];
+                        troopQty = Data.options.autoTrain.city[i].troopType[j];
+                        cap = t.getTroopCap(troopType, troopQty);
+                        try {
+                            if (cap) {
+                                troopQty = 0;
+                                if (t.contentType == 1) t.dispFeedback("Troops Capped");
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            }
+                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                        catch (e) {
+                        }
+                        break;
+                }
+                if (troopQty > 0) {
+                    var ret = t.checkReqs(troopType, troopQty, i, j, troopsLength);
+                    if (t.contentType == 1) t.dispFeedback (ret.msg);
+                    if (ret.trainable) {
+                        var d = {tType:troopType, tQty:troopQty, cityIdx:i, troopIdx:j, tLen:troopsLength};
+                        t.trainJobs.push (d);
+                        //t.trainTime = setTimeout ("t.doTrain(troopType, troopQty, i, j, troopsLength)", 3000);
+                    }
+                    else {
+                        // Error condition prevents training, try again later
+                        doRecheck = true;
+                        break;
+                    }
+                } 
+            }
+        }
+        if (doRecheck) {
+           // t.trainTimer = setTimeout (function() {t.trainTick(i)}, 3000);
+        }
+        // See if we have space in the queue before we try to run the jobs
+        var qLen = 0;
+        for (var i=0; i<Seed.s.cities.length; i++) {
+            qLen += t.getRemainingQueue(i, kUnits);
+        }
+        if (qLen)
+            t.runJobs();   		
+	},
+
+    // Algorithm change
+    // Examine the training queue for the city, if there is space, run the job
+    // Possible side effects are implied prioritization based on queue availability
+    // and speed of training
+    runJobs : function(){
+        var t = Tabs.Jobs;
+        if (t.trainJobs.length > 0) {
+        
+            // Create a set of training jobs in each city
+            for (var i=0; i<Seed.s.cities.length; i++){
+                var jList = []; // list of troops for this city
+                
+                // Iterate the training list looking for all the troops from this city
+                // Could be none up to every troop type available
+                // Might be a problem if the user selects all the troops but doesn't have
+                // enough garrisons/training camps to do them all at once
+                var j=0;
+                while (j < t.trainJobs.length) {
+                    if (t.trainJobs[j].cityIdx == i)
+                        jList[j] = t.trainJobs[j];
+                    ++j;
+                }
+   
+                // Get the remaining queue length for this city        
+                var qLen = t.getRemainingQueue(i, kUnits);
+               
+                // Are there enough queue slots for the jobs?
+                var len = jList.length; // length is modified inside the loop
+                if (qLen >= len)
+                    // Yes, do the job
+                    for (var j=0; j<len; j++) {
+                    
+                        var tJob = jList.shift();
+                        t.doTrain (tJob.tType, tJob.tQty, i);                   
+                    }
+                // Remove this city's job set from the training list
+                t.trainJobs.splice(0, len);
+            }
+            
+            setTimeout( "t.runJobs()", 3000);
+        }
+    },
+
+    // Queue the training job
+    // Parameters:
+    //      troopType - Porter, Conscript, etc.
+    //      troopQty - number of troops to train
+    //      ic - city index (0=capitol, 1=outpost 1, 2 = outpost 2)
+    //      count - error count
+    //      troopsLength - number of troop types
+    // Calls Ajax.troopTraining with city troop type, qty, city id, and a function for the rslt
+    // The rlst function fetches the city, does a status update through statTick
+    // If the rslt is ok, we set the Train Tab errorCount back to zero, log the training, increment the count (why?)
+    // and attempt to train more troops - this seems like it should come from trainTick() instead being called directly here
+    // If the rslt is not ok, we refetch the city info, log the error, increment the Train Tab errorCount (if we have more than
+    // three errors we disable training and show the feedback) and display the error message, reset the training time for 20 seconds
+    // but do not disable training
+	doTrain : function (troopType, troopQty, ic){
+		var t = Tabs.Jobs;
+		var city = Seed.s.cities[ic];
+		var msg = kTraining1 + troopQty +' '+ troopType + kAt + city.type;
+		//t.dispFeedback (msg);
+
+		Ajax.troopTraining (troopType, troopQty, city.id, function (rslt){
+			Seed.fetchCity (city.id, 1000);
+			if (rslt.ok){
+				t.errorCount = 0;
+				actionLog (msg);
+				return;
+			} 
+            else {
+				Seed.fetchSeed();
+				actionLog (kTrainError + rslt.errmsg);
+				// The queue is frequently full, but we could be getting server errors (500) too
+				// Wait a couple of minutes
+				if (++t.trainErrorCount > 5){
+					if (t.contentType == 1) t.dispFeedback (kDisablingAutoTrain);
+					t.setTrainEnable (false);
+					t.trainErrorCount = 0;
+					return;
+				}
+				if (t.contentType == 1) t.dispFeedback (kTrainError + rslt.errmsg);
+				//t.trainTimer = setTimeout (t.trainTick, 180000);
+				return;
+			}
+		});
+	},
+
+    // Upgrade the building
+    // Sets doBuildRecheck = true if the Ajax call returns an error
+    // This forces a Seed fetch and resets the buildTick timer to 20 seconds
+    // to allow the server enough time to return valid data (we hope)
+    // If the Ajax call returns with no errors, the buildErrorCount is reset to zero
+    doBuild : function (building, city){
+        var t = Tabs.Jobs;
+        var cityType = (city.type == "Capital") ? 'Capitol' : city.type;
+        var msg = kBuildingLevel + (building.level+1) +' '+ building.type + kAt + cityType;
+    
+        if (t.contentType == 2) t.dispFeedback (msg);
+    
+        Ajax.buildingUpgrade (city.id, building.id, function (rslt){
+            //logit ('BUILD RESULT: '+ inspect (rslt, 7, 1)); 
+            if (rslt.ok){
+                t.buildErrorCount = 0;
+                actionLog (msg);
+                //t.buildTimer = setTimeout (t.buildTick, 8000);
+                return;
+            } 
+            else {
+                Seed.fetchSeed();
+                actionLog (building.type + ': ' + rslt.errmsg);
+                if (++t.buildErrorCount > 3){
+                    if (t.contentType == 2) t.dispFeedback (kTooManyBuildErrs);
+                    t.setBuildEnable (false);
+                    t.buildErrorCount = 0;
+                    return;
+                }
+                if (t.contentType == 2) t.dispFeedback (building.type + ': ' + rslt.errmsg);
+                //t.buildTimer = setTimeout (t.buildTick, 20000);
+                t.doBuildRecheck = true;
+                return;
+            }
+        });
+    },
+
+    doResearch : function (researchType, researchLevel){
+        var t = Tabs.Jobs;
+        var city = Seed.s.cities[0];
+        var msg = kResearch +' '+ kLevel1 +' ' +(researchLevel+1) +' '+ t.resUITranslate (researchType);
+        if (t.contentType == 3) t.dispFeedback (msg);
+        actionLog('Research started: '+ researchType +' ' +researchLevel);
+        
+        Ajax.researchStart (city.id, researchType, function (rslt){
+            //logit ('RESEARCH RESULT: '+ inspect (rslt, 7, 1));       
+            if (rslt.ok){
+                t.resErrorCount = 0;
+                actionLog (msg);
+                return;
+            } 
+            else {
+                Seed.fetchSeed();
+                actionLog (kResearchErr+ rslt.errmsg);
+                if (++t.resErrorCount > 3){
+                    if (t.contentType == 3) t.dispFeedback (kTooManyResearchErrs);
+                    t.setResearchEnable (false);
+                    t.resErrorCount = 0;
+                    return;
+                }
+                if (t.contentType == 3) t.dispFeedback (kResearchErr + rslt.errmsg);
+                t.doResRecheck = true;
+                return;
+            }
+        });
+    },
+
+    // train sub tab
+    tabTrain : function(){
+        var t = Tabs.Jobs;
+        // Create troop table for each city
+        var el = [], m = '';
+	   
+        for (var c=0; c<Seed.s.cities.length; c++){
+            switch (c) {
+                case 0: troopTypes = t.capitolTroops; break;
+                case 1: troopTypes = t.outpost1Troops; break;
+                case 2: troopTypes = t.outpost2Troops; break;		
+            }
+            
+            var city = Seed.s.cities[c];
+            m += '<DIV class=pbSubtitle>City #'+ (c+1) +' ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+            for (tt=0; tt<troopTypes.length; tt++){
+                // Use less room in the table layout
+                if (tt%3 == 0) m += '<TR>';
+                m += '<TD class=pbTabLeft>'+ Names.troops.byName[troopTypes[tt]][2] +':</td>';
+                var num = Data.options.autoTrain.city[c].troopType[tt];
+                if (!num || isNaN(num)) num = 0;
+                m += '<TD><INPUT type=text id=pbtrnTrp_'+ c +'_'+ tt +' maxlength=6 size=2 value="'+ num +'"\></td>';
+                if (tt>0 && (tt+1)%3 == 0) m += '</tr>';
+                el.push('pbtrnTrp_'+ c +'_'+ tt);
+            }
+            m += ((tt+1)%3 == 0) ? '</tr></table></td></tr></table>' : '</table></td></tr></table>';
+        }    
+        m += '</div>';
+        document.getElementById('pbtrnConfig').innerHTML = m;
+
+        // Hilite the sub-tabs correctly
+        document.getElementById('pbttConfigTrain').style.backgroundColor = BUTTON_BGCOLOR; 
+        document.getElementById('pbttConfigTrain').style.color = "white";
+
+        t.trainContentType = 0;
+        document.getElementById('pbttTrain').style.backgroundColor = "#eed"; 
+        document.getElementById('pbttTrain').style.color = "black";
+
+        // Add event listeners for troop quantities 
+        for (var i=0; i<el.length; i++)
+        document.getElementById(el[i]).addEventListener('change', troopsChanged, false);
+ 
+        // Update troops on change
+        function troopsChanged (e){
+            var args = e.target.id.split('_');
+            var x = parseIntZero(e.target.value);
+            var lvl = getMusterPointLevel(0);
+            var maxLvl = lvl * 10000;
+            maxLvl = (lvl == 11) ? 120000 : maxLvl;
+            if (isNaN(x) || x<0 || x>maxLvl){
+                e.target.style.backgroundColor = 'red';
+                dispError (kInvalidNumberTroops);
+            } 
+            else {
+                e.target.value = x;
+                Data.options.autoTrain.city[args[1]].troopType[args[2]] = x;
+                e.target.style.backgroundColor = '';
+            }
+        }
+    }, 
+    
+    // config sub tab
+    tabConfigTrain : function(){
+        var t = Tabs.Jobs;
+    
+        // Hilite the sub-tabs correctly
+        document.getElementById('pbttTrain').style.backgroundColor = BUTTON_BGCOLOR; 
+        document.getElementById('pbttTrain').style.color = "white";
+
+        t.trainContentType = 1;
+        document.getElementById('pbttConfigTrain').style.backgroundColor = "#eed"; 
+        document.getElementById('pbttConfigTrain').style.color = "black";
+    
+        var m = '<DIV class=pbSubtitle>'+ kConfigTrain +'</div>\
+                 <DIV style="overflow:auto">\
+                 <TABLE class=pbTabPad>\
+                 <TR align=center class=pbTabHdr1><TD style="background:none !important;" colspan=2></td></tr>\
+                 </div>';
+    
+        // Add the radio buttons  
+        m += '<TR><TD><INPUT type=radio name=pbttQRadio value="Minimum Housing" ></td><td>'+ kMinHousing +'</td></tr>';
+        m += '<TR><TD><INPUT type=radio name=pbttQRadio value="Minimum Resource Levels" ></td><td>'+ kMinResourceLevels +'</td></tr>';
+        m += '</table><DIV class=short></div>'; 
+    
+        // Create an all troop table
+        var el = [];
+        var troopTypes = t.allTroops;
+   
+        m += '<DIV class=pbSubtitle style="background-color:#0044a0;">Troop Cap (Max Troops, 0 = no max)</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+        for (tt=0; tt<troopTypes.length; tt++){
+            // Use less room in the table layout
+            if (tt%3 == 0) m += '<TR>';
+            m += '<TD class=pbTabLeft>'+ Names.troops.byName[troopTypes[tt]][2] +':</td>';
+            var num = Data.options.troopCap.city[0].troopType[tt];
+            if (!num || isNaN(num)) num = 0;
+            m += '<TD><INPUT type=text id=pbtrnCap_'+ 0 +'_'+ tt +' maxlength=6 size=2 value="'+ num +'"\></td>';
+            if (tt>0 && (tt+1)%3 == 0) m += '</tr>';
+            el.push('pbtrnCap_'+ 0 +'_'+ tt);
+        }
+        m += ((tt+1)%3 == 0) ? '</tr></table></td></tr></table>' : '</table></td></tr></table>';
+        m += '</div>';
+    
+        // Display the page
+        document.getElementById('pbtrnConfig').innerHTML = m;
+
+        // add event listeners for the radio buttons
+        var r = document.getElementsByName('pbttQRadio');
+        for (i=0;i<r.length;i++) {
+            r[i].addEventListener('change', enableChanged, false);
+            // Select the radio button that was last selected
+            r[i].checked = (r[i].value == Data.options.trainQChoice);
+        }
+   
+        // Add event listeners for troop quantities 
+        for (var i=0; i<el.length; i++)
+        document.getElementById(el[i]).addEventListener('change', troopsChanged, false);
+
+        // radio buttons are weird    
+        function enableChanged(e){
+            var t = Tabs.Jobs;
+        
+            if (Data.options.autoTrain.enabled) {
+                t.setTrainEnable(false); // It would be very bad to leave training on when switching queue types. 
+                if (t.contentType == 1) t.dispFeedback (kTrainSafetyFeature);
+            }
+        
+            t.selectedQ = e.target.value;
+            Data.options.trainQChoice = e.target.value;
+        }
+    
+        // Update troops on change
+        function troopsChanged (e){
+            var args = e.target.id.split('_');
+            var x = parseIntZero(e.target.value);
+            // The upper limit is not important because we are looking at a maximum number of troops
+            if (isNaN(x) || x<0){
+                e.target.style.backgroundColor = 'red';
+                dispError (kInvalidNumberTroops);
+            } 
+            else {
+                e.target.value = x;
+                Data.options.troopCap.city[args[1]].troopType[args[2]] = x;
+                e.target.style.backgroundColor = '';
+            }
+        }
+    },
+    
 }
 
-/*********************************** Options Tab ***********************************/
+/***********************************   End Jobs  ***********************************/
 
+/*********************************** Options Tab ***********************************/
 // Added a select box to allow the user to choose the number of hours between autocollecting
 // resources (from 1 to 8)
-//*********************************** Options Tab ***********************************
+
 Tabs.Options = {
   tabOrder : OPTIONS_TAB_ORDER,
   tabLabel : kOpts,
@@ -7857,14 +9373,6 @@ var Map = {
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
     setTimeout (function(){new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), version:3 }, t.got, false);}, MAP_DELAY);
  },
-    
-  normalize : function (x){
-    if (x > 750)
-      x -= 750;
-    if (x < 0)
-      x += 750;
-    return x;
-  },  
 
      
   normalize : function (x){
