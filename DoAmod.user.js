@@ -10,7 +10,7 @@
 
 var kDOAPowerTools = 'DoA Power Tools mod by Wham';
 
-var Version = '20110715b';
+var Version = '20110716a';
 var Title = kDOAPowerTools;
 var WebSite = 'www.userscripts.org/103833';
 var VERSION_CHECK_HOURS = 4;
@@ -113,7 +113,7 @@ var kWatDrg = translate ('WatDrg');
 var kStnDrg = translate ('StnDrg');
 var kFang = translate ('Fang');
 var kOgre = translate ('Ogre');
-var kDjinn = translate ('Djinn');
+var kLavaJaw = translate ('LavaJaw');
 
 // Tabs
 var kInfo = translate ('Info');
@@ -1159,7 +1159,7 @@ var Seed = {
   fetchSeed : function (notify) {
     var t = Seed;
     var now = new Date().getTime() / 1000;
-    new MyAjaxRequest ('player.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, '%5Fsession%5Fid':C.attrs.sessionId, version:3, timestamp:parseInt(serverTime()) }, function (rslt){
+    new MyAjaxRequest ('player.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, '%5Fsession%5Fid':C.attrs.sessionId, version:4, timestamp:parseInt(serverTime()) }, function (rslt){
       if (rslt.ok){
         if (rslt.dat.timestamp)
           t.serverTimeOffset = rslt.dat.timestamp - now;
@@ -1182,7 +1182,7 @@ var Seed = {
 	fetchReqs : function (notify) {
 		var t = Seed;
 		var now = new Date().getTime() / 1000;
-		new MyAjaxRequest ('manifest.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:3, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt) {
+		new MyAjaxRequest ('manifest.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:4, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt) {
 			if (rslt.ok) {
 				if (rslt.dat.timestamp)
 					t.serverTimeOffset = rslt.dat.timestamp - now;
@@ -1423,7 +1423,7 @@ var Seed = {
       maxTime = 5000;
     RequestQueue.add ('fetchCity', doit, maxTime);    
     function doit (){    
-      new MyAjaxRequest ('cities/'+ cityId +'.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:3, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt){
+      new MyAjaxRequest ('cities/'+ cityId +'.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:4, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt){
         var t = Seed;
         if (rslt.ok){
           t.checkIncomingData(rslt);
@@ -3159,7 +3159,7 @@ var Ajax = {
   messageList : function (cat, callback){
     if (!cat)
       cat = 'all';
-    new MyAjaxRequest ('reports.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, count:12, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, category:cat, page:1, version:3 }, mycb, false);
+    new MyAjaxRequest ('reports.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, count:12, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, category:cat, page:1, version:4 }, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3171,7 +3171,7 @@ var Ajax = {
   },
   
   messageDetail : function (id, callback){
-    new MyAjaxRequest ('reports/'+ id +'.json', {'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:3, 'dragon%5Fheart':C.attrs.dragonHeart }, mycb, false);
+    new MyAjaxRequest ('reports/'+ id +'.json', {'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:4, 'dragon%5Fheart':C.attrs.dragonHeart }, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3190,7 +3190,7 @@ var Ajax = {
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['ids'] = ids.join('%7C');
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 3;
+	p['version'] = 4;
     new MyAjaxRequest ('reports/bulk_delete.json', p, mycb, true);
     function mycb (rslt){
       if (rslt.ok && !rslt.dat.result.success)
@@ -3208,7 +3208,7 @@ var Ajax = {
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
     p['%5Fmethod'] = 'put';
-	p['version'] = 3;
+	p['version'] = 4;
 	p['timestamp'] = parseInt(serverTime());
     new MyAjaxRequest ('cities/'+ cityId +'/buildings/'+ buildingId +'.json', p, mycb, true);
     function mycb (rslt){
@@ -3235,7 +3235,7 @@ var Ajax = {
 	p['units%5Bquantity%5D'] = troopQty;
 	p['units%5Bunit%5Ftype%5D'] = troopType;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 3;
+	p['version'] = 4;
     new MyAjaxRequest ('cities/'+ cityId +'/units.json', p, mycb, true);
     function mycb (rslt){
 	  //logit ("Troop Training Response:\n" + inspect (rslt, 10, 1));
@@ -3259,7 +3259,7 @@ var Ajax = {
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['research%5Bresearch%5Ftype%5D'] = researchType;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 3;
+	p['version'] = 4;
     new MyAjaxRequest ('cities/'+ cityId +'/researches.json', p, mycb, true);
     function mycb (rslt){
         //logit ("RESEARCH RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3377,7 +3377,7 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['user%5Fid'] = C.attrs.userId;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 3;
+	p['version'] = 4;
     new MyAjaxRequest ('cities/'+ cityId +'/marches.json', p, mycb, true);
     function mycb (rslt){
         //logit ("MARCH RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3411,7 +3411,7 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
     p['%5Fmethod'] = 'delete';
-	p['version'] = 3;
+	p['version'] = 4;
 	p['timestamp'] = parseInt(serverTime());
     new MyAjaxRequest ('cities/'+ cityId +'/marches/'+ marchId +'.json', p, mycb, true);
     function mycb (rslt){
@@ -3436,7 +3436,7 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 	p['user%5Fid'] = C.attrs.userId;
 	p['timestamp'] = parseInt(serverTime());
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
-	p['version'] = 3;
+	p['version'] = 4;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
     new MyAjaxRequest ('cities/'+ cityId +'/move_resources.json', p, mycb, true);
     function mycb (rslt){
@@ -3730,7 +3730,7 @@ var Names = {
     [13, kStoneDragon, kStnDrg],
     [14, kAquaTroop, kFang],
     [15, kStoneTroop, kOgre],
-    [16, kFireTroop, kDjinn],
+    [16, kFireTroop, kLavaJaw],
     ],
   }, 
   
@@ -3764,6 +3764,15 @@ var Names = {
     [141, 'StoneTroopItemStack100', 'GlowingMandrake-100'],
     [142, 'StoneTroopItemStack500', 'GlowingMandrake-500'],
     [143, 'StoneTroopItemStack1000', 'GlowingMandrake-1000'],
+    [144, 'FireDragonEgg', 'FireDragonEgg'],
+    [150, 'FireDragonBodyArmor', 'SD Armor-1'],
+    [151, 'FireDragonHelmet', 'SD Armor-2'],
+    [152, 'FireDragonTailGuard', 'SD Armour-3'],
+    [153, 'FireDragonClawGuards', 'SD Armor-4'],
+    [160, 'FireTroopItem', 'VolcanicRune'],
+    [161, 'FireTroopItemStack100', 'VolcanicRune-100'],
+    [162, 'FireTroopItemStack500', 'VolcanicRune-500'],
+    [163, 'FireTroopItemStack1000', 'VolcanicRune-1000'],
    ],
   }, 
 
@@ -7553,7 +7562,7 @@ Tabs.Jobs = {
         if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
         if (t.getBuildingLevel(0, kFactory, factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
         if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
-        var availableRespirators = t.getItem(ic, kAquaTroopRespirator);
+        var availableRespirators = t.getItem(kAquaTroopRespirator);
         if (availableRespirators < respiratorQty) m += '<TD>&nbsp;Respirators '+ (respiratorQty - availableRespirators) +'</td>';
         if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
         if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
@@ -7636,7 +7645,7 @@ Tabs.Jobs = {
         // Returns zero or the building level
         if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
         if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
-        var availableMandrakes = t.getItem(ic, kStoneTroopItem);
+        var availableMandrakes = t.getItem(kStoneTroopItem);
         if (availableMandrakes < mandrakeQty) m += '<TD>&nbsp;Mandrakes '+ (mandrakeQty - availableMandrakes) +'</td>';
         if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
         if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
@@ -9370,7 +9379,7 @@ var Map = {
     t.callback = callback; 
     t.circ = true;
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.firstX, y:t.firstY, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:3 }, t.got, false);
+    new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.firstX, y:t.firstY, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:4 }, t.got, false);
   },  
 
  // TBD: Change the if/else in the detail section to a case for the various types

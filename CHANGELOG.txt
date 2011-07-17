@@ -1,4 +1,4 @@
-Version: 07115012b
+Version: 07162011a
 
 Info
 07062011b Info feature: Added the alliance name to the city title
@@ -35,6 +35,7 @@ TBD: show individual time for completion in status with total time next to city 
 Note: items are not part of the requirements section, e.g. Respirators
 07152011b Training bug: Renamed checkReqs to checkTrainReqs. Fixed
 07152011b Training bug: Missed function to check caps when moving training to jobs tab. Fixed
+07152011d Training bug: getItem now takes one parameter - the item type. Fixed
   
 Auto-Collect
 07042011b Was generating server errors spuriously because 'p' was not declared as a var before it was used. Fixed.
@@ -79,3 +80,6 @@ Other
 07092011a Changed all feedback areas to text-align:left; padding: 2px 0px 2px 2px; height:34px because error text was running over the bottom
 07112011a Replaced Seed with new version that reads manifest.json
 07152011a Implemented Jobs tab
+07152011c Changed MyAjaxRequest parameter for version 4 (from 3)
+07152011a Added FireDragon items
+07162011a Added LavaJaw, Volcanic Rune to FireDragon items
