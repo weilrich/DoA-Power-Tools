@@ -1,4 +1,4 @@
-Version: 07162011a
+Version: 07182011b
 
 Info
 07062011b Info feature: Added the alliance name to the city title
@@ -36,6 +36,10 @@ Note: items are not part of the requirements section, e.g. Respirators
 07152011b Training bug: Renamed checkReqs to checkTrainReqs. Fixed
 07152011b Training bug: Missed function to check caps when moving training to jobs tab. Fixed
 07152011d Training bug: getItem now takes one parameter - the item type. Fixed
+07182011b Training bug: setTrainEnable was not getting called in Jobs init(). Fixed.
+07182011b Training feature: Added function refreshTrainButton
+07182011b Training bug: doTrain was setting t.errorCount to zero, should be t.trainErrorCount. Fixed
+07182001b Training bug: rslt.dat is null when DialogRetry uses doCancel. Checked for null, added setInterval for 3 minutes. Removed call to Seed.fetchSeed - only made things worse. Fixed
   
 Auto-Collect
 07042011b Was generating server errors spuriously because 'p' was not declared as a var before it was used. Fixed.
@@ -52,6 +56,9 @@ Build
 07132011a Build feature: use the manifest in Seed, if available, to check requirements. If the manifest is not available, log a warning and use the defaults.
 07152011a Build bug: checkGoldReqs() was not checking available gold. Fixed
 07152011a Build bug: buildTick was not referencing doRecheck correctely (t.doRecheck). Fixed
+07182011b Build bug: setBuildEnable was not getting called in Jobs init(). Fixed
+07182011b Build feature: Added function refreshBuildButton
+07182011b Build bug: getBuildCap was not using the city index. Fixed
 
 Research
 07032011a Research feature: Implemented basic auto-research using research caps.
@@ -69,7 +76,9 @@ Research
 Note: items are part of the requirements section (unlike training), e.g. Respirators
 07142011a Research bug: Deleting a research job left the length of the array positive. Added check to see if the job itself was null. This prevented research from continuing after successfully completing a job. Fixed
 07132011a Research feature: Call researchTick if research is enabled when the user changes the cap or selects a different research item. This allows research to continue without having to turn research off and then back on again. 
-07152011a Build bug: researchTick was not referencing doRecheck correctely (t.doRecheck). Fixed
+07152011a Research bug: researchTick was not referencing doRecheck correctely (t.doRecheck). Fixed
+07182011b Research bug: setResearchEnable was not getting called in Jobs init(). Fixed
+07182011b Research feature: Added function refreshResearchButton
 
 Other
 07012011a Added initializer to defaults for ptWinPos.
@@ -83,3 +92,8 @@ Other
 07152011c Changed MyAjaxRequest parameter for version 4 (from 3)
 07152011a Added FireDragon items
 07162011a Added LavaJaw, Volcanic Rune to FireDragon items
+07182011a Added function makeid. Use makeid to create the CPopup window name.
+07182011b Moved the train, build, and research timers to persistent storage
+07182011b Changed divs in jobs so scrolling only affects the inputs
+07182011b DialogRetry was using local variables to store data between calls. Moved variables into global scope. Fixed
+07182011b Adjusted size of main CPopup window to fix the Kabam flash frame (subtracted 15 pixels from the height). 

@@ -1,18 +1,15 @@
 // ==UserScript==
-// @name           DOA Power Tools mod. by Wham
-// @namespace      mat
-// @include        http://*.castle.wonderhill.com/*
-// @include        http://apps.facebook.com/dragonsofatlantis/*
-// @match          http://*.castle.wonderhill.com/*
-// @match          http://apps.facebook.com/dragonsofatlantis/*
-// @description    Tools for Dragons of Atlantis modfified by Wham
+// @name          DOA Power Tools Plus
+// @namespace     http://www.mmogwiki.com/scripts/dragonsofatlantis
+// @description   Enhanced Power Tools for Dragons of Atlantis
+// @include       http://*.castle.wonderhill.com/*
+// @include       http://apps.facebook.com/dragonsofatlantis/*
+// @version       20110718b
 // ==/UserScript==
 
-var kDOAPowerTools = 'DoA Power Tools mod by Wham';
-
-var Version = '20110716a';
-var Title = kDOAPowerTools;
-var WebSite = 'www.userscripts.org/103833';
+var Version = '20110718b';
+var Title = 'DoA Power Tools Plus';
+var WebSite = 'www.mmogwiki.com';
 var VERSION_CHECK_HOURS = 4;
 var DEBUG_TRACE_AJAX = 2;
 var DEBUG_MARCHES = false;
@@ -135,9 +132,9 @@ var kGDHelmet = 'GreatDragonHelment';
 var kGDTailGuard = 'GreatDragonTailGuard';
 
 // Error messages
-var kFatalSWF = translate ('"<B>Error initializing DOA Power Tools mod by Wham:</b><BR><BR>Unable to find SWF element"');
-var kStartupErr = translate ('"Unable to start DOA Power Tools mod by Wham:<BR>"');
-var kInitErr = translate ('"<B>Error initializing DOA Power Tools mod by Wham:</b><BR><BR>"');
+var kFatalSWF = translate ('"<B>Error initializing DOA Power Tools Plus</b><BR><BR>Unable to find SWF element"');
+var kStartupErr = translate ('"Unable to start DOA Power Tools Plus<BR>"');
+var kInitErr = translate ('"<B>Error initializing DOA Power Tools Plus</b><BR><BR>"');
 var kNoTroops = translate ('No troops available');
 var kErrSendAttack = translate ('ERROR! (sendAttack is busy, no response from server?)');
 var kAttackErr = translate ('Attack Error: ');
@@ -185,7 +182,7 @@ var kAttackSent = translate ('Attack sent to level ');
 var kAutoAttack = translate ('Auto-attack ');
 var kAutoAttackConfig = translate ('Auto-attack Configuration');
 var kRandomDelay = translate ('Random delay between attacks:');
-var kDOAVersionString = translate ('DOA Power Tools mod by Wham - v');
+var kDOAVersionString = translate ('DOA Power Tools Plus - v');
 var kTo = translate (' to ');
 var kSeconds = translate (' seconds ');
 var kSameTargetDelay = translate ('Same target delay: ');
@@ -244,7 +241,7 @@ var kAutoRetry = translate ('Automatic retry in ');
 var kSeconds1 =  translate (kSeconds) +' ...';
 var kCancelRetry = translate ('"CANCEL Retry"');
 var kNewVersionAvailable = translate ('New Version Available!');
-var kAnnounceVersion = translate ('There is a new version of DOA Power Tools mod by Wham<BR><BR>Version: ');
+var kAnnounceVersion = translate ('There is a new version of DOA Power Tools Plus<BR><BR>Version: ');
 var kRemindLater = translate ('"Remind me later"');
 var kNoReminder = translate ('"Don\'t remind me again"');
 var kTargetCoords = translate ('Target Coords: ');
@@ -597,13 +594,13 @@ TODO:
 var OptionsDefaults = {
   ptWinIsOpen   : true,
   ptWinDrag     : true,
-  ptWinPos      : {x:WIN_POS_X, y:WIN_POS_Y},
+  ptWinPos     : {x: 760, y: 93 },
   objAttack     : {enabled:false, repeatTime:3660, delayMin:30, delayMax:60, levelEnable:[], levelDist:[null,10,10,10,10,10,10,10,10,10,10], deleteObjAttacks:false, stopAttackOnLoss:false, logAttacks:true, maxMarches:10, troops:[], clearAllTargets:false},
   currentTab    : false,
   attackTab     : 0,
   mapTab        : 0,
   jobsTab       : 0,
-  autoCollect   : {enabled:false, lastTime:0, delay:8*3600},
+  autoCollect   : {enabled:false, lastTime:0, delay:1, unit:3600 },
   autoBuild     : {enabled:false, buildingEnable:[], buildCap:[]},
   autoResearch  : {enabled:false, researchEnable:[], researchCap:[]},
   autoTrain     : {enabled:false, trainingEnable:[], city:[]},
@@ -622,6 +619,9 @@ var OptionsDefaults = {
   troopCap      : {},
   tJobs         : [],
   rJobs         : [],
+  buildTimer    : null,
+  researchTimer : null,
+  trainTimer    : null,
 //  alertConfig  : {aChat:false, aPrefix:'** I\'m being attacked! **', scouting:false, wilds:false, minTroops:10000, spamLimit:10 },
 };
 
@@ -761,6 +761,16 @@ var dtStartupTimer = null;
 var doatLoaded = false;
 var startupCount = 0;
 
+function makeid(){
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for( var i=0; i < 5; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+}
+
 // Main entry
 function dtStartup (){
   clearTimeout (dtStartupTimer);
@@ -801,8 +811,7 @@ logit ('dtStartup');
     WinLog.enabled = ENABLE_WINLOG;
     logit (inspect (C, 6, 1));
     Data.init({options:OptionsDefaults, log:[], targets:{radius:0, center:{x:0, y:0}, mapObjects:[], camps:[], cities:[], outposts:[], grasslands:[], swamps:[], lakes:[], hills:[], plains:[], mountains:[], forests:[]}});
-    Data.options.autoCollect.delay = 4*3600;
-    checkVersion ();
+    //checkVersion (); // RESTORE
     var swfCont = swf;
     while ((swfCont = swfCont.parentNode) != null && swfCont.style){
       swfCont.style.margin = '';   
@@ -813,7 +822,6 @@ logit ('dtStartup');
       document.getElementById('hd').style.width = '760px';   
       document.getElementById('content').style.margin = '';   
     } catch (e) {}
-    //C.attrs.sessionId = 'xd234';  //test session id failure
     Seed.init(function(rslt){
       if (rslt.ok){
         gotSeed (rslt);
@@ -824,14 +832,10 @@ logit ('dtStartup');
       }
     });
     
-    logit ("* DOA Power Tools mod by Wham v"+ Version +" Loaded");
+    logit ("* DOA Power Tools Plus v"+ Version +" Loaded");
     
-  // TODO: Make sure WinPos is visible on-screen ?
-    if (Data.options.ptWinPos==null || Data.options.ptWinPos.x==null|| Data.options.ptWinPos.x=='' || isNaN(Data.options.ptWinPos.x)){
-      Data.options.ptWinPos.x = WIN_POS_X;
-      Data.options.ptWinPos.y = WIN_POS_Y;
-    }
-    mainPop = new CPopup ('dtmain', Data.options.ptWinPos.x, Data.options.ptWinPos.y, 400,800, Data.options.ptWinDrag, 
+    var popName = makeid();
+    mainPop = new CPopup (popName, Data.options.ptWinPos.x, Data.options.ptWinPos.y, 400,785, Data.options.ptWinDrag, 
         function (){
           tabManager.hideTab();
           WinTracker.show (false);
@@ -845,7 +849,7 @@ logit ('dtStartup');
         tabManager.showTab();
       }
       AddMainTabLink('DOA Tools', eventHideShow, mouseMainTab);
-      actionLog ("* DOA Power Tools mod by Wham v"+ Version +" Loaded");
+      actionLog ("* DOA Power Tools Plus v"+ Version +" Loaded");
       AutoCollect.init ();
       TestSomething.init ();
       Messages.init ();
@@ -1917,7 +1921,7 @@ Tabs.AutoAttack = {
       <INPUT class=button type=submit value='+ kTargets +' id=pbatTargets></input>\
       <INPUT class=button type=submit value='+ kStats +' id=pbatStats></input>\
       <INPUT class=button type=submit value='+ kMaps +' id=pbatMaps></input></td></tr></table>\
-      <DIV id=pbatContent style="padding-top:5px; height:480px; max-height:480px; overflow:auto; background-color:white"></div>';
+      <DIV id=pbatContent style="padding-top:5px; height:470px; max-height:470px; overflow:auto; background-color:white"></div>';
      
     // Add the event listeners
     document.getElementById('pbatEnable').addEventListener ('click', function (){
@@ -3239,11 +3243,14 @@ var Ajax = {
     new MyAjaxRequest ('cities/'+ cityId +'/units.json', p, mycb, true);
     function mycb (rslt){
 	  //logit ("Troop Training Response:\n" + inspect (rslt, 10, 1));
-      if (rslt.dat.result.success){
-        Seed.jsonAddJob (rslt.dat.result.job);
-      } else {
-        rslt.ok = false;
-        rslt.errmsg = rslt.dat.result.errors[0];
+      if (rslt.dat) {
+        if (rslt.dat.result.success){
+            Seed.jsonAddJob (rslt.dat.result.job);
+        } 
+        else {
+            rslt.ok = false;
+            rslt.errmsg = rslt.dat.result.errors[0];
+        }
       }
       if (callback)
         callback (rslt);
@@ -3454,44 +3461,37 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 
 // Added the autocollection interval from the select menu
 var AutoCollect = {
-  init : function (){
-    var t = AutoCollect;
-    t.setDelay ();
-    t.setEnable (Data.options.autoCollect.enabled);
-  },
-  setDelay : function(){
-    var selectMenu = document.getElementById('pboptColInt');
-    var index = selectMenu.options.selectedIndex;
-    Data.options.autoCollect.delay = selectMenu[index].value * 3600;
-  },
-  setEnable : function (onOff){
-    var t = AutoCollect;
-    clearTimeout (t.timer);
-    Data.options.autoCollect.enabled = onOff;
-    // Always collect on startup
-    if (onOff){
-      var time = Data.options.autoCollect.delay - serverTime() + Data.options.autoCollect.lastTime;
-      if (time <= 0)
-        t.doit ();
-      else
-        t.timer = setTimeout (t.doit, time*1000);
-        //t.timer = setTimeout (t.doit, 1000);
-    }
-  },
-  
-  doit : function (){
-    var t = AutoCollect;
-    Data.options.autoCollect.lastTime = serverTime();
-    for (var out=1; out<Seed.s.cities.length; out++)
-      collect (out, out*30000);
-    t.timer = setTimeout (t.doit, (Data.options.autoCollect.delay + (Math.random()*120))*1000);
-    function collect (cityIdx, delay){
-      setTimeout (function(){
-        Ajax.collectResources (Seed.s.cities[cityIdx].id);
-        actionLog ('Collected resources at outpost #'+ cityIdx);
-      }, delay);
-    }
-  },
+	init : function (){
+		var t = AutoCollect;
+		t.setEnable (Data.options.autoCollect.enabled);
+	},
+	
+	setEnable : function (onOff){
+		var t = AutoCollect;
+		clearTimeout (t.timer);
+		Data.options.autoCollect.enabled = onOff;
+		if (onOff){
+			var time = (Data.options.autoCollect.delay*Data.options.autoCollect.unit) - serverTime() + Data.options.autoCollect.lastTime;
+			if (time <= 0)
+				t.doit ();
+			else
+				t.timer = setTimeout (t.doit, time*1000);
+		}
+	},
+	
+	doit : function (){
+		var t = AutoCollect;
+		Data.options.autoCollect.lastTime = serverTime();
+		for (var out=1; out<Seed.s.cities.length; out++)
+			collect (out, out*30000);
+		t.timer = setTimeout (t.doit, ((Data.options.autoCollect.delay*Data.options.autoCollect.unit) + (Math.random()*120))*1000);
+		function collect (cityIdx, delay){
+			setTimeout (function(){
+				Ajax.collectResources (Seed.s.cities[cityIdx].id);
+				actionLog ('Collected resources at outpost #'+ cityIdx);
+			}, delay);
+		}
+	},
 }
 
 
@@ -3575,12 +3575,12 @@ Tabs.Info = {
 //        + dispBuildingJob(0) + dispResearchJob(0) + dispTrainingJobs(0) + '</td></tr></table>';
   
         // outposts ...
-        if (Seed.s.cities.length > 0){
-            for (var i=1; i<Seed.s.cities.length; i++){
-                m += '<DIV class=short></div>'+ cityTitle(i) + '<TABLE class=pbTabPad><TR><TD></td></tr></table>'
-//          + dispBuildingJob(i) + dispTrainingJobs(i) + '</td></tr></table>';
-            }
-        }
+        //if (Seed.s.cities.length > 0){
+        //    for (var i=1; i<Seed.s.cities.length; i++){
+        //        m += '<DIV class=short></div>'+ cityTitle(i) + '<TABLE class=pbTabPad><TR><TD></td></tr></table>'
+//      //    + dispBuildingJob(i) + dispTrainingJobs(i) + '</td></tr></table>';
+        //    }
+        //}
     
         // Marches, building, research, training
         document.getElementById('pbinfCont').innerHTML = m; 
@@ -5865,9 +5865,9 @@ Tabs.Jobs = {
 	tabLabel        : kJobs,
 	cont            : null,
 	timer           : null,
-    buildTimer      : null,
+//    buildTimer      : null,
     buildStatTimer  : null,
-    researchTimer   : null,
+//    researchTimer   : null,
     resStatTimer    : null,
     trainTimer      : null,
     trainStatTimer  : null,
@@ -5894,12 +5894,13 @@ Tabs.Jobs = {
 		// Tab initialization
 		t.cont = div;
 		div.innerHTML =  '<TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
-			<INPUT class=button type=submit value="Info" id=pbjobInfo></INPUT>\
+			<INPUT class=button type=submit value="Job Info" id=pbjobInfo></INPUT>\
 			<INPUT class=button type=submit value="Train" id=pbjobTrain></INPUT>\
 			<INPUT class=button type=submit value="Build" id=pbjobBuild></INPUT>\
 			<INPUT class=button type=submit value="Research" id=pbjobResearch></INPUT>\
 			</TD></TR></TABLE>\
-			<DIV id=pbjobContent style="padding-top:5px; height:700px; max-height:700px; overflow-y:auto;"></div>';
+			<DIV id=pbjobHeader style="padding-top:5px; height:260px; max-height:260px;"></div>\
+			<DIV id=pbjobContent style="padding-top:5px; height:435px; max-height:800px; overflow-y:auto;"></div>';
 			
 		document.getElementById('pbjobInfo').addEventListener ('click', t.tabJobInfo, false);
 		document.getElementById('pbjobTrain').addEventListener ('click', t.tabJobTrain, false);	
@@ -5962,6 +5963,12 @@ Tabs.Jobs = {
             if (!Data.options.autoResearch.researchCap[i])
                 Data.options.autoResearch.researchCap[i] = {};
         }
+        
+        // Enable the jobs
+        t.setTrainEnable (Data.options.autoTrain.enabled);	
+        t.selectedQ = Data.options.trainQChoice;
+        t.setBuildEnable (Data.options.autoBuild.enabled);
+        t.setResearchEnable (Data.options.autoResearch.enabled);
 	},
 
 	show : function (){
@@ -5977,7 +5984,7 @@ Tabs.Jobs = {
 	
 	hide : function (){
 		var t = Tabs.Jobs;
-		t.clearTimers();
+		//t.clearTimers();
 	},
 	
     onUnload : function (){
@@ -6014,9 +6021,12 @@ Tabs.Jobs = {
 		t.timer = setInterval (t.tabJobInfo, 1000);
 		
 		var city = Seed.s.cities[0];
-		var m = '<DIV class=pbTitle>Information</DIV>';
-		m += cityTitle(0);
-		m += '<TABLE class=pbTabPad>' + dispBuildingJob(0) + dispResearchJob(0) + dispTrainingJobs(0) + '</td></tr></table>';
+		var n = '<DIV class=pbTitle>Information</DIV>';
+		n += cityTitle(0);
+		document.getElementById('pbjobHeader').style.height = "45px";
+		document.getElementById('pbjobHeader').innerHTML = n;
+		
+		var m = '<TABLE class=pbTabPad>' + dispBuildingJob(0) + dispResearchJob(0) + dispTrainingJobs(0) + '</td></tr></table>';
   
 		// outposts ...
 		if (Seed.s.cities.length > 0){
@@ -6025,6 +6035,7 @@ Tabs.Jobs = {
 			}
 		}
     
+		document.getElementById('pbjobContent').style.height = "665px";
 		document.getElementById('pbjobContent').innerHTML = m; 
     	
 		// Display build queue
@@ -6110,21 +6121,26 @@ Tabs.Jobs = {
 		t.trainStatTimer = setInterval(t.trainStatTick, 1000);
 
 	   // Create status ticker
-        var m = '<DIV class=pbTitle>'+ kAutoTrain +'</div>\
+        var n = '<DIV class=pbTitle>'+ kAutoTrain +'</div>\
                  <DIV class=pbStatBox style="margin-bottom: 5px !important"><CENTER><INPUT id=pbtrnOnOff type=submit\></center>\
-                 <DIV id=pbtrnTrnStat style="height:165px; max-height: 165px; overflow:auto;"></div> <BR>\
+                 <DIV id=pbtrnTrnStat style="height: 126px; max-height: 126px; overflow:auto;"></div> <BR>\
                  <DIV id=pbtrnFeedback style="font-weight:bold; border: 1px solid green; padding: 2px 0px 2px 2px; height:34px"></div>  </div>\
                  <TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
                  <INPUT class=button type=submit value='+ kTrain +' id=pbttTrain></input>\
-                 <INPUT class=button type=submit value='+ kConfig +' id=pbttConfigTrain></input></td></tr></table>\
-                 <DIV id=pbtrnConfig style="padding-top: 5px; overflow:auto;"class=pbInput>';
+                 <INPUT class=button type=submit value='+ kConfig +' id=pbttConfigTrain></input></td></tr></table>';
+		document.getElementById('pbjobHeader').style.height = "258px";
+        document.getElementById('pbjobHeader').innerHTML = n;
         
+        var m = '<DIV id=pbtrnConfig style="padding-top: 5px; overflow:auto;"class=pbInput>';
+        
+		document.getElementById('pbjobContent').style.height = "435px";
         document.getElementById('pbjobContent').innerHTML = m;
       
  	  // Add event listener for auto on/off button
         document.getElementById('pbtrnOnOff').addEventListener ('click', function (){ t.setTrainEnable (!Data.options.autoTrain.enabled);}, false);
         document.getElementById('pbttTrain').addEventListener ('click', t.tabTrain, false);
         document.getElementById('pbttConfigTrain').addEventListener ('click', t.tabConfigTrain, false);
+        t.refreshTrainButton (Data.options.autoTrain.enabled);
     
         switch (t.trainContentType) {
             case 0: t.tabTrain(); break;
@@ -6132,8 +6148,6 @@ Tabs.Jobs = {
         }
 
         window.addEventListener ('unload', t.onUnload, false);
-        t.setTrainEnable (Data.options.autoTrain.enabled);	
-        t.selectedQ = Data.options.trainQChoice;
 	
 	   // Display error message
         function dispError (msg){
@@ -6167,10 +6181,14 @@ Tabs.Jobs = {
 		//var m = '<DIV class=pbTitle>Auto Build</div>';
 		//document.getElementById('pbjobContent').innerHTML = m;	
 
-        var m = '<DIV class=pbTitle>'+ kAutoUpgradeBuildings +'</div>\
+        var n = '<DIV class=pbTitle>'+ kAutoUpgradeBuildings +'</div>\
                  <DIV class=pbStatBox><CENTER><INPUT id=pbbldOnOff type=submit\></center>\
-                 <DIV id=pbbldBldStat></div> <BR> <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>\
-                 <DIV id=pbbldConfig class=pbInput>';
+                 <DIV id=pbbldBldStat style="height: 126px; max-height: 126px; overflow:auto;"></div> <BR>\
+                 <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>';
+		document.getElementById('pbjobHeader').style.height = "240px";
+        document.getElementById('pbjobHeader').innerHTML = n;
+        
+        var m = '<DIV id=pbbldConfig class=pbInput>';
     
         var el = [], listC = [], listF = [];
     
@@ -6201,6 +6219,7 @@ Tabs.Jobs = {
             m += '</table></td></tr></table>';
         }    
         m += '</div>';
+		document.getElementById('pbjobContent').style.height = "475px";
         document.getElementById('pbjobContent').innerHTML = m;
     
         // Add the event listeners for each city's building types
@@ -6232,8 +6251,8 @@ Tabs.Jobs = {
             }
         }
       
-        t.setBuildEnable (Data.options.autoBuild.enabled);
         document.getElementById('pbbldOnOff').addEventListener ('click', function (){t.setBuildEnable (!Data.options.autoBuild.enabled);}, false);
+        t.refreshBuildButton (Data.options.autoBuild.enabled);
     
         function checked (evt){
             var id = evt.target.id.split ('_');
@@ -6288,10 +6307,14 @@ Tabs.Jobs = {
 		t.clearTimers();
         t.resStatTimer = setInterval (t.resStatTick, 1000); // start the research statistics timer
         
-        var m = '<DIV class=pbTitle>'+ kAutoResearch +'</div>\
+        var n = '<DIV class=pbTitle>'+ kAutoResearch +'</div>\
                  <DIV class=pbStatBox><CENTER><INPUT id=pbresOnOff type=submit\></center>\
-                 <DIV id=pbresStat></div> <BR> <DIV id=pbresFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>\
-                 <DIV id=pbresConfig class=pbInput>';
+                 <DIV id=pbresStat style="height: 126px; max-height: 126px; overflow:auto;"></div> <BR>\
+                 <DIV id=pbresFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>';
+		document.getElementById('pbjobHeader').style.height = "230px";
+		document.getElementById('pbjobHeader').innerHTML = n;
+		
+        var m = '<DIV id=pbresConfig class=pbInput>';
     
         var el = [];
         var city = Seed.s.cities[0];
@@ -6305,6 +6328,7 @@ Tabs.Jobs = {
         }
         m += '</table></td><TD><TABLE class=pbTab>';  
         m += '</div>';
+		document.getElementById('pbjobContent').style.height = "435px";
 		document.getElementById('pbjobContent').innerHTML = m;
     
         // Add the event listeners for the research types
@@ -6333,9 +6357,9 @@ Tabs.Jobs = {
             ++ii;
         }
       
-        t.setResearchEnable (Data.options.autoResearch.enabled);
         document.getElementById('pbresOnOff').addEventListener ('click', function (){t.setResearchEnable (!Data.options.autoResearch.enabled);}, false);
-    
+        t.refreshResearchButton (Data.options.autoResearch.enabled);
+        
         function checked (evt){
             var rId = evt.target.id.split ('_');
             Data.options.autoResearch.researchEnable[rId[1]][rId[2]] = evt.target.checked;
@@ -6375,15 +6399,19 @@ Tabs.Jobs = {
         var but = document.getElementById('pbtrnOnOff');
         Data.options.autoTrain.enabled = onOff;
         if (onOff){
-            but.value = kAutoOn;
-            but.className = 'butAttackOn';
-            t.trainTimer = setInterval(function() {t.trainTick(0) }, 3000);
+            if (but) {
+                but.value = kAutoOn;
+                but.className = 'butAttackOn';
+            }
+            Data.options.trainTimer = setInterval(function() {t.trainTick(0) }, 3000);
         } 
         else {
-            but.value = kAutoOff;
-            but.className = 'butAttackOff';
+            if (but) {
+                but.value = kAutoOff;
+                but.className = 'butAttackOff';
+            }
             t.dispFeedback(""); // Erase previous feedback
-            clearTimeout (t.trainTimer);
+            clearTimeout (Data.options.trainTimer);
         }
     },
   	
@@ -6392,14 +6420,18 @@ Tabs.Jobs = {
         var but = document.getElementById('pbbldOnOff');
         Data.options.autoBuild.enabled = onOff;
         if (onOff){
-            but.value = kAutoBuildOn;
-            but.className = 'butAttackOn';
-            t.buildTimer = setInterval (t.buildTick, 4000);
+            if (but) {
+                but.value = kAutoBuildOn;
+                but.className = 'butAttackOn';
+            }
+            Data.options.buildTimer = setInterval (t.buildTick, 4000);
         } 
         else {
-            but.value = kAutoBuildOff;
-            but.className = 'butAttackOff';
-            clearTimeout (t.buildTimer);
+            if (but) {
+                but.value = kAutoBuildOff;
+                but.className = 'butAttackOff';
+            }
+            clearTimeout (Data.options.buildTimer);
             Data.options.tJobs.length = 0;
         }
     },
@@ -6410,15 +6442,64 @@ Tabs.Jobs = {
 
         Data.options.autoResearch.enabled = onOff;
         if (onOff){
+            if (but) {
+                but.value = kAutoResearchOn;
+                but.className = 'butAttackOn';
+            }
+            Data.options.researchTimer = setInterval(t.researchTick, 5000);
+        } 
+        else {
+            if (but) {
+                but.value = kAutoResearchOff;
+                but.className = 'butAttackOff';
+            }
+            clearTimeout (Data.options.researchTimer);
+            Data.options.rJobs.length = 0;
+        }
+    },
+    
+    refreshTrainButton : function (onOff) {
+        var t = Tabs.Jobs;
+        var but = document.getElementById('pbtrnOnOff');
+
+        if (onOff){
+            but.value = kAutoOn;
+            but.className = 'butAttackOn';
+
+        } 
+        else {
+            but.value = kAutoOff;
+            but.className = 'butAttackOff';
+        }
+    },
+
+    refreshBuildButton : function (onOff) {
+        var t = Tabs.Jobs;
+        var but = document.getElementById('pbbldOnOff');
+
+        if (onOff){
+            but.value = kAutoBuildOn;
+            but.className = 'butAttackOn';
+
+        } 
+        else {
+            but.value = kAutoBuildOff;
+            but.className = 'butAttackOff';
+        }
+    },
+
+    refreshResearchButton : function (onOff) {
+        var t = Tabs.Jobs;
+        var but = document.getElementById('pbresOnOff');
+
+        if (onOff){
             but.value = kAutoResearchOn;
             but.className = 'butAttackOn';
-            t.researchTimer = setInterval(t.researchTick, 5000);
+
         } 
         else {
             but.value = kAutoResearchOff;
             but.className = 'butAttackOff';
-            clearTimeout (t.researchTimer);
-            Data.options.rJobs.length = 0;
         }
     },
 
@@ -6633,7 +6714,7 @@ Tabs.Jobs = {
         for (var i=0; i < cityType.length; i++) {
             if (cityType[i] == buildingType) {
                 try {
-                    cap = (Data.options.autoBuild.buildCap[0][i]) ? Data.options.autoBuild.buildCap[0][i] : 0; 
+                    cap = (Data.options.autoBuild.buildCap[cityIdx][i]) ? Data.options.autoBuild.buildCap[cityIdx][i] : 0; 
                     break;
                 }
                 catch (e) {
@@ -8547,10 +8628,10 @@ Tabs.Jobs = {
                                 !Data.options.tJobs[i].duration ||
                                 Data.options.tJobs[i].run_at + Data.options.tJobs[i].duration > serverTime()) {
                                 
-                                Data.options.tJobs.splice(i,1)
+                                Data.options.tJobs.splice(i,1);
                                 Seed.fetchSeed ();
-                                clearTimeout (t.buildTimer);
-                                t.BuildTimer = setInterval (t.buildTick, 4000);
+                                clearTimeout (Data.options.buildTimer);
+                                Data.options.buildTimer = setInterval (t.buildTick, 4000);
                                 return;
                             }
                         }
@@ -8567,6 +8648,7 @@ Tabs.Jobs = {
                             bl = bl.concat (bldg);
                         }
                     }
+                    bl.sort (function(a,b){return a.level-b.level});
                     
                     // Change: we want to iterate over each buildings comparing the level to the cap. If the cap has not
                     // been reached, call doBuild
@@ -8635,8 +8717,8 @@ Tabs.Jobs = {
                 if (t.doBuildRecheck) {
                     Seed.fetchSeed();
                     t.doBuildRecheck = false;
-                    clearTimeout(t.buildTimer);
-                    t.buildTimer = setInterval (t.buildTick, 20000);
+                    clearTimeout(Data.options.buildTimer);
+                    Data.options.buildTimer = setInterval (t.buildTick, 20000);
                     if (t.contentType == 2) t.dispFeedback ("Completion errors: waiting 20 seconds to try again"); 
                     return;              
                 }      
@@ -8672,8 +8754,8 @@ Tabs.Jobs = {
                             // Yes, has the job completed?
                             Data.options.rJobs.splice(i,1);
                             Seed.fetchSeed();
-                            clearTimeout (t.researchTimer);
-                            t.researchTimer = setInterval (t.researchTick, 5000);
+                            clearTimeout (Data.options.researchTimer);
+                            Data.options.researchTimer = setInterval (t.researchTick, 5000);
                             return;
                         }
                     }
@@ -8743,8 +8825,8 @@ Tabs.Jobs = {
             if (t.doResRecheck) {
                 Seed.fetchSeed();
                 t.doResRecheck = false;
-                clearTimeout(t.researchTimer);
-                t.researchTimer = setInterval (t.researchTick, 20000);
+                clearTimeout(Data.options.researchTimer);
+                Data.options.researchTimer = setInterval (t.researchTick, 20000);
                 if (t.contentType == 3) t.dispFeedback ("Completion errors: waiting 20 seconds to try again");               
             }
         }); 
@@ -8847,7 +8929,7 @@ Tabs.Jobs = {
         }
         if (doRecheck) {
             Seed.fetchSeed();
-            //t.trainTimer = setTimeout (function() {t.trainTick(i)}, 20000);
+            //Data.options.trainTimer = setTimeout (function() {t.trainTick(i)}, 20000);
         }		
 	},
   
@@ -8945,7 +9027,7 @@ Tabs.Jobs = {
             }
         }
         if (doRecheck) {
-           // t.trainTimer = setTimeout (function() {t.trainTick(i)}, 3000);
+           // Data.options.trainTimer = setTimeout (function() {t.trainTick(i)}, 3000);
         }
         // See if we have space in the queue before we try to run the jobs
         var qLen = 0;
@@ -9020,14 +9102,15 @@ Tabs.Jobs = {
 		//t.dispFeedback (msg);
 
 		Ajax.troopTraining (troopType, troopQty, city.id, function (rslt){
-			Seed.fetchCity (city.id, 1000);
+			//Seed.fetchCity (city.id, 1000);
 			if (rslt.ok){
-				t.errorCount = 0;
+				t.trainErrorCount = 0;
 				actionLog (msg);
+				Data.options.trainTimer = setInterval(function() {t.trainTick(0) }, 3000);
 				return;
 			} 
             else {
-				Seed.fetchSeed();
+				//Seed.fetchSeed();
 				actionLog (kTrainError + rslt.errmsg);
 				// The queue is frequently full, but we could be getting server errors (500) too
 				// Wait a couple of minutes
@@ -9038,7 +9121,7 @@ Tabs.Jobs = {
 					return;
 				}
 				if (t.contentType == 1) t.dispFeedback (kTrainError + rslt.errmsg);
-				//t.trainTimer = setTimeout (t.trainTick, 180000);
+				Data.options.trainTimer = setInterval(function() {t.trainTick(ic) }, 180000);
 				return;
 			}
 		});
@@ -9061,7 +9144,7 @@ Tabs.Jobs = {
             if (rslt.ok){
                 t.buildErrorCount = 0;
                 actionLog (msg);
-                //t.buildTimer = setTimeout (t.buildTick, 8000);
+                //Data.options.buildTimer = setTimeout (t.buildTick, 8000);
                 return;
             } 
             else {
@@ -9074,7 +9157,7 @@ Tabs.Jobs = {
                     return;
                 }
                 if (t.contentType == 2) t.dispFeedback (building.type + ': ' + rslt.errmsg);
-                //t.buildTimer = setTimeout (t.buildTick, 20000);
+                //Data.options.buildTimer = setTimeout (t.buildTick, 20000);
                 t.doBuildRecheck = true;
                 return;
             }
@@ -9271,74 +9354,94 @@ Tabs.Options = {
   tabLabel : kOpts,
   cont : null,
   fixAvailable : {},
-  autoCollectInterval : 8,
 
-  init : function (div){
-    var t = Tabs.Options;
-    t.cont = div;
-    try {      
-      m = '<DIV class=pbTitle style="margin-bottom:10px">'+ kOptions +'</div><TABLE class=pbTab>\
-        <TR valign=top><TD colspan=2><B>Config:</b></td></tr>\
-        <TR valign=top><TD><INPUT id=ptAllowWinMove type=checkbox /></td><TD>'+ kEnableDrag +'</td></tr>\
-        <TR valign=top><TD colspan=2><B><BR>'+ kFeatures +'</b></td></tr>\
-        <TR><TD><INPUT id=pboptACol type=checkbox /></td><TD>'+ kAutoCollectAt +'<SELECT id=pboptColInt size="1">\
-        <option value="1">1</option>\
-        <option value="2">2</option>\
-        <option value="3">3</option>\
-        <option value="4">4</option>\
-        <option value="5">5</option>\
-        <option value="6">6</option>\
-        <option value="7">7</option>\
-        <option value="8">8</option>\
-        </select> hour(s)</td></tr>\
-        </table><BR><HR>';
-      t.cont.innerHTML = m;
-      
-      var selectMenu = document.getElementById('pboptColInt');
-      selectMenu.options[Data.options.autoColInt-1].selected = true;
-      selectMenu.selectedIndex = Data.options.autoColInt-1;
-      
-      t.togOpt ('ptAllowWinMove', Data.options.ptWinDrag, mainPop.setEnableDrag);
-      t.togOpt ('pboptACol', Data.options.autoCollect.enabled, AutoCollect.setEnable);
-      document.getElementById('pboptColInt').addEventListener('change', changeColInt, false);
-      
-      function changeColInt (e) {
-        Data.options.autoColInt = e.target[e.target.selectedIndex].value;
-        Data.options.autoCollect.delay = Data.options.autoColInt * 3600;       
-      }
-      
-    } catch (e) {
-      t.cont.innerHTML = '<PRE>'+ e.name +' : '+ e.message +'</pre>';  
-    }
-  },
+	init : function (div){
+		var t = Tabs.Options;
+		t.cont = div;
+
+		var selected = new Array(4);
+		for (var i = 0; i < selected.length; i++)
+			selected[i] = '';
+		switch (Data.options.autoCollect.unit) {
+			case 1:
+				selected[1] = 'selected';
+				break
+			case 60:
+				selected[2] = 'selected';
+				break;
+			case 3600:
+				selected[3] = 'selected';
+				break;
+			case 86400:
+				selected[4] = 'selected';
+				break;
+			default:
+				selected[3] = 'selected';
+		}
+
+		try {      
+			m = '<DIV class=pbTitle style="margin-bottom:10px">'+ kOptions +'</div><TABLE class=pbTab>\
+				<TR valign=top><TD colspan=2><B>Config:</B></TD></TR>\
+				<TR valign=top><TD><INPUT id=ptAllowWinMove type=checkbox /></TD><TD>'+ kEnableDrag +'</TD></TR>\
+				<TR valign=top><TD colspan=2><B><BR>'+ kFeatures +'</B></TD></TR>\
+				<TR><TD><INPUT id=pboptACol type=checkbox /></TD><TD>'+ kAutoCollectAt +'<INPUT id=pboptAColTime size=1 maxlength=2 type=text value="'+ Data.options.autoCollect.delay +'" /></TD><TD>\
+				<SELECT id=pboptAColUnit size=1>\
+				<OPTION value=1 '+selected[1]+'>Second(s)</OPTION>\
+				<OPTION value=60 '+selected[2]+'>Minute(s)</OPTION>\
+				<OPTION value=3600 '+selected[3]+'>Hour(s)</OPTION>\
+				<OPTION value=86400 '+selected[4]+'>Day(s)</OPTION>\
+				</SELECT></TD></TR></TABLE><BR><HR>';
+			t.cont.innerHTML = m;
+			t.togOpt ('ptAllowWinMove', Data.options.ptWinDrag, mainPop.setEnableDrag);
+			t.togOpt ('pboptACol', Data.options.autoCollect.enabled, AutoCollect.setEnable);
+			document.getElementById('pboptAColTime').addEventListener ('change', t.timeChanged, false);
+			document.getElementById('pboptAColUnit').addEventListener ('change', t.unitChanged, false);
+		} catch (e) {
+			t.cont.innerHTML = '<PRE>'+ e.name +' : '+ e.message +'</pre>';  
+		}
+	},  
+	
+	timeChanged : function (e){
+		var etime = document.getElementById('pboptAColTime');
+		var time = parseIntZero (etime.value);
+		etime.value = time;
+		Data.options.autoCollect.delay = time;
+	},
   
-  hide : function (){
-  },
-  show : function (){
-  },
+	unitChanged : function (e){
+		var eunit = document.getElementById('pboptAColUnit');
+		var unit = parseIntZero (eunit.value);
+		eunit.value = unit;
+		Data.options.autoCollect.unit = unit;
+	},
+	
+	hide : function (){
+	},
   
-  togOpt : function (checkboxId, optionVar, callEnable, callIsAvailable){
-    var t = Tabs.Options;
-    var checkbox = document.getElementById(checkboxId);
-    
-    if (callIsAvailable && callIsAvailable()==false){
-      checkbox.disabled = true;
-      return;
-    }
-    if (optionVar)
-      checkbox.checked = true;
-    checkbox.addEventListener ('change', new eventToggle(checkboxId, optionVar, callEnable).handler, false);
-    function eventToggle (checkboxId, optionVar, callOnChange){
-      this.handler = handler;
-      var optVar = optionVar;
-      var callback = callOnChange;
-      function handler(event){
-        optVar = this.checked;
-        if (callback != null)
-          callback (this.checked);
-      }
-    }
-  },
+	show : function (){
+	},
+  
+	togOpt : function (checkboxId, optionVar, callEnable, callIsAvailable){
+		var t = Tabs.Options;
+		var checkbox = document.getElementById(checkboxId);
+		if (callIsAvailable && callIsAvailable()==false){
+			checkbox.disabled = true;
+			return;
+		}
+		if (optionVar)
+			checkbox.checked = true;
+		checkbox.addEventListener ('change', new eventToggle(checkboxId, optionVar, callEnable).handler, false);
+		function eventToggle (checkboxId, optionVar, callOnChange){
+			this.handler = handler;
+			var optVar = optionVar;
+			var callback = callOnChange;
+			function handler(event){
+				optVar = this.checked;
+				if (callback != null)
+					callback (this.checked);
+			}
+		}
+	},
 }
 
 
@@ -9422,7 +9525,7 @@ var Map = {
     ret.done = false;
     t.callback (ret);  
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    setTimeout (function(){new MyAjaxRequest ('map.json', { '%5Fsession%5Fid':C.attrs.sessionId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), version:3 }, t.got, false);}, MAP_DELAY);
+    setTimeout (function(){new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:4 }, t.got, false);}, MAP_DELAY);
  },
 
      
@@ -9772,7 +9875,7 @@ function CdialogCancelContinue (msg, canNotify, contNotify, centerElement){
     pop.centerMe(centerElement);
   else
     pop.centerMe(document.body);
-  pop.getTopDiv().innerHTML = '<CENTER>'+ kDOAPowerTools +'</center>';
+  pop.getTopDiv().innerHTML = '<CENTER>'+ Title +'</center>';
   pop.getMainDiv().innerHTML = '<TABLE class=ptTab align=center style="height: 100%"><TR align=center height=90%><TD>'+ msg +'</td></tr>\
       <TR align=center><TD><INPUT id=ptcccancel type=submit value='+ kCancel +' \> &nbsp; &nbsp; <INPUT id=ptcccontin type=submit value='+ kContinue +' \></td></tr></table>';
   document.getElementById('ptcccancel').addEventListener ('click', function (){pop.show(false); if (canNotify) canNotify();}, false);
@@ -9780,18 +9883,18 @@ function CdialogCancelContinue (msg, canNotify, contNotify, centerElement){
   pop.show(true);
 }
 
-
+var rTimer;
+var cdTimer;
+  
 // TODO: add 'Retry Now' button
 function DialogRetry (errMsg, seconds, onRetry, onCancel){
-  var secs;
+  var secs, pop;
   var pop;
-  var rTimer;
-  var cdTimer;
   
     secs = parseInt(seconds);
     pop = new CPopup ('pbretry', 0, 0, 400,200, true);
     pop.centerMe(mainPop.getMainDiv());
-    pop.getTopDiv().innerHTML = '<CENTER>'+ kDOAPowerTools +'</center>';
+    pop.getTopDiv().innerHTML = '<CENTER>'+ Title +'</center>';
     pop.getMainDiv().innerHTML = '<CENTER><BR><FONT COLOR=#550000><B>'+ kErrorOccurred +'</b></font><BR><BR><DIV id=paretryErrMsg></div>\
         <BR><BR><B>'+ kAutoRetry +'<SPAN id=paretrySeconds></b></span>'+ kSeconds1 +'<BR><BR><INPUT id=paretryCancel type=submit value='+ kCancelRetry +' \>';
     document.getElementById('paretryCancel').addEventListener ('click', doCancel, false);
@@ -10283,6 +10386,7 @@ function CPopup (prefix, x, y, width, height, enableDrag, onClose) {
   }
   function setEnableDrag (tf){
     t.dragger.setEnable(tf);
+	Data.options.ptWinDrag = tf;
   }
   function setLayer(zi){
     t.div.style.zIndex = ''+ (this.BASE_ZINDEX + zi);
