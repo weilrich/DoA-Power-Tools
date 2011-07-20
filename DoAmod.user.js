@@ -1,15 +1,15 @@
 // ==UserScript==
-// @name          DOA Power Tools Plus
+// @name          DoA Power Tools Plus
 // @namespace     http://www.mmogwiki.com/scripts/dragonsofatlantis
 // @description   Enhanced Power Tools for Dragons of Atlantis
 // @include       http://*.castle.wonderhill.com/*
 // @include       http://apps.facebook.com/dragonsofatlantis/*
-// @version       20110718b
+// @version       20110720a
 // ==/UserScript==
 
-var Version = '20110718b';
-var Title = 'DoA Power Tools Plus';
-var WebSite = 'www.mmogwiki.com';
+var Version = '20110720b';
+var Title = 'Kabam Sucks';
+var WebSite = ''; //www.mmogwiki.com
 var VERSION_CHECK_HOURS = 4;
 var DEBUG_TRACE_AJAX = 2;
 var DEBUG_MARCHES = false;
@@ -29,12 +29,14 @@ var JOBS_TAB_ORDER = 7;
 var LOG_TAB_ORDER = 8;
 var OPTIONS_TAB_ORDER = 9;
 var DEBUG_TAB_ORDER = 99;
-var WIN_POS_X = 760;
+var WIN_POS_X = 735;
 var WIN_POS_Y = 129;
 var BUTTON_BGCOLOR = '#436';
 var JOB_BUTTON_BGCOLOR = '#049C93';
 
 var IsChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
+
+var wordArr = ['Czar', 'Bright', 'Work', 'Power', 'Tools', 'Dragons', 'Fire', 'Water', 'Lava', 'Metal', 'Stone', 'Protect', 'Branch', 'Child', 'New', 'Fangled', 'Flugel', 'Horn', 'Perfect', 'Myth', 'Jelly', 'Graph', 'Quick', 'Thorn', 'Pitbull', 'Tech', 'Cow', 'Middle', 'Brow', 'Hammer', 'Chord', 'Dazzle', 'Elemental', 'Brillig', 'Craft', 'Thumb', 'Print', 'Crtyp', 'Torch', 'Light', 'Bank', 'Final', 'Epic', 'Desk', 'Marble', 'Aqua', 'Phoenix', 'Peanut', 'Halo', 'Nimbus', 'Cloud', 'Seed',];
 
 //
 // Translation strings - will use preprocessor #ifdef to create translations
@@ -132,9 +134,9 @@ var kGDHelmet = 'GreatDragonHelment';
 var kGDTailGuard = 'GreatDragonTailGuard';
 
 // Error messages
-var kFatalSWF = translate ('"<B>Error initializing DOA Power Tools Plus</b><BR><BR>Unable to find SWF element"');
-var kStartupErr = translate ('"Unable to start DOA Power Tools Plus<BR>"');
-var kInitErr = translate ('"<B>Error initializing DOA Power Tools Plus</b><BR><BR>"');
+var kFatalSWF = translate ('"<B>Error initializing "'+ Title +'"</b><BR><BR>Unable to find SWF element"');
+var kStartupErr = translate ('"Unable to start "'+ Title +'"<BR>"');
+var kInitErr = translate ('"<B>Error initializing "'+ Title +'"</b><BR><BR>"');
 var kNoTroops = translate ('No troops available');
 var kErrSendAttack = translate ('ERROR! (sendAttack is busy, no response from server?)');
 var kAttackErr = translate ('Attack Error: ');
@@ -182,7 +184,7 @@ var kAttackSent = translate ('Attack sent to level ');
 var kAutoAttack = translate ('Auto-attack ');
 var kAutoAttackConfig = translate ('Auto-attack Configuration');
 var kRandomDelay = translate ('Random delay between attacks:');
-var kDOAVersionString = translate ('DOA Power Tools Plus - v');
+var kDOAVersionString = translate (Title + ' - v');
 var kTo = translate (' to ');
 var kSeconds = translate (' seconds ');
 var kSameTargetDelay = translate ('Same target delay: ');
@@ -241,7 +243,7 @@ var kAutoRetry = translate ('Automatic retry in ');
 var kSeconds1 =  translate (kSeconds) +' ...';
 var kCancelRetry = translate ('"CANCEL Retry"');
 var kNewVersionAvailable = translate ('New Version Available!');
-var kAnnounceVersion = translate ('There is a new version of DOA Power Tools Plus<BR><BR>Version: ');
+var kAnnounceVersion = translate ('There is a new version of '+ Title +'<BR><BR>Version: ');
 var kRemindLater = translate ('"Remind me later"');
 var kNoReminder = translate ('"Don\'t remind me again"');
 var kTargetCoords = translate ('Target Coords: ');
@@ -594,7 +596,7 @@ TODO:
 var OptionsDefaults = {
   ptWinIsOpen   : true,
   ptWinDrag     : true,
-  ptWinPos     : {x: 760, y: 93 },
+  ptWinPos     : {x: 735, y: 93 },
   objAttack     : {enabled:false, repeatTime:3660, delayMin:30, delayMax:60, levelEnable:[], levelDist:[null,10,10,10,10,10,10,10,10,10,10], deleteObjAttacks:false, stopAttackOnLoss:false, logAttacks:true, maxMarches:10, troops:[], clearAllTargets:false},
   currentTab    : false,
   attackTab     : 0,
@@ -652,8 +654,8 @@ var Styles = '\
     table.pbMainTab tr td.spacer {padding: 0px 3px; border:none; }\
     table.pbMainTab tr td.sel    {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#eed; cursor:hand; cursor:pointer; padding: 2px;}\
     table.pbMainTab tr td.notSel {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#0044a0; color:white; border-color:black; cursor:hand; cursor:pointer; padding: 2px;}\
-    .CPopup .CPopMain { background-color:#f8f8f8; padding:6px;}\
-    .CPopup  {border:3px ridge #666}\
+    .CP .CPMain { background-color:#f8f8f8; padding:6px;}\
+    .CP  {border:3px ridge #666}\
     input.butAttackOff {width:130px; background-color:#e80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
     input.butAttackOff:hover {width:130px; background-color:#f80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
     input.butAttackOn {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
@@ -761,19 +763,11 @@ var dtStartupTimer = null;
 var doatLoaded = false;
 var startupCount = 0;
 
-function makeid(){
-    var text = "";
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-    for( var i=0; i < 5; i++ )
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
-}
-
 // Main entry
 function dtStartup (){
+	//alert('dtStartup');
   clearTimeout (dtStartupTimer);
+  pickRandomTitle();
   if (doatLoaded)
     return;
 logit ('dtStartup'); 
@@ -786,7 +780,7 @@ logit ('dtStartup');
     var swf = null;
     var obs = document.getElementsByTagName ('object');
     if (obs.length < 1){
-      dtStartupTimer = setTimeout (dtStartup, 1000);
+      dtStartupTimer = setTimeout (dtStartup, 10000);
       return;
     }
     for (var i=0; i<obs.length; i++){
@@ -798,11 +792,11 @@ logit ('dtStartup');
       }
     }
     if (!C.attrs.apiServer){
-      dtStartupTimer = setTimeout (dtStartup, 1000);
+      dtStartupTimer = setTimeout (dtStartup, 10000);
       return;
     }  
   } catch (e){
-    dtStartupTimer = setTimeout (dtStartup, 1000);
+    dtStartupTimer = setTimeout (dtStartup, 10000);
     return;
   }
 
@@ -819,7 +813,7 @@ logit ('dtStartup');
       swfCont.style.background = 'none';
     }
     try {
-      document.getElementById('hd').style.width = '760px';   
+      document.getElementById('hd').style.width = '735px';   
       document.getElementById('content').style.margin = '';   
     } catch (e) {}
     Seed.init(function(rslt){
@@ -832,10 +826,9 @@ logit ('dtStartup');
       }
     });
     
-    logit ("* DOA Power Tools Plus v"+ Version +" Loaded");
-    
+    logit ("* "+ Title +" v"+ Version +" Loaded");
     var popName = makeid();
-    mainPop = new CPopup (popName, Data.options.ptWinPos.x, Data.options.ptWinPos.y, 400,785, Data.options.ptWinDrag, 
+    mainPop = new CPopup (popName, Data.options.ptWinPos.x, Data.options.ptWinPos.y, 400,800, Data.options.ptWinDrag, 
         function (){
           tabManager.hideTab();
           WinTracker.show (false);
@@ -849,7 +842,7 @@ logit ('dtStartup');
         tabManager.showTab();
       }
       AddMainTabLink('DOA Tools', eventHideShow, mouseMainTab);
-      actionLog ("* DOA Power Tools Plus v"+ Version +" Loaded");
+      actionLog ("* "+ Title +" v"+ Version +" Loaded");
       AutoCollect.init ();
       TestSomething.init ();
       Messages.init ();
@@ -907,10 +900,11 @@ function onUnload (){
 
 // Translation
 function dialogFatal (msg){
-  var pop = new CPopup ('dtfatal', 200,300, 400,300, true); 
-  pop.getMainDiv ().innerHTML = '<STYLE>'+ Styles +'</style><BR>'+ msg ;
-  pop.getTopDiv ().innerHTML = '<B><CENTER>Uh ohs</center></b>' ;
-  pop.show(true);
+    var popName = makeid();
+    var pop = new CPopup (popName, 200,300, 400,300, true); 
+    pop.getMainDiv ().innerHTML = '<STYLE>'+ Styles +'</style><BR>'+ msg ;
+    pop.getTopDiv ().innerHTML = '<B><CENTER>Uh ohs</center></b>' ;
+    pop.show(true);
 }
 
 var RequestQueue = {
@@ -968,7 +962,8 @@ function checkVersion (){
       var m = r.responseText.match (/var \s*Version\s*=\s*\'(.*)\'/m);
       if (m && m[1]!=Data.options.version.checkVersion){
         clearTimeout (timer);
-        pop = new CPopup ('dtver', Data.options.ptWinPos.x, Data.options.ptWinPos.y, 300,200, Data.options.ptWinDrag, remindLater); 
+        var popName = makeid();
+        pop = new CPopup (popName, Data.options.ptWinPos.x, Data.options.ptWinPos.y, 300,200, Data.options.ptWinDrag, remindLater); 
         // Translation
         pop.getTopDiv ().innerHTML = '<CENTER><B>'+ kNewVersionAvailable +'</b></center>';
         pop.getMainDiv ().innerHTML = '<STYLE>'+ Styles +'</style><BR><CENTER>'+ kAnnounceVersion + m[1] 
@@ -1163,7 +1158,7 @@ var Seed = {
   fetchSeed : function (notify) {
     var t = Seed;
     var now = new Date().getTime() / 1000;
-    new MyAjaxRequest ('player.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, '%5Fsession%5Fid':C.attrs.sessionId, version:4, timestamp:parseInt(serverTime()) }, function (rslt){
+    new MyAjaxRequest ('player.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, '%5Fsession%5Fid':C.attrs.sessionId, version:6, timestamp:parseInt(serverTime()) }, function (rslt){
       if (rslt.ok){
         if (rslt.dat.timestamp)
           t.serverTimeOffset = rslt.dat.timestamp - now;
@@ -1427,7 +1422,7 @@ var Seed = {
       maxTime = 5000;
     RequestQueue.add ('fetchCity', doit, maxTime);    
     function doit (){    
-      new MyAjaxRequest ('cities/'+ cityId +'.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:4, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt){
+      new MyAjaxRequest ('cities/'+ cityId +'.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:6, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt){
         var t = Seed;
         if (rslt.ok){
           t.checkIncomingData(rslt);
@@ -3163,7 +3158,7 @@ var Ajax = {
   messageList : function (cat, callback){
     if (!cat)
       cat = 'all';
-    new MyAjaxRequest ('reports.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, count:12, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, category:cat, page:1, version:4 }, mycb, false);
+    new MyAjaxRequest ('reports.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, count:12, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, category:cat, page:1, version:6 }, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3175,7 +3170,7 @@ var Ajax = {
   },
   
   messageDetail : function (id, callback){
-    new MyAjaxRequest ('reports/'+ id +'.json', {'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:4, 'dragon%5Fheart':C.attrs.dragonHeart }, mycb, false);
+    new MyAjaxRequest ('reports/'+ id +'.json', {'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:6, 'dragon%5Fheart':C.attrs.dragonHeart }, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3212,7 +3207,7 @@ var Ajax = {
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
     p['%5Fmethod'] = 'put';
-	p['version'] = 4;
+	p['version'] = 6;
 	p['timestamp'] = parseInt(serverTime());
     new MyAjaxRequest ('cities/'+ cityId +'/buildings/'+ buildingId +'.json', p, mycb, true);
     function mycb (rslt){
@@ -3239,7 +3234,7 @@ var Ajax = {
 	p['units%5Bquantity%5D'] = troopQty;
 	p['units%5Bunit%5Ftype%5D'] = troopType;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 4;
+	p['version'] = 6;
     new MyAjaxRequest ('cities/'+ cityId +'/units.json', p, mycb, true);
     function mycb (rslt){
 	  //logit ("Troop Training Response:\n" + inspect (rslt, 10, 1));
@@ -3384,7 +3379,7 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['user%5Fid'] = C.attrs.userId;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 4;
+	p['version'] = 6;
     new MyAjaxRequest ('cities/'+ cityId +'/marches.json', p, mycb, true);
     function mycb (rslt){
         //logit ("MARCH RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3418,7 +3413,7 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
     p['%5Fmethod'] = 'delete';
-	p['version'] = 4;
+	p['version'] = 6;
 	p['timestamp'] = parseInt(serverTime());
     new MyAjaxRequest ('cities/'+ cityId +'/marches/'+ marchId +'.json', p, mycb, true);
     function mycb (rslt){
@@ -3443,7 +3438,7 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 	p['user%5Fid'] = C.attrs.userId;
 	p['timestamp'] = parseInt(serverTime());
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
-	p['version'] = 4;
+	p['version'] = 6;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
     new MyAjaxRequest ('cities/'+ cityId +'/move_resources.json', p, mycb, true);
     function mycb (rslt){
@@ -3895,7 +3890,8 @@ Tabs.Debug = {
   },
   
   dispScripts : function (){
-    pop = new CPopup ('debug', 0,0, 1000,800, true); 
+    var popName = makeid();
+    pop = new CPopup (popName, 0,0, 1000,800, true); 
     pop.getTopDiv ().innerHTML = '<B><CENTER>Debug - List Scripts</center></b>' ;
     var scripts = document.getElementsByTagName('script');
     var m = '<DIV style="height:560px; max-height:560px; overflow:auto">';
@@ -5875,7 +5871,7 @@ Tabs.Jobs = {
     outpost1Troops  : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop'],
     outpost2Troops  : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'StoneTroop'],
     outpost3Troops  : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'FireTroop'],
-    allTroops       : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop', 'StoneTroop'],
+    allTroops       : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop', 'StoneTroop', 'FireTroop'],
     selectedQ       : kMinHousing,
     trainJobs       : [],
     capitolResearch : {Agriculture:'Agriculture', Woodcraft:'Woodcraft', Masonry:'Masonry', Mining:'Alloys', Clairvoyance:'Clairvoyance', RapidDeployment:'Rapid Deployment', Ballistics:'Weapons Calibration', Metallurgy:'Metallurgy', Medicine:'Medicine', Dragonry:'Dragonry', Levitation:'Levitation', Mercantilism:'Mercantilism', AerialCombat:'Aerial Combat'},
@@ -5887,6 +5883,7 @@ Tabs.Jobs = {
 	capitalResearch : ['Agriculture', 'Woodcraft', 'Masonry', 'Alloys', 'Clairvoyance', 'Rapid Deployment', 'Weapons Calibration', 'Metallurgy', 'Medicine', 'Dragonry', 'Levitation', 'Mercantilism', 'Aerial Combat'],
     contentType     : 0, // 0 = info, 1 = train, 2 = build, 3 = research, these should be enums but Javascript doesn't support that type
     trainContentType: 0, // 0 = train, 1 = config
+    buildScrollPos  : 0,
     
 	init : function (div){
 		var t = Tabs.Jobs;
@@ -5969,6 +5966,9 @@ Tabs.Jobs = {
         t.selectedQ = Data.options.trainQChoice;
         t.setBuildEnable (Data.options.autoBuild.enabled);
         t.setResearchEnable (Data.options.autoResearch.enabled);
+        
+        // Add the unload event listener
+        window.addEventListener('unload', t.onUnload, false);
 	},
 
 	show : function (){
@@ -6095,12 +6095,15 @@ Tabs.Jobs = {
             // Outposts are always defending (until further notice)
             var wallStatus = '';
             var alliance_name = (Seed.s.alliance) ? Seed.s.alliance.name : '';
+            alliance_name = (city.type == 'Outpost') ? '' : alliance_name;
+            var city_type = (city.type == 'Capital') ? 'Capitol' : city.type + ' ' + cityIdx;
+            
             if (cityIdx == 0)
                 wallStatus = (Seed.s.cities[cityIdx].defended) ? '<font class="defending">'+ kDefending +'</font>' : '<font class="hiding">'+ kSanctuary +'</font>';
             else
-                wallStatus = '<font class="defending">'+ kDefending +'</font>';
+                wallStatus = '<font class="defending">'+ kDefending +'</font>';               
       
-            return '<div class=pbSubtitle><TABLE class=pbTab><TR><TD>'+ kCityNumber + (cityIdx+1) +'</td><TD align=center>'+ city.type +'</td><TD align=right>'+ city.x +','+ city.y + ' ' + alliance_name +'</td><TD width=220px align=right>'+ wallStatus +'</td></tr></table></div>';
+            return '<div class=pbSubtitle><TABLE class=pbTab><TR><TD align=left>'+ city_type +'</td><TD align=center>'+ city.x +','+ city.y + '</td><TD align=center width=200px><font color=yellow>' + alliance_name +'</font></td><TD width=80px align=right>'+ wallStatus +'</td></tr></table></div>';
         }
 	},
   
@@ -6146,8 +6149,6 @@ Tabs.Jobs = {
             case 0: t.tabTrain(); break;
             case 1: t.tabConfigTrain(); break;
         }
-
-        window.addEventListener ('unload', t.onUnload, false);
 	
 	   // Display error message
         function dispError (msg){
@@ -6221,6 +6222,7 @@ Tabs.Jobs = {
         m += '</div>';
 		document.getElementById('pbjobContent').style.height = "475px";
         document.getElementById('pbjobContent').innerHTML = m;
+        document.getElementById('pbjobContent').scrollTop = t.buildScrollPos;
     
         // Add the event listeners for each city's building types
         for (var i=0; i<el.length; i++)
@@ -6251,8 +6253,10 @@ Tabs.Jobs = {
             }
         }
       
+        // Add the event listeners for the auto-build button and scrollbar
         document.getElementById('pbbldOnOff').addEventListener ('click', function (){t.setBuildEnable (!Data.options.autoBuild.enabled);}, false);
         t.refreshBuildButton (Data.options.autoBuild.enabled);
+        document.getElementById('pbjobContent').addEventListener('scroll', onScroll, false);
     
         function checked (evt){
             var id = evt.target.id.split ('_');
@@ -6287,6 +6291,11 @@ Tabs.Jobs = {
             evt.target.style.backgroundColor = ''; 
             if (Data.options.autoBuild.enabled)
                 t.buildTick();      
+        }
+        
+        function onScroll (e){
+            if (t.contentType == 2)
+                t.buildScrollPos = document.getElementById('pbjobContent').scrollTop;
         }
 	},
   
@@ -6595,7 +6604,7 @@ Tabs.Jobs = {
             case 3: elementId = 'pbresFeedback'; break;
         } 
         
-        if (elementId)
+        if (elementId && document.getElementById(elementId))
             if (msg == '')
                 document.getElementById(elementId).innerHTML = msg; 
             else
@@ -7700,7 +7709,7 @@ Tabs.Jobs = {
         try {
             var seedReqs = Seed.requirements.troop[troopType];
             food = troopQty * seedReqs.resources['food'];
-            garrisonLevel = seedReqs.buildings['Garrison'];
+            garrisonLevel = seedReqs.buildings['TrainingCamp'];
             factoryLevel = seedReqs.buildings['Factory'];
             metalsmithLevel = seedReqs.buildings['Metalsmith'];
             idlePop = troopQty * seedReqs.population['idle'];
@@ -7750,6 +7759,89 @@ Tabs.Jobs = {
         return ret;    
     },
 
+    checkFireTroopReqs : function(troopQty, ic, count, troopsLength) {
+    // Requirements
+    // Clairvoyance: 5
+    // Metalsmith: 9
+    // Metallurgy: 10
+    // Masonry: 10
+    // Food: 3000
+    // TrainingCamp Level: 10
+    // Idle Population: 8
+    // Lumber: 4000
+    // Metals: 2000
+    // Stone: 8000
+    // Upkeep: 110 food
+    // Glowing Mandrake: 1
+    
+        var t = Tabs.Jobs;    
+        var food = troopQty * 5000;
+        var trainingCampLevel = 10;
+        var idlePop = troopQty * 12;
+        var lumber = troopQty * 3000;
+        var metal = troopQty * 9000;
+        var stone = troopQty * 4000;
+        var upkeep = troopQty * 260;
+        var metalsmithLevel = 8;
+        var rapidDeploymentLevel = 9;
+        var weaponsCalibrationLevel = 10;
+        var clairvoyanceLevel = 5;
+        var volcanicRunesQty = troopQty;
+        var city = Seed.s.cities[0];
+        var troopType = 'FireTroop';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+            food = troopQty * seedReqs.resources['food'];
+            garrisonLevel = seedReqs.buildings['TrainingCamp'];
+            metalsmithLevel = seedReqs.buildings['Metalsmith'];
+            idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            stone = troopQty * seedReqs.resources['stone'];
+            rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
+            clairvoyanceLevel = seedReqs.research['Clairvoyance'];
+            weaponsCalibrationLevel = seedReqs.research['Ballistics'];
+        }
+        catch(e){
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kFireTroop, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+        if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
+        if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
+        var availableRunes = t.getItem(kFireTroopItem);
+        if (availableRunes < volcanicRunesQty) m += '<TD>&nbsp;Mandrakes '+ (volcanicRunesQty - availableRunes) +'</td>';
+        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
+        if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
+        if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
+        if (Seed.s.research.Ballistics < weaponsCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponsCalibrationLevel +'</td>'; 
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kFireTroop +'s eat ' + upkeep + ' food';
+        }
+        else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+    
     checkTrainReqs : function(troopType, troopQty, ic, count, troopsLength) {
         var t = Tabs.Jobs;
         var ret = {};
@@ -7767,6 +7859,7 @@ Tabs.Jobs = {
             case kFireMirror: ret = t.checkFireMirrorReqs(troopQty, ic, count, troopsLength); break;
             case kAquaTroop: ret = t.checkAquaTroopReqs(troopQty, ic, count, troopsLength); break;
             case kStoneTroop: ret = t.checkStoneTroopReqs(troopQty, ic, count, troopsLength); break;
+            case kFireTroop: ret = t.checkFireTroopReqs(troopQty, ic, count, troopsLength); break;
         }
         return ret;
     },
@@ -7953,7 +8046,7 @@ Tabs.Jobs = {
         return ret; 
     },
   
-    checkWoodcraftingReqs : function() {
+    checkWoodcraftReqs : function() {
         var t = Tabs.Jobs;
         var researchType = 'Woodcraft';
         var researchLevel = t.getCurrentResearchLevel(researchType);
@@ -8579,6 +8672,7 @@ Tabs.Jobs = {
                 case 0: troopsLength = t.capitolTroops.length; break;
                 case 1: troopsLength = t.outpost1Troops.length; break;
                 case 2: troopsLength = t.outpost2Troops.length; break;
+                case 3: troopsLength = t.outpost3Troops.length; break;
 				break;		
             }
             
@@ -8895,6 +8989,22 @@ Tabs.Jobs = {
                             catch (e) {
                             }
                             break;
+                        case 3:
+                            troopType = t.outpost3Troops[j];
+                            troopQty = Data.options.autoTrain.city[i].troopType[j];
+                            cap = t.getTroopCap(troopType, troopQty);
+                            try {
+                                if (cap) {
+                                    troopQty = 0;
+                                    if (t.contentType == 1) t.dispFeedback("Troops Capped");
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                                }
+                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                            catch (e) {
+                            }
+                            break;
                         default:
                             troopType = t.capitolTroops[j];
                             troopQty = Data.options.autoTrain.city[i].troopType[j];
@@ -8979,6 +9089,22 @@ Tabs.Jobs = {
                         break;
                     case 2:
                         troopType = t.outpost2Troops[j];
+                        troopQty = Data.options.autoTrain.city[i].troopType[j];
+                        cap = t.getTroopCap(troopType, troopQty);
+                        try {
+                            if (cap) {
+                                troopQty = 0;
+                                if (t.contentType == 1) t.dispFeedback("Troops Capped");
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
+                            }
+                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
+                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
+                            }
+                        catch (e) {
+                        }
+                        break;
+                    case 3:
+                        troopType = t.outpost3Troops[j];
                         troopQty = Data.options.autoTrain.city[i].troopType[j];
                         cap = t.getTroopCap(troopType, troopQty);
                         try {
@@ -9102,12 +9228,10 @@ Tabs.Jobs = {
 		//t.dispFeedback (msg);
 
 		Ajax.troopTraining (troopType, troopQty, city.id, function (rslt){
-			//Seed.fetchCity (city.id, 1000);
 			if (rslt.ok){
 				t.trainErrorCount = 0;
 				actionLog (msg);
 				Data.options.trainTimer = setInterval(function() {t.trainTick(0) }, 3000);
-				return;
 			} 
             else {
 				//Seed.fetchSeed();
@@ -9118,12 +9242,14 @@ Tabs.Jobs = {
 					if (t.contentType == 1) t.dispFeedback (kDisablingAutoTrain);
 					t.setTrainEnable (false);
 					t.trainErrorCount = 0;
-					return;
 				}
-				if (t.contentType == 1) t.dispFeedback (kTrainError + rslt.errmsg);
-				Data.options.trainTimer = setInterval(function() {t.trainTick(ic) }, 180000);
-				return;
+				else {
+				    if (t.contentType == 1) t.dispFeedback (kTrainError + rslt.errmsg);
+				    Data.options.trainTimer = setInterval(function() {t.trainTick(ic) }, 180000);
+				}
 			}
+            // Get the troops being built so the will be displayed
+            Seed.fetchCity (city.id, 1000);
 		});
 	},
 
@@ -9205,10 +9331,12 @@ Tabs.Jobs = {
                 case 0: troopTypes = t.capitolTroops; break;
                 case 1: troopTypes = t.outpost1Troops; break;
                 case 2: troopTypes = t.outpost2Troops; break;		
+                case 3: troopTypes = t.outpost3Troops; break;		
             }
-            
+           
             var city = Seed.s.cities[c];
-            m += '<DIV class=pbSubtitle>City #'+ (c+1) +' ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+            var city_type = (city.type == 'Capital') ? 'Capitol' : city.type + ' ' + c;
+            m += '<DIV class=pbSubtitle>'+ city_type +'</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
             for (tt=0; tt<troopTypes.length; tt++){
                 // Use less room in the table layout
                 if (tt%3 == 0) m += '<TR>';
@@ -9341,6 +9469,30 @@ Tabs.Jobs = {
         }
     },
     
+}
+
+function makeid(){
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for( var i=0; i < 5; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+}
+
+function pickRandomTitle(){
+    var len = wordArr.length-1;
+    var rnd1 = Math.ceil (Math.random() * len);
+    var rnd2 = Math.ceil (Math.random() * len);
+    
+    Title = wordArr[rnd1] +' '+ wordArr[rnd2];
+    
+    kDOAVersionString = translate (Title + ' -v');
+    kFatalSWF = translate ('"<B>Error initializing "'+ Title +'"</b><BR><BR>Unable to find SWF element"');
+    kStartupErr = translate ('"Unable to start "'+ Title +'"<BR>"');
+    kInitErr = translate ('"<B>Error initializing "'+ Title +'"</b><BR><BR>"');
+    kAnnounceVersion = translate ('There is a new version of '+ Title +'<BR><BR>Version: ');
 }
 
 /***********************************   End Jobs  ***********************************/
@@ -9482,7 +9634,7 @@ var Map = {
     t.callback = callback; 
     t.circ = true;
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.firstX, y:t.firstY, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:4 }, t.got, false);
+    new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.firstX, y:t.firstY, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:6 }, t.got, false);
   },  
 
  // TBD: Change the if/else in the detail section to a case for the various types
@@ -9525,7 +9677,7 @@ var Map = {
     ret.done = false;
     t.callback (ret);  
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    setTimeout (function(){new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:4 }, t.got, false);}, MAP_DELAY);
+    setTimeout (function(){new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:6 }, t.got, false);}, MAP_DELAY);
  },
 
      
@@ -9870,17 +10022,18 @@ function CdispCityPicker (id, span, dispName, notify, selbut){
 
 
 function CdialogCancelContinue (msg, canNotify, contNotify, centerElement){
-  var pop = new CPopup ('ptcancont', 0, 0, 400,200, true, canNotify);
-  if (centerElement)
-    pop.centerMe(centerElement);
-  else
-    pop.centerMe(document.body);
-  pop.getTopDiv().innerHTML = '<CENTER>'+ Title +'</center>';
-  pop.getMainDiv().innerHTML = '<TABLE class=ptTab align=center style="height: 100%"><TR align=center height=90%><TD>'+ msg +'</td></tr>\
-      <TR align=center><TD><INPUT id=ptcccancel type=submit value='+ kCancel +' \> &nbsp; &nbsp; <INPUT id=ptcccontin type=submit value='+ kContinue +' \></td></tr></table>';
-  document.getElementById('ptcccancel').addEventListener ('click', function (){pop.show(false); if (canNotify) canNotify();}, false);
-  document.getElementById('ptcccontin').addEventListener ('click', function (){pop.show(false); if (contNotify) contNotify();}, false);
-  pop.show(true);
+    var popName = makeid();
+    var pop = new CPopup (popName, 0, 0, 400,200, true, canNotify);
+    if (centerElement)
+        pop.centerMe(centerElement);
+    else
+        pop.centerMe(document.body);
+    pop.getTopDiv().innerHTML = '<CENTER>'+ Title +'</center>';
+    pop.getMainDiv().innerHTML = '<TABLE class=ptTab align=center style="height: 100%"><TR align=center height=90%><TD>'+ msg +'</td></tr>\
+        <TR align=center><TD><INPUT id=ptcccancel type=submit value='+ kCancel +' \> &nbsp; &nbsp; <INPUT id=ptcccontin type=submit value='+ kContinue +' \></td></tr></table>';
+    document.getElementById('ptcccancel').addEventListener ('click', function (){pop.show(false); if (canNotify) canNotify();}, false);
+    document.getElementById('ptcccontin').addEventListener ('click', function (){pop.show(false); if (contNotify) contNotify();}, false);
+    pop.show(true);
 }
 
 var rTimer;
@@ -9888,11 +10041,10 @@ var cdTimer;
   
 // TODO: add 'Retry Now' button
 function DialogRetry (errMsg, seconds, onRetry, onCancel){
-  var secs, pop;
-  var pop;
+    var secs, pop, popName = makeid();
   
     secs = parseInt(seconds);
-    pop = new CPopup ('pbretry', 0, 0, 400,200, true);
+    pop = new CPopup (popName, 0, 0, 400,200, true);
     pop.centerMe(mainPop.getMainDiv());
     pop.getTopDiv().innerHTML = '<CENTER>'+ Title +'</center>';
     pop.getMainDiv().innerHTML = '<CENTER><BR><FONT COLOR=#550000><B>'+ kErrorOccurred +'</b></font><BR><BR><DIV id=paretryErrMsg></div>\
@@ -9956,7 +10108,7 @@ function MyAjaxRequest (url, params, callback, isPost){
   o.parameters = {};
   for (var p in params)
     o.parameters[p] = params[p];
-  o.parameters._session_id = C.attrs.sessionId;
+  //o.parameters._session_id = C.attrs.sessionId;
   if (EMULATE_NET_ERROR > 0){
     if (Math.random()*100 <= EMULATE_NET_ERROR){
 //      o.parameters._session_id = 'xxx';
@@ -10019,7 +10171,7 @@ function AjaxRequest (url, opts){
   var headers = {
 //    'X-Requested-With': 'XMLHttpRequest',
 //    'X-Prototype-Version': '1.6.1',
-    'Accept': 'text/javascript, text/html, application/xml, text/xml, */*'
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
   };
   if (window.XMLHttpRequest)
     ajax=new XMLHttpRequest();
@@ -10309,7 +10461,8 @@ function CPopup (prefix, x, y, width, height, enableDrag, onClose) {
   this.onClose = onClose;
   
   var t = this;
-  this.div.className = 'CPopup '+ prefix +'_CPopup';
+  //this.div.className = 'CPopup '+ prefix +'_CPopup';
+  this.div.className = 'CP '+ prefix +'_CP';
   this.div.id = prefix +'_outer';
   this.div.style.background = "#fff";
   this.div.style.zIndex = this.BASE_ZINDEX        // KOC modal is 100210 ?
@@ -10321,13 +10474,21 @@ function CPopup (prefix, x, y, width, height, enableDrag, onClose) {
   this.div.style.left = x + 'px';
   
   if (CPopUpTopClass==null)
-    topClass = 'CPopupTop '+ prefix +'_CPopupTop';
+//    topClass = 'CPopupTop '+ prefix +'_CPopupTop';
+    topClass = 'CPTop '+ prefix +'_CPTop';
   else
     topClass = CPopUpTopClass +' '+ prefix +'_'+ CPopUpTopClass;
     
-  var m = '<TABLE cellspacing=0 width=100% height=100%><TR id="'+ prefix +'_bar" class="'+ topClass +'"><TD width=99% valign=bottom><SPAN id="'+ prefix +'_top"></span></td>\
-      <TD id='+ prefix +'_X align=right valign=middle onmouseover="this.style.cursor=\'pointer\'" style="color:#fff; background:#333; font-weight:bold; font-size:14px; padding:0px 5px">X</td></tr>\
-      <TR><TD height=100% valign=top class="CPopMain '+ prefix +'_CPopMain" colspan=2 id="'+ prefix +'_main"></td></tr></table>';
+  var m = '<TABLE cellspacing=0 widthe=100% height=100%>\
+           <TR id="'+ prefix +'_bar" class="'+ topClass +'">\
+           <TD width=99% valign=bottom>\
+           <SPAN id="'+ prefix +'_top"></span></td>\
+           <TD id='+ prefix +'_X align=right valign=middle onmouseover="this.style.cursor=\'pointer\'" style="color:#fff; background:#333; font-weight:bold; font-size:14px; padding:0px 4px">X</td></tr>\
+           <TR><TD height=100% valign=top class="CPMain '+ prefix +'_CPMain" colspan=2 id="'+ prefix +'_main"></td></tr></table>';
+  
+//  var m = '<TABLE cellspacing=0 width=100% height=100%><TR id="'+ prefix +'_bar" class="'+ topClass +'"><TD width=99% valign=bottom><SPAN id="'+ prefix +'_top"></span></td>\
+//      <TD id='+ prefix +'_X align=right valign=middle onmouseover="this.style.cursor=\'pointer\'" style="color:#fff; background:#333; font-weight:bold; font-size:14px; padding:0px 5px">X</td></tr>\
+//      <TR><TD height=100% valign=top class="CPopMain '+ prefix +'_CPopMain" colspan=2 id="'+ prefix +'_main"></td></tr></table>';
   document.body.appendChild(this.div);
   this.div.innerHTML = m;
   document.getElementById(prefix+'_X').addEventListener ('click', e_XClose, false);
@@ -11069,8 +11230,9 @@ function SHA1 (msg) {
 	return temp.toLowerCase();
 }
 
-
-dtStartup ();
+//alert ('attempting startup');
+setTimeout (dtStartup, 20000);
+//dtStartup();
 
 /*
 

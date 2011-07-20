@@ -1,8 +1,10 @@
-Version: 07182011b
+Version: 07202011a
 
 Info
 07062011b Info feature: Added the alliance name to the city title
 07072011f Info feathre: Added Jason's UI modifications to show the wall status
+
+Wave - None
 
 Attack
 07012011a Attack bug: found that scanMapBusy was being set to true when dat.done in butSearchNow(). Fixed
@@ -13,6 +15,12 @@ Attack
 07032011g Attack bug: butSearch did not transfer the map to the target. Fixed
 07042011c Attack bug: troopsChanged would not allow more than 100000 troops to be sent at once. Changed to 120000. Fixed
 07062011a Attack feature: adjust max march to correspond to the muster point level. Fixed
+
+Jobs
+07192011a Jobs bug: Does not remember the sub-tab after refreshing the browser. Fixed
+07192011a Jobs bug: Does not remember the scroll position. Fixed (only within a single session, is not persisted by design)
+07192011a Jobs bug: Capitol misspelled in Info. Fixed
+07192011a Jobs feature: put alliance name in a different color, does not need to appear in outposts. Fixed
 
 Train
 07012011a Training feature: added third outpost and Firetroops. Guessed at new troop name: Djinn - will replace when I see what the actual name is
@@ -39,8 +47,13 @@ Note: items are not part of the requirements section, e.g. Respirators
 07182011b Training bug: setTrainEnable was not getting called in Jobs init(). Fixed.
 07182011b Training feature: Added function refreshTrainButton
 07182011b Training bug: doTrain was setting t.errorCount to zero, should be t.trainErrorCount. Fixed
-07182001b Training bug: rslt.dat is null when DialogRetry uses doCancel. Checked for null, added setInterval for 3 minutes. Removed call to Seed.fetchSeed - only made things worse. Fixed
-  
+07182011b Training bug: rslt.dat is null when DialogRetry uses doCancel. Checked for null, added setInterval for 3 minutes. Removed call to Seed.fetchSeed - only made things worse. Fixed
+07192011b Training bug: Does not immediately display troops training in status or info.
+07202011a Training bug: Changed Capital to Capitol. Fixed
+07202011a Training feature: Added LavaJaw
+07202011a Training bug: Added case 3 to switch in tabTrain for the new outpost. Fixed
+07202011a Training bug: Added case 3 to switch in attemptTrainLongQ and attemptTrainShortQ. Fixed
+ 
 Auto-Collect
 07042011b Was generating server errors spuriously because 'p' was not declared as a var before it was used. Fixed.
 
@@ -79,6 +92,7 @@ Note: items are part of the requirements section (unlike training), e.g. Respira
 07152011a Research bug: researchTick was not referencing doRecheck correctely (t.doRecheck). Fixed
 07182011b Research bug: setResearchEnable was not getting called in Jobs init(). Fixed
 07182011b Research feature: Added function refreshResearchButton
+07192011a Research bug: Changed checkWoodcraftingReqs to checkWoodcraftReqs - was not getting called. Fixed
 
 Other
 07012011a Added initializer to defaults for ptWinPos.
@@ -97,3 +111,4 @@ Other
 07182011b Changed divs in jobs so scrolling only affects the inputs
 07182011b DialogRetry was using local variables to store data between calls. Moved variables into global scope. Fixed
 07182011b Adjusted size of main CPopup window to fix the Kabam flash frame (subtracted 15 pixels from the height). 
+07202011a Added pickRandomTitle(). Called from dtstartup.
