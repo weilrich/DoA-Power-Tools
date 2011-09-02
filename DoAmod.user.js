@@ -4,12 +4,184 @@
 // @description   Enhanced Power Tools for Dragons of Atlantis
 // @include       http://*.castle.wonderhill.com/*
 // @include       http://apps.facebook.com/dragonsofatlantis/*
-// @version       20110720a
+// @include			*plus.google.com/games/659749063556*
+// @include			*googleusercontent.com/gadgets/ifr?url=app://659749063556*
+// @exclude       http://apps.facebook.com/dragonsofatlantis/rubies
+// @version       1.7.33
 // ==/UserScript==
 
-var Version = '20110720b';
-var Title = 'Kabam Sucks';
-var WebSite = ''; //www.mmogwiki.com
+/********************************************************************************
+ * All global variables MUST be set here or they will not be available to all   *
+ * functions throughout the script.                                             *
+ ********************************************************************************/
+// Script information
+var Version = '1.7.33'; // Year, Month, Day, Revision, Maturity (e.g. YYYMMDDa_BETA)
+var Title = ''; // Removed for security purposes
+var WebSite = ''; // Removed for security purposes
+var getVersion = 11;
+var postVersion = 11;
+
+// Style - Rules: First character must be a-zA-Z, last character must be a-zA-Z0-9, middle characters must be _a-zA-Z0-9-
+var rndStyle = ['idPrefix', 'classPrefix', 'subtab_info', 'subtab_build', 'subtab_research', 'subtab_train', 'status_ticker', 'status_feedback', 'job_header', 'job_content'];
+var rndId = ['enable_drag', 'enable_verbose', 'enable_collect', 'collect_time', 'collect_unit', 'options_refresh', 'options_clear'];
+var rndClass = ['red_button', 'green_button', 'blue_button', 'yellow_button', 'purple_button', 'cyan_button', 'tab_title'];
+
+// Tab order
+var INFO_TAB_ORDER = 1;     
+var WAVE_TAB_ORDER = 2;
+var ATTACK_TAB_ORDER = 3;
+var JOBS_TAB_ORDER = 4;
+var LOG_TAB_ORDER = 5;
+var OPTIONS_TAB_ORDER = 6;
+var DEBUG_TAB_ORDER = 99;
+
+// Tab enable/disable
+var INFO_TAB_ENABLE = true;     
+var WAVE_TAB_ENABLE = true;
+var ATTACK_TAB_ENABLE = true;
+var JOBS_TAB_ENABLE = true;
+var LOG_TAB_ENABLE = true;
+var OPTIONS_TAB_ENABLE = true;
+var DEBUG_TAB_ENABLE = false;
+
+function scramble(s) {
+	return s.replace(
+		/\b([a-zA-Z])([_a-zA-Z0-9-]+)([a-zA-Z0-9])\b/gi,
+		function( t, a, b, c ) {
+			b = b.split( /\B/ );
+			for( var i = b.length, j, k; i; j = parseInt( Math.random() * i ),
+			k = b[--i], b[i] = b[j], b[j] = k ) {}
+			return a + b.join( '' ) + c;
+		}
+	);
+}
+
+function checkDuplicate(s) {
+	for (var ss=0; ss<rndStyle.length; ss++) {
+		if (s != ss) {
+			if (rndStyle[rndStyle[s]] == rndStyle[rndStyle[ss]]) {
+				rndStyle[rndStyle[s]] = scramble(rndStyle[s]);
+				checkDuplicates(s);
+			}
+		}
+	}
+}
+
+/********************************************************************************
+ * Check to see if script is running in an iframe or not and removes            *
+ * unnecessary elements before continuing with the script.                      *
+ *                                                                              *
+ * Current actions:                                                             *
+ *  - Set width all parent div of 'iframe_canvas' to 100%                       *
+ *  - Hide 'rightCol' div                                                       *
+ *  - Hide unwanted objects                                                     *
+ *  - Set width of 'hd' div to 760px                                            *
+ *  - Set margin of parent to game object to 0px                                *
+ *  - Hide unwanted elements in 'hd' div                                        *
+ *  - Hide 'ft' div                                                             *
+ ********************************************************************************/
+if (unsafeWindow.top === unsafeWindow.self) {
+	function setFacebookWide() {	
+		var iframe = document.getElementById('iframe_canvas');
+		if (!iframe) {
+			setTimeout (setFacebookWide, 1000);
+			return;
+		}
+		while ((iframe = iframe.parentNode) != null) {
+			if (iframe.tagName == 'DIV')
+				iframe.style.width = '100%';
+		}
+		document.getElementById('rightCol').style.display = 'none';
+	}
+
+	function setGoogleWide() {	
+		var iframeTag = document.getElementById('content').getElementsByTagName('iframe');
+		if (iframeTag.length < 1) {
+			setTimeout (setGoogleWide, 1000);
+			return;
+		}
+		var iframeId = iframeTag[0].id;
+		var iframe = document.getElementById(iframeId);
+		while ((iframe = iframe.parentNode) != null) {
+			if (iframe.tagName == 'DIV')
+				iframe.style.width = '100%';
+		}
+	}
+	
+	if (unsafeWindow.location.href.indexOf("facebook") != -1)
+		setFacebookWide();
+	else
+		setGoogleWide();
+} else {
+	function setFacebookHigh() {
+		var obs = document.getElementsByTagName('object');
+		if (obs.length < 1) {
+			setTimeout (setFacebookHigh, 1000);
+			return;
+		}
+		for (var i=0; i<obs.length; i++)
+			switch (obs[i].parentNode.id) {
+				case 'hd' :
+					obs[i].style.display = 'none';
+					obs[i].parentNode.style.width = '760px';   
+					break;
+				default :
+					obs[i].parentNode.style.margin = '0px';
+			}
+		var hdChild = document.getElementById('hd').childNodes;
+		for (var i=0; i<hdChild.length; i++)
+			if (hdChild[i].tagName == 'DIV')
+				hdChild[i].style.display = 'none';  
+		document.getElementById('ft').style.display = 'none';
+		initStyle();
+	}
+	
+	function setGoogleHigh() {	
+		var obs = document.getElementsByTagName('object');
+		if (obs.length < 1) {
+			setTimeout (setGoogleHigh, 1000);
+			return;
+		}
+		initStyle();
+	}
+	
+	if (unsafeWindow.location.href.indexOf("facebook") != -1)
+		setFacebookHigh();
+	else 
+		setGoogleHigh();
+}
+
+function initStyle () {
+	/********************************************************************************
+	 * All id and class names must be scrambled to prevent the script from being    *
+	 * blocked. These names have to be generated and allocated to CSS prior to      *
+	 * rest of the script being initialised.                                        *
+	 *                                                                              *
+	 * rndStyle is an array containing the normal names for each id and class. This *
+	 * is then looped through and then scrambled to generate a unique name. A check *
+	 * is done to ensure no two randmised names are the same before allowing the    *
+	 * script to continue.                                                          *
+	 ********************************************************************************/ 
+	for (var s=0; s<rndStyle.length; s++) {
+		rndStyle[rndStyle[s]] = scramble(rndStyle[s]);
+		checkDuplicate(s);
+	}
+	
+	for (var s=0; s<rndId.length; s++) {
+		rndId[rndId[s]] = scramble(rndId[s]);
+		checkDuplicate(s);
+	}
+	
+	for (var s=0; s<rndClass.length; s++) {
+		rndClass[rndClass[s]] = scramble(rndClass[s]);
+		checkDuplicate(s);
+	}
+	
+	setTimeout (initScript, 1000); // NOTE: Forced a delay in an attempt to stop the styling issue (Need to find a better way)
+}
+
+function initScript () {
+// CHECK THESE VARIABLES
 var VERSION_CHECK_HOURS = 4;
 var DEBUG_TRACE_AJAX = 2;
 var DEBUG_MARCHES = false;
@@ -29,10 +201,9 @@ var JOBS_TAB_ORDER = 7;
 var LOG_TAB_ORDER = 8;
 var OPTIONS_TAB_ORDER = 9;
 var DEBUG_TAB_ORDER = 99;
-var WIN_POS_X = 735;
-var WIN_POS_Y = 129;
 var BUTTON_BGCOLOR = '#436';
 var JOB_BUTTON_BGCOLOR = '#049C93';
+var AJAX_VERSION = 7;
 
 var IsChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
 
@@ -42,240 +213,261 @@ var wordArr = ['Czar', 'Bright', 'Work', 'Power', 'Tools', 'Dragons', 'Fire', 'W
 // Translation strings - will use preprocessor #ifdef to create translations
 //
 // Terrain types
-var kAnthropusCamp = translate ('Anthropus Camp');
-var kAntCamp = translate ('AntCamp');
-var kCity = translate ('City');
-var kOutpost = translate ('Outpost');
-var kSavanna = translate ('Savanna');
-var kSwamp = translate ('Swamp');
-var kLake = translate ('Lake');
-var kHill = translate ('Hill');
-var kPlain = translate ('Plain');
-var kMountain = translate ('Mountain');
-var kForest = translate ('Forest');
+var kAnthropusCamp = 'Anthropus Camp';
+var kAntCamp = 'AntCamp';
+var kCity = 'City';
+var kOutpost = 'Outpost';
+var kSavanna = 'Savanna';
+var kSwamp = 'Swamp';
+var kLake = 'Lake';
+var kHill = 'Hill';
+var kPlain = 'Plain';
+var kMountain = 'Mountain';
+var kForest = 'Forest';
 
 // Buildings
-var kFarm = translate ('Farm');
-var kHome = translate ('Home');
-var kMine = translate ('Mine');
-var kSilo = translate ('Silo');
-var kWall = translate ('Wall');
-var kQuarry = translate ('Quarry');
-var kFactory = translate ('Factory');
-var kRookery = translate ('Rookery');
-var kTheater = translate ('Theater');
-var kFortress = translate ('Fortress');
-var kGarrison = translate ('Garrison');
-var kSentinel = translate ('Sentinel');
-var kLumbermill = translate ('Lumbermill');
-var kDragonKeep = translate ('DragonKeep');
-var kMetalsmith = translate ('Metalsmith');
-var kMusterPoint = translate ('MusterPoint');
-var kStorageVault = translate ('StorageVault');
-var kTrainingCamp = translate ('TrainingCamp');
-var kScienceCenter = translate ('ScienceCenter');
-var kOfficerQuarter = translate ('OfficerQuarter');
+var kFarm = 'Farm';
+var kHome = 'Home';
+var kMine = 'Mine';
+var kSilo = 'Silo';
+var kWall = 'Wall';
+var kQuarry = 'Quarry';
+var kFactory = 'Factory';
+var kRookery = 'Rookery';
+var kTheater = 'Theater';
+var kFortress = 'Fortress';
+var kGarrison = 'Garrison';
+var kSentinel = 'Sentinel';
+var kLumbermill = 'Lumbermill';
+var kDragonKeep = 'DragonKeep';
+var kMetalsmith = 'Metalsmith';
+var kMusterPoint = 'MusterPoint';
+var kStorageVault = 'StorageVault';
+var kTrainingCamp = 'TrainingCamp';
+var kScienceCenter = 'ScienceCenter';
+var kOfficerQuarter = 'OfficerQuarter';
 
 // Troops
-var kPorter = translate ('Porter');
-var kConscript = translate ('Conscript');
-var kSpy = translate ('Spy');
-var kSpies = translate ('Spies');
-var kHalberdsman = translate ('Halberdsman');
-var kHalberdsmen = translate ('Halberdsmen');
-var kMinotaur = translate ('Minotaur');
-var kLongbowman = translate ('Longbowman');
-var kLongbowmen = translate ('Longbowmen');
-var kSwiftStrikeDragon = translate ('SwiftStrikeDragon');
-var kBattleDragon = translate ('BattleDragon');
-var kArmoredTransport = translate ('ArmoredTransport');
-var kGiant = translate ('Giant');
-var kFireMirror = translate ('FireMirror');
-var kAquaTroop = translate ('AquaTroop');
-var kStoneTroop = translate ('StoneTroop');
-var kFireTroop = translate ('FireTroop');
-var kGreatDragon = translate ('GreatDragon');
-var kWaterDragon = translate ('WaterDragon');
-var kStoneDragon = translate ('StoneDragon');
+var kPorter = 'Porter';
+var kConscript = 'Conscript';
+var kSpy = 'Spy';
+var kSpies = 'Spies';
+var kHalberdsman = 'Halberdsman';
+var kHalberdsmen = 'Halberdsmen';
+var kMinotaur = 'Minotaur';
+var kLongbowman = 'Longbowman';
+var kLongbowmen = 'Longbowmen';
+var kSwiftStrikeDragon = 'SwiftStrikeDragon';
+var kBattleDragon = 'BattleDragon';
+var kArmoredTransport = 'ArmoredTransport';
+var kGiant = 'Giant';
+var kFireMirror = 'FireMirror';
+var kAquaTroop = 'AquaTroop';
+var kStoneTroop = 'StoneTroop';
+var kFireTroop = 'FireTroop';
+var kWindTroop = 'WindTroop';
+var kGreatDragon = 'GreatDragon';
+var kWaterDragon = 'WaterDragon';
+var kStoneDragon = 'StoneDragon';
+var kFireDragon = 'FireDragon';
+var kWindDragon = 'WindDragon';
 
 // Troop abbreviations
-var kConscr = translate ('Conscr');
-var kHalbrd = translate ('Halbrd');
-var kMino = translate ('Mino');
-var kLBM = translate ('LBM');
-var kSSDrg = translate ('SSDrg');
-var kBatDrg = translate ('BatDrg');
-var kATrans = translate ('ATrans');
-var kFireM = translate ('FireM');
-var kGrtDrg = translate ('GrtDrg');
-var kWatDrg = translate ('WatDrg');
-var kStnDrg = translate ('StnDrg');
-var kFang = translate ('Fang');
-var kOgre = translate ('Ogre');
-var kLavaJaw = translate ('LavaJaw');
+var kConscr = 'Conscr';
+var kHalbrd = 'Halbrd';
+var kMino = 'Mino';
+var kLBM = 'LBM';
+var kSSDrg = 'SSDrg';
+var kBatDrg = 'BatDrg';
+var kATrans = 'ATrans';
+var kFireM = 'FireM';
+var kGrtDrg = 'GrtDrg';
+var kWatDrg = 'WatDrg';
+var kStnDrg = 'StnDrg';
+var kFireDrg = 'FireDrg';
+var kWndDrg = 'WndDrg';
+var kFang = 'Fang';
+var kOgre = 'Ogre';
+var kLavaJaw = 'LavaJaw';
+var kWindUnknown = 'WindUnk';
 
 // Tabs
-var kInfo = translate ('Info');
-var kWave = translate ('Wave');
-var kAttack = translate ('Attack');
-var kTrain = translate ('Train');
-var kBuild = translate ('Build');
-var kResearch = translate ('Research');
-var kJobs = translate ('Jobs');
-var kLog = translate ('Log');
-var kOpts = translate ('Opts');
+var kInfo = 'Info';
+var kWave = 'Wave';
+var kAttack = 'Attack';
+var kTrain = 'Train';
+var kBuild = 'Build';
+var kResearch = 'Research';
+var kJobs = 'Jobs';
+var kLog = 'Log';
+var kOpts = 'Opts';
 
 // Items
-var kAquaTroopRespirator = translate ('AquaTroopRespirator');
-var kStoneTroopItem = translate('StoneTroopItem');
+var kAquaTroopRespirator = 'AquaTroopRespirator';
+var kStoneTroopItem = 'StoneTroopItem';
+var kFireTroopItem = 'FireTroopItem';
+var kWindTroopItem = 'WindTroopItem';
 var kGDBodyArmor = 'GreatDragonBodyArmor';
 var kGDClawGuards = 'GreatDragonClawGuards';
-var kGDHelmet = 'GreatDragonHelment';
+var kGDHelmet = 'GreatDragonHelmet';
 var kGDTailGuard = 'GreatDragonTailGuard';
 
 // Error messages
-var kFatalSWF = translate ('"<B>Error initializing "'+ Title +'"</b><BR><BR>Unable to find SWF element"');
-var kStartupErr = translate ('"Unable to start "'+ Title +'"<BR>"');
-var kInitErr = translate ('"<B>Error initializing "'+ Title +'"</b><BR><BR>"');
-var kNoTroops = translate ('No troops available');
-var kErrSendAttack = translate ('ERROR! (sendAttack is busy, no response from server?)');
-var kAttackErr = translate ('Attack Error: ');
-var kNoTroopsDefined = translate ('No Troops Defined');
-var kNotEnough = translate ('Not enough ');
-var kMusterPointFull = translate ('Muster Point Full');
-var kNoGenerals = translate ('No Generals Available');
-var kInvalidDelay = translate ('Invalid delay(s)');
-var kErrScanningMap = translate ('<B>Bummer, there was an error while scanning the map.</b>');
-var kBuildErr = translate ('BUILD ERROR: ');
-var kResearchErr = translate ('RESEARCH ERROR: ');
-var kTooManyBuildErrs = translate ('Too many errors, disabling auto-build');
-var kTooManyResearchErrs = translate ('Too many errors, disabling auto-research');
-var kMaxMarchesReached = translate ('User-set maximum marches reached.');
-var kAttackSafetyFeature = translate ('Safety Feature: Auto-Attack turned off');
-var kTrainSafetyFeature = translate ('Safety Feature: Auto-Train turned off');
-var kSelectLevelsReminder = translate ('Use the Levels Tab to select attack areas');
-var kTooManyTroops = translate ('Too many troops for muster point level');
-var kDisablingAutoTrain = translate ('Too many errors, disabling auto-train');
-var kTrainError = translate ('Train error: ');
-var kInvalidNumberTroops = translate ('Invalid number of troops');
-var kErrorOccurred = translate ('An error has occurred:');
+var kFatalSWF = '"<B>Error initializing "'+ Title +'"</b><BR><BR>Unable to find SWF element"';
+var kStartupErr = '"Unable to start "'+ Title +'"<BR>"';
+var kInitErr = '"<B>Error initializing "'+ Title +'"</b><BR><BR>"';
+var kNoTroops = 'No troops available';
+var kErrSendAttack = 'ERROR! (sendAttack is busy, no response from server?)';
+var kAttackErr = 'Attack Error: ';
+var kNoTroopsDefined = 'No Troops Defined';
+var kNotEnough = 'Not enough ';
+var kMusterPointFull = 'Muster Point Full';
+var kNoGenerals = 'No Generals Available';
+var kInvalidDelay = 'Invalid delay(s)';
+var kErrScanningMap = '<B>Bummer, there was an error while scanning the map.</b>';
+var kBuildErr = 'BUILD ERROR: ';
+var kResearchErr = 'RESEARCH ERROR: ';
+var kTooManyBuildErrs = 'Too many errors, disabling auto-build';
+var kTooManyResearchErrs = 'Too many errors, disabling auto-research';
+var kMaxMarchesReached = 'User-set maximum marches reached.';
+var kAttackSafetyFeature = 'Safety Feature: Auto-Attack turned off';
+var kTrainSafetyFeature = 'Safety Feature: Auto-Train turned off';
+var kSelectLevelsReminder = 'Use the Levels Tab to select attack areas';
+var kTooManyTroops = 'Too many troops for muster point level';
+var kDisablingAutoTrain = 'Too many errors, disabling auto-train';
+var kTrainError = 'Train error: ';
+var kInvalidNumberTroops = 'Invalid number of troops';
+var kErrorOccurred = 'An error has occurred:';
 
 // User interface
-var kAttacks = translate ('Attacks');
-var kAttack1 = translate (kAttacks) +' ';
-var kAttack2 = translate (kAttacks) + ': ';
-var kAttackNow = translate ('"Attack Now"');
-var kSkipAttack = translate ('"Skip Attack"');
-var kWaveTitle = translate ('Attack One Target in Waves');
-var kAttackStatsTitle = translate ('Auto-attack Stats');
-var kAutoUpgradeBuildings = translate ('Auto Upgrade Buildings');
-var kAutoResearch = translate ('Auto Research');
-var kClearStats = translate ('"Clear Stats"');
-var kClearLast = translate ('Clear last attack on current map');
-var kClear = translate ('Clear');
-var kClearAll = translate ('Clear last attack on all maps');
-var kTroopsLost = translate ('Troops lost! (');
-var kMaps = translate ('Maps');
-var kAutoOn = translate ('Auto ON');
-var kAutoOff = translate ('Auto OFF');
-var kAttackingLevel = translate ('Attacking level ');
-var kCampAt = translate (' camp at ');
-var kAttackSent = translate ('Attack sent to level ');
-var kAutoAttack = translate ('Auto-attack ');
-var kAutoAttackConfig = translate ('Auto-attack Configuration');
-var kRandomDelay = translate ('Random delay between attacks:');
-var kDOAVersionString = translate (Title + ' - v');
-var kTo = translate (' to ');
-var kSeconds = translate (' seconds ');
-var kSameTargetDelay = translate ('Same target delay: ');
-var kTwentyMinutes = translate (' 20 minutes');
-var kOneHour = translate (' 1 hour');
-var kLogAttacks = translate ('Log attacks: ');
-var kDeleteMarchReports = translate ('Delete March Reports: ');
-var kStopOnLoss = translate ('Stop if any troops lost: ');
-var kMaxMarches = translate ('Maximum simultaneous marches: ');
-var kRescanMap = translate ('" Rescan Map "');
-var kFirstValue = translate ('First value must be between ');
-var kSecondValue = translate (' and 3600<BR>Second value must be at least 5 above the first value.');
-var kLastAttack = translate ('Last Attack');
-var kSendingAttack = translate ('Sending Attack');
-var kOK = translate ('OK');
-var kMapping = translate ('Mapping');
-var kMapTypes = translate ('" Map Types "');
-var kTargets = translate ('" Targets "');
-var kConfig = translate ('"Config"');
-var kStats = translate ('"Stats"');
-var kMapCategories = translate ('Map Categories');
-var kSearch = translate ('" Search "');
-var kTransferMap = translate ('" Transfer to Attack "');
-var kScanningMap = translate ('Scanning map within 35 miles<BR>This should take about a minute');
-var kList = translate (' List');
-var kDistance = translate ('Dist');
-var kCoords = translate ('Coords');
-var kLvl = translate ('Lvl');
-var kCityName = translate (kCity) +(' Name');
-var kLord = translate ('Lord');
-var kPower = translate ('Power');
-var kAlliance = translate ('Alliance');
-var kLevels = translate (' Levels');
-var kTraining = translate ('Training:');
-var kTraining1 = translate ('Training ');
-var kAutoBuildOn = translate ('Auto Build ON');
-var kAutoBuildOff = translate ('Auto Build OFF');
-var kAutoResearchOn = translate ('Auto Research ON');
-var kAutoResearchOff = translate ('Auto Research OFF');
-var kCityNumber = translate (kCity) +' #';
-var kLevel = translate ('level ');
-var kLevel1 = translate (' Level');
-var kNothingToDo = translate ('Nothing to do, disabling auto-build.');
-var kNoResearchToDo = translate ('Nothing to do, disabling auto-research');
-var kBuildingLevel = translate ('Building level ');
-var kBuilding = translate ('Building:');
-var kBuilding1 = translate (kBuilding) +' ';
-var kIdle = translate ('idle');
-var kAt = translate (' at ');
-var kOptions = translate ('Options');
-var kEnableDrag = translate ('Enable window drag (move window by dragging <BR>top bar with mouse)');
-var kFeatures = translate ('Features: ');
-var kCancel = translate ('"CANCEL"');
-var kContinue = translate ('"CONTINUE"');
-var kAutoRetry = translate ('Automatic retry in ');
-var kSeconds1 =  translate (kSeconds) +' ...';
-var kCancelRetry = translate ('"CANCEL Retry"');
-var kNewVersionAvailable = translate ('New Version Available!');
-var kAnnounceVersion = translate ('There is a new version of '+ Title +'<BR><BR>Version: ');
-var kRemindLater = translate ('"Remind me later"');
-var kNoReminder = translate ('"Don\'t remind me again"');
-var kTargetCoords = translate ('Target Coords: ');
-var kDistance1 = translate ('Distance: ');
-var kWaveTroops = translate ('Troops for Wave Attack: ');
-var kDeleteBattleReports = translate (' Delete battle reports:');
-var kDelayBetweenAttacks = translate ('Delay Between attacks: ');
-var kResetStats = translate ('"Reset Stats"');
-var kGot = translate (': Got ');
-var kRunTime = translate ('Run Time: ');
-var kAttackOn = translate ('Attacks ON');
-var kAttackOff = translate ('Attacks OFF');
-var kError = translate ('Error: ');
-var kStatsStarted = translate ('Stats started at: ');
-var kResources = translate ('Resources: ');
-var kStatsBy = translate ('Stats by ');
-var kEnable = translate ('Enable: ');
-var kDistanceWarning = translate ('Distance must be between 1 and ');
-var kTroopWarning = translate ('Invalid # of troops');
-var kMaxDist = translate ('Max Dist: ');
-var kRefresh = translate ('"refresh"');
-var kDefending = translate ('DEFENDING');
-var kSanctuary = translate ('HIDING');
-var kMarches = translate ('Marches:');
-var kTroops = translate ('Troops');
-var kGenerals = translate ('Generals');
-var kUnits = translate ('units');
-var kAutoCollectAt = translate ('Auto-collect resources from outpost(s) every: ');
-var kAutoTrain = translate ('Auto Train');
-var kConfigTrain = translate ('Training Configuration');
-var kMinHousing = translate ('Minimum Housing');
-var kMinResourceLevels = translate ('Minimum Resource Levels');
+var kAttacks = 'Attacks';
+var kAttack1 = kAttacks +' ';
+var kAttack2 = kAttacks + ': ';
+var kAttackNow = '"Attack Now"';
+var kSkipAttack = '"Skip Attack"';
+var kWaveTitle = 'Attack One Target in Waves';
+var kAttackStatsTitle = 'Auto-attack Stats';
+var kAutoUpgradeBuildings = 'Auto Upgrade Buildings';
+var kAutoResearch = 'Auto Research';
+var kClearStats = '"Clear Stats"';
+var kClearLast = 'Clear last attack on current map';
+var kClear = 'Clear';
+var kClearAll = 'Clear last attack on all maps';
+var kTroopsLost = 'Troops lost! (';
+var kMaps = 'Maps';
+var kAutoOn = 'Auto ON';
+var kAutoOff = 'Auto OFF';
+var kAttackingLevel = 'Attacking level ';
+var kCampAt = ' camp at ';
+var kAttackSent = 'Attack sent to level ';
+var kAutoAttack = 'Auto-attack ';
+var kAutoAttackConfig = 'Auto-attack Configuration';
+var kRandomDelay = 'Random delay between attacks:';
+var kDOAVersionString = Title + ' - v';
+var kTo = ' to ';
+var kSeconds = ' seconds ';
+var kSameTargetDelay = 'Same target delay: ';
+var kTwentyMinutes = ' 20 minutes';
+var kOneHour = ' 1 hour';
+var kLogAttacks = 'Log attacks: ';
+var kDeleteMarchReports = 'Delete March Reports: ';
+var kStopOnLoss = 'Stop if any troops lost: ';
+var kMaxMarches = 'Maximum simultaneous marches: ';
+var kRescanMap = '" Rescan Map "';
+var kFirstValue = 'First value must be between ';
+var kSecondValue = ' and 3600<BR>Second value must be at least 5 above the first value.';
+var kLastAttack = 'Last Attack';
+var kSendingAttack = 'Sending Attack';
+var kOK = 'OK';
+var kMapping = 'Mapping';
+var kMapTypes = '" Map Types "';
+var kTargets = '" Targets "';
+var kConfig = '"Config"';
+var kStats = '"Stats"';
+var kMapCategories = 'Map Categories';
+var kSearch = '" Search "';
+var kTransferMap = '" Transfer to Attack "';
+var kScanningMap = 'Scanning map within 35 miles<BR>This should take about a minute';
+var kList = ' List';
+var kDistance = 'Dist';
+var kCoords = 'Coords';
+var kLvl = 'Lvl';
+var kCityName = kCity + ' Name';
+var kLord = 'Lord';
+var kPower = 'Power';
+var kAlliance = 'Alliance';
+var kLevels = ' Levels';
+var kTraining = 'Training:';
+var kTraining1 = 'Training ';
+var kAutoBuildOn = 'Auto Build ON';
+var kAutoBuildOff = 'Auto Build OFF';
+var kAutoResearchOn = 'Auto Research ON';
+var kAutoResearchOff = 'Auto Research OFF';
+var kCityNumber = kCity +' #';
+var kLevel = 'level ';
+var kLevel1 = ' Level';
+var kNothingToDo = 'Nothing to do, disabling auto-build.';
+var kNoResearchToDo = 'Nothing to do, disabling auto-research';
+var kBuildingLevel = 'Building level ';
+var kBuilding = 'Building:';
+var kBuilding1 = kBuilding +' ';
+var kIdle = 'idle';
+var kAt = ' at ';
+
+var kCancel = '"CANCEL"';
+var kContinue = '"CONTINUE"';
+var kAutoRetry = 'Automatic retry in ';
+var kSeconds1 = kSeconds +' ...';
+var kCancelRetry = '"CANCEL Retry"';
+var kNewVersionAvailable = 'New Version Available!';
+var kAnnounceVersion = 'There is a new version of '+ Title +'<BR><BR>Version: ';
+var kRemindLater = '"Remind me later"';
+var kNoReminder = '"Don\'t remind me again"';
+var kTargetCoords = 'Target Coords: ';
+var kDistance1 = 'Distance: ';
+var kWaveTroops = 'Troops for Wave Attack: ';
+var kDeleteBattleReports = ' Delete battle reports:';
+var kDelayBetweenAttacks = 'Delay Between attacks: ';
+var kResetStats = '"Reset Stats"';
+var kGot = ': Got ';
+var kRunTime = 'Run Time: ';
+var kAttackOn = 'Attacks ON';
+var kAttackOff = 'Attacks OFF';
+var kError = 'Error: ';
+var kStatsStarted = 'Stats started at: ';
+var kResources = 'Resources: ';
+var kStatsBy = 'Stats by ';
+var kEnable = 'Enable: ';
+var kDistanceWarning = 'Distance must be between 1 and ';
+var kTroopWarning = 'Invalid # of troops';
+var kMaxDist = 'Max Dist: ';
+
+var kDefending = 'DEFENDING';
+var kSanctuary = 'HIDING';
+var kMarches = 'Marches:';
+var kTroops = 'Troops';
+var kGenerals = 'Generals';
+var kUnits = 'units';
+
+// Buttons
+var kRefresh = 'Refresh';
+
+var kAutoTrain = 'Auto Train';
+var kConfigTrain = 'Training Configuration';
+var kMinHousing = 'Minimum Housing';
+var kMinResourceLevels = 'Minimum Resource Levels';
+
+// Options Tab
+var kOptions = 'Options';
+var kGameOptions = 'Game Options';
+var kAutoCollect = 'Auto-collect resources from outpost(s) every';
+var kSeconds = 'Second(s)';
+var kMinutes = 'Minute(s)';
+var kHours = 'Hour(s)';
+var kDays = 'Day(s)';
+var kScriptOptions = 'Script Options';
+var kEnableDrag = 'Enable window drag (move window by dragging top bar with mouse)';
+var kEnableVerbose = 'Enable verbose logging (only use when an error is suspected)';
 
 
 /*******************************************************************************
@@ -539,16 +731,6 @@ var translateEsArray = {
 	'DEFENDING':'Defensa'
 };
 
-// Global variables
-var Tabs = {};
-var currentName = kInfo;
-var mainPop;
-var CPopUpTopClass = 'pbPopTop';
-var gAttScrollPos = 0;
-var gMapScrollPos = 0;
-var C = {};
-C.attrs = {};
-
 /******************
 George's Current: 
 *) auto ant: update stats only when report rx'ed (i/o on tick)
@@ -595,14 +777,14 @@ TODO:
 // This is part of a sweeping change to remove the camp terminology and replace it with mapped objects (e.g. mountains, plains, cities, etc.)
 var OptionsDefaults = {
   ptWinIsOpen   : true,
-  ptWinDrag     : true,
-  ptWinPos     : {x: 735, y: 93 },
+
+  ptWinPos     : {x: 0, y: 0 },
   objAttack     : {enabled:false, repeatTime:3660, delayMin:30, delayMax:60, levelEnable:[], levelDist:[null,10,10,10,10,10,10,10,10,10,10], deleteObjAttacks:false, stopAttackOnLoss:false, logAttacks:true, maxMarches:10, troops:[], clearAllTargets:false},
   currentTab    : false,
   attackTab     : 0,
   mapTab        : 0,
   jobsTab       : 0,
-  autoCollect   : {enabled:false, lastTime:0, delay:1, unit:3600 },
+
   autoBuild     : {enabled:false, buildingEnable:[], buildCap:[]},
   autoResearch  : {enabled:false, researchEnable:[], researchCap:[]},
   autoTrain     : {enabled:false, trainingEnable:[], city:[]},
@@ -625,57 +807,85 @@ var OptionsDefaults = {
   researchTimer : null,
   trainTimer    : null,
 //  alertConfig  : {aChat:false, aPrefix:'** I\'m being attacked! **', scouting:false, wilds:false, minTroops:10000, spamLimit:10 },
+	// Options Tab
+	autoCollect		: {enabled:false, lastTime:0, delay:1, unit:3600},
+	ptWinDrag		: true,
+	verboseLog		: {enabled:false},
+	
 };
 
 var Styles = '\
-    div {margin:0 ! important}\
-    div.pbTitle {border:1px solid; border-color:#ffffff; font-weight:bold; padding-top:2px; padding-bottom:2px; text-align:center; color:#ffffff; background-color:#436}\
-    div.pbSubtitle {border:1px solid; border-color:#ffffff; font-weight:bold; padding-top:2px; padding-bottom:2px; text-align:center; color:#ffffff; background-color:#444}\
-    div.pbInput {border:2px ridge yellow; background-color:#ffffee; padding:3px}\
-    div.pbStatBox {border:2px ridge black; background-color:#efefe0; padding:2px}\
+    div.' + rndClass['tab_title'] + ' {border:1px solid; border-color:#ffffff; font-weight:bold; padding-top:2px; padding-bottom:2px; text-align:center; color:#ffffff; background-color:#436}\
+    div.' + rndStyle['classPrefix'] + 'Subtitle {border:1px solid; border-color:#ffffff; font-weight:bold; padding-top:2px; padding-bottom:2px; text-align:center; color:#ffffff; background-color:#444}\
+    div.' + rndStyle['classPrefix'] + 'Input {border:2px ridge yellow; background-color:#ffffee; padding:3px}\
+    div.' + rndStyle['status_ticker'] + ' {border:2px ridge black; background-color:#efefe0; padding:2px}\
+	div.' + rndStyle['status_feedback'] + ' {height: 34px; border:1px solid black; background-color:#ffeeee; padding: 2px 0px 2px 2px; text-align:left; font-weight:bold;}\
     div.short {height:7px;}\
     .hiding {background-color: #2FAC2F; color: white; padding-left: 10px; padding-right: 10px; margin-right: -2px;}\
     .defending {background-color: #F80000; color: white; padding-left: 10px; padding-right: 10px; margin-right: -2px;}\
     div#qTip {padding: 3px; border: 1px solid #777; border-right-width: 2px; border-bottom-width: 2px; display: none; background: #999; color: #fff; font: bold 9px Verdana, Arial, sans-serif; text-align: left; position: absolute; z-index: 1000}\
-    table.pbTabPad tr td {border:none; background:none; white-space:nowrap; padding: 2px 4px}\
-    table.pbTab tr td {border:none; background:none; white-space:nowrap; padding: 0px 4px;}\
-    table tr td.pbTabLeft {font-weight:bold; text-align:right; padding-right: 5px}\
-    table.pbTabLined tr td {border-bottom:1px solid #ccc; background:none; white-space:nowrap; padding: 1px 4px 1px 4px;}\
-    table tr.pbTabHdr1 td {background-color:#dde; font-weight:bold}\
-    table tr.pbTabHdr2 td {font-weight:bold}\
-    tr.pbMarchOther td {color:#888888}\
-    tr.pbMarchMine td {color:#000000}\
-    tr.pbPopTop td { background-color:#dde; border:none; height: 21px;  padding:0px; }\
-    tr.pbretry_ptPopTop td { background-color:#a00; color:#fff; border:none; height: 21px; padding:0px; }\
-    tr.pbOwned {background-color: #e80000; color:white}\
-    table.pbMainTab {empty-cells:show; margin-top:5px; }\
-    table.pbMainTab tr td a {color:inherit }\
-    table.pbMainTab tr td   {height:60%; empty-cells:show; padding: 0px 5px 0px 5px;  margin-top:5px; white-space:nowrap; border: 2px solid; border-style: none none solid none; }\
-    table.pbMainTab tr td.spacer {padding: 0px 3px; border:none; }\
-    table.pbMainTab tr td.sel    {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#eed; cursor:hand; cursor:pointer; padding: 2px;}\
-    table.pbMainTab tr td.notSel {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#0044a0; color:white; border-color:black; cursor:hand; cursor:pointer; padding: 2px;}\
-    .CP .CPMain { background-color:#f8f8f8; padding:6px;}\
-    .CP  {border:3px ridge #666}\
+    table.' + rndStyle['classPrefix'] + 'TabPad tr td {border:none; background:none; white-space:nowrap; padding: 1px 1px}\
+    table.' + rndStyle['classPrefix'] + 'Tab tr td {border:none; background:none; white-space:nowrap; padding: 0px 4px;}\
+    table tr td.' + rndStyle['classPrefix'] + 'TabLeft {font-weight:bold; text-align:right; padding-right: 5px}\
+    table.' + rndStyle['classPrefix'] + 'TabLined tr td {border-bottom:1px solid #ccc; background:none; white-space:nowrap; padding: 1px 4px 1px 4px;}\
+    table tr.' + rndStyle['classPrefix'] + 'TabHdr1 td {background-color:#dde; font-weight:bold}\
+    table tr.' + rndStyle['classPrefix'] + 'TabHdr2 td {font-weight:bold}\
+    tr.' + rndStyle['classPrefix'] + 'MarchOther td {color:#888888}\
+    tr.' + rndStyle['classPrefix'] + 'MarchMine td {color:#000000}\
+    tr.pbretry_ptpoptp td { background-color:#a00; color:#fff; border:none; height: 21px; padding:0px; }\
+    tr.' + rndStyle['classPrefix'] + 'retry_ptpoptp td { background-color:#a00; color:#fff; border:none; height: 21px; padding:0px; }\
+    tr.' + rndStyle['classPrefix'] + 'Owned {background-color: #e80000; color:white}\
+    table.' + rndStyle['classPrefix'] + 'MainTab {empty-cells:show; margin-top:5px; }\
+    table.' + rndStyle['classPrefix'] + 'MainTab tr td a {color:inherit }\
+    table.' + rndStyle['classPrefix'] + 'MainTab tr td   {height:60%; empty-cells:show; padding: 0px 5px 0px 5px;  margin-top:5px; white-space:nowrap; border: 2px solid; border-style: none none solid none; }\
+    table.' + rndStyle['classPrefix'] + 'MainTab tr td.spacer {padding: 0px 3px; border:none; }\
+    table.' + rndStyle['classPrefix'] + 'MainTab tr td.sel    {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#eed; cursor:hand; cursor:pointer; padding: 2px;}\
+    table.' + rndStyle['classPrefix'] + 'MainTab tr td.notSel {font-weight:bold; font-size:13px; border: 1px solid; border-style: solid solid none solid; background-color:#0044a0; color:white; border-color:black; cursor:hand; cursor:pointer; padding: 2px;}\
+    .' + rndStyle['classPrefix'] + 'CP .' + rndStyle['classPrefix'] + 'CPMain { background-color:#f8f8f8; padding:6px;}\
     input.butAttackOff {width:130px; background-color:#e80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
     input.butAttackOff:hover {width:130px; background-color:#f80000; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
     input.butAttackOn {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
     input.butAttackOn:hover {width:130px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
     input.small {margin:0; padding-top:0; padding-bottom:0; padding-left:1px; padding-right:1px; font-size:10px}\
     input.short {width:30px}\
-    input.greenButton {width:130px; background-color:#009C1F; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
-    input.greenButton:active {width:130px; background-color:black; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
-    input.greenButton:hover {width:130px; background-color:#2FAC2F; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
+    input.' + rndClass['red_button'] + ', input.' + rndClass['green_button'] + ', input.' + rndClass['blue_button'] + ', input.' + rndClass['yellow_button'] + ', input.' + rndClass['cyan_button'] + ', input.' + rndClass['purple_button'] + ' {width:130px; color:white; font-weight:bold; cursor:hand; cursor:pointer;}\
+    input.' + rndClass['red_button'] + ':active, input.' + rndClass['green_button'] + ':active, input.' + rndClass['blue_button'] + ':active, input.' + rndClass['yellow_button'] + ':active, input.' + rndClass['cyan_button'] + ':active, input.' + rndClass['purple_button'] + ':active {width:130px; background-color:black; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
+    input.' + rndClass['red_button'] + ':hover, input.' + rndClass['green_button'] + ':hover, input.' + rndClass['blue_button'] + ':hover, input.' + rndClass['yellow_button'] + ':hover, input.' + rndClass['cyan_button'] + ':hover, input.' + rndClass['purple_button'] + ':hover {width:130px; color:white; font-weight:bold; cursor:hand; cursor:pointer; }\
+	input.' + rndClass['red_button'] + ' {background-color:#BF0000;}\
+	input.' + rndClass['red_button'] + ':hover {background-color:#DF0000;}\
+	input.' + rndClass['green_button'] + ' {background-color:#00BF00;}\
+	input.' + rndClass['green_button'] + ':hover {background-color:#00DF00;}\
+	input.' + rndClass['blue_button'] + ' {background-color:#0000BF;}\
+	input.' + rndClass['blue_button'] + ':hover {background-color:#0000DF;}\
+	input.' + rndClass['yellow_button'] + ' {background-color:#BFBF00;}\
+	input.' + rndClass['yellow_button'] + ':hover {background-color:#DFDF00;}\
+	input.' + rndClass['cyan_button'] + ' {background-color:#00BFBF;}\
+	input.' + rndClass['cyan_button'] + ':hover {background-color:#00DFDF;}\
+	input.' + rndClass['purple_button'] + ' {background-color:#BF00BF;}\
+	input.' + rndClass['purple_button'] + ':hover {background-color:#DF00DF;}\
     .button {cursor:hand; cursor:pointer; border: 1px solid #006; background: #049C93; color: white; padding: 2px; font-weight:bold; font-size:13px; border-style: solid solid none solid;}\
 //  .button:hover {background: #eed; font-weight:bold; font-size:13px; color: black; border-style: solid solid none solid; }\
 //  .button:active {background: black; font-weight:bold; font-size:13px; color: white; border-style: none none none none;}\
     span.boldRed {color:#550000; font-weight:bold}\
     hr.thin {margin:0px; padding:0px}\
-    #hd ul.tabs li.tab a.toolbutOn {background-color:#900 ! important; color:white ! important}\
-    #hd ul.tabs li.tab a.toolbutOff {background-color:#ffc ! important; color:black ! important}\
+    #hdRnd ul.tabs li.tab a.' + rndStyle['classPrefix'] + 'toolbutOn {background-color:#900 ! important; color:white ! important}\
+    #hdRnd ul.tabs li.tab a.' + rndStyle['classPrefix'] + 'toolbutOff {background-color:#ffc ! important; color:black ! important}\
     ';
+	
+	
+	
 
-var JSON;if(!JSON){JSON={};}(function(){"use strict";function f(n){return n<10?'0'+n:n;}if(typeof Date.prototype.toJSON!=='function'){Date.prototype.toJSON=function(key){return isFinite(this.valueOf())?this.getUTCFullYear()+'-'+f(this.getUTCMonth()+1)+'-'+f(this.getUTCDate())+'T'+f(this.getUTCHours())+':'+f(this.getUTCMinutes())+':'+f(this.getUTCSeconds())+'Z':null;};String.prototype.toJSON=Number.prototype.toJSON=Boolean.prototype.toJSON=function(key){return this.valueOf();};}var cx=/[\u0000\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,escapable=/[\\\"\x00-\x1f\x7f-\x9f\u00ad\u0600-\u0604\u070f\u17b4\u17b5\u200c-\u200f\u2028-\u202f\u2060-\u206f\ufeff\ufff0-\uffff]/g,gap,indent,meta={'\b':'\\b','\t':'\\t','\n':'\\n','\f':'\\f','\r':'\\r','"':'\\"','\\':'\\\\'},rep;function quote(string){escapable.lastIndex=0;return escapable.test(string)?'"'+string.replace(escapable,function(a){var c=meta[a];return typeof c==='string'?c:'\\u'+('0000'+a.charCodeAt(0).toString(16)).slice(-4);})+'"':'"'+string+'"';}function str(key,holder){var i,k,v,length,mind=gap,partial,value=holder[key];if(value&&typeof value==='object'&&typeof value.toJSON==='function'){value=value.toJSON(key);}if(typeof rep==='function'){value=rep.call(holder,key,value);}switch(typeof value){case'string':return quote(value);case'number':return isFinite(value)?String(value):'null';case'boolean':case'null':return String(value);case'object':if(!value){return'null';}gap+=indent;partial=[];if(Object.prototype.toString.apply(value)==='[object Array]'){length=value.length;for(i=0;i<length;i+=1){partial[i]=str(i,value)||'null';}v=partial.length===0?'[]':gap?'[\n'+gap+partial.join(',\n'+gap)+'\n'+mind+']':'['+partial.join(',')+']';gap=mind;return v;}if(rep&&typeof rep==='object'){length=rep.length;for(i=0;i<length;i+=1){k=rep[i];if(typeof k==='string'){v=str(k,value);if(v){partial.push(quote(k)+(gap?': ':':')+v);}}}}else{for(k in value){if(Object.hasOwnProperty.call(value,k)){v=str(k,value);if(v){partial.push(quote(k)+(gap?': ':':')+v);}}}}v=partial.length===0?'{}':gap?'{\n'+gap+partial.join(',\n'+gap)+'\n'+mind+'}':'{'+partial.join(',')+'}';gap=mind;return v;}}if(typeof JSON.stringify!=='function'){JSON.stringify=function(value,replacer,space){var i;gap='';indent='';if(typeof space==='number'){for(i=0;i<space;i+=1){indent+=' ';}}else if(typeof space==='string'){indent=space;}rep=replacer;if(replacer&&typeof replacer!=='function'&&(typeof replacer!=='object'||typeof replacer.length!=='number')){throw new Error('JSON.stringify');}return str('',{'':value});};}if(typeof JSON.parse!=='function'){JSON.parse=function(text,reviver){var j;function walk(holder,key){var k,v,value=holder[key];if(value&&typeof value==='object'){for(k in value){if(Object.hasOwnProperty.call(value,k)){v=walk(value,k);if(v!==undefined){value[k]=v;}else{delete value[k];}}}}return reviver.call(holder,key,value);}text=String(text);cx.lastIndex=0;if(cx.test(text)){text=text.replace(cx,function(a){return'\\u'+('0000'+a.charCodeAt(0).toString(16)).slice(-4);});}if(/^[\],:{}\s]*$/.test(text.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,'@').replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,']').replace(/(?:^|:|,)(?:\s*\[)+/g,''))){j=eval('('+text+')');return typeof reviver==='function'?walk({'':j},''):j;}throw new SyntaxError('JSON.parse');};}}());
-var JSON2 = JSON; 
+	
+
+
+// Global variables
+var Tabs = {};
+var currentName = kInfo;
+var mainPop;
+var gAttScrollPos = 0;
+var gMapScrollPos = 0;
+var C = {};
+C.attrs = {};
 
 // Provide language translation services based on the browswer language
 function translate( wordToTranslate ) {
@@ -697,41 +907,6 @@ function translate( wordToTranslate ) {
 		}
 	}
 	return returnWord;
-}
-
-//***  Run only in "apps.facebook.com" instance ... ***
-function facebookInstance (){
-  "use strict";
-  function setWide (){
-logit ('facebookInstance:setWide');  
-    var e = document.getElementById('iframe_canvas');
-    if (!e){
-      setTimeout (setWide, 1000);
-      return;
-    }  
-    e.style.width = '100%';
-    e.style.height = '1050px';
-    while ( (e=e.parentNode) != null){
-      if (e.tagName=='DIV') {
-        e.style.width = '100%';
-      }
-    }
-    document.getElementById('rightCol').style.display='none';
-  }
-  setWide();
-}
-
-if (document.URL.search(/apps.facebook.com\/dragonsofatlantis/i) >= 0){
-  facebookInstance ();
-  return; // Necessary to prevent SWF initialization error
-}
-
-function debel (e, msg){
-  "use strict";
-  if (!e)
-    logit (msg + ': null');
-  else
-    logit (msg + ': '+ e.tagName + ' , '+ e.className);
 }
 
 function getC (swf){
@@ -756,7 +931,6 @@ function getC (swf){
   C.attrs.sessionId = attrs.session_id;
   C.attrs.dragonHeart = attrs.dragon_heart;
   C.attrs.userId = attrs.user_id;
-  //alert(C.attrs.userId); // DELETE
 }
 
 var dtStartupTimer = null;
@@ -765,6 +939,7 @@ var startupCount = 0;
 
 // Main entry
 function dtStartup (){
+console.log('Startup ' + new Date().getTime());
 	//alert('dtStartup');
   clearTimeout (dtStartupTimer);
   pickRandomTitle();
@@ -778,10 +953,10 @@ logit ('dtStartup');
   }
   try {  
     var swf = null;
-    var obs = document.getElementsByTagName ('object');
-    if (obs.length < 1){
-      dtStartupTimer = setTimeout (dtStartup, 10000);
-      return;
+	var obs = document.getElementsByTagName ('object');
+    if (obs.length < 1) {
+		dtStartupTimer = setTimeout (dtStartup, 1000);
+		return;
     }
     for (var i=0; i<obs.length; i++){
       if (obs[i].type && obs[i].type=='application/x-shockwave-flash'){
@@ -792,11 +967,11 @@ logit ('dtStartup');
       }
     }
     if (!C.attrs.apiServer){
-      dtStartupTimer = setTimeout (dtStartup, 10000);
+      dtStartupTimer = setTimeout (dtStartup, 1000);
       return;
     }  
   } catch (e){
-    dtStartupTimer = setTimeout (dtStartup, 10000);
+    dtStartupTimer = setTimeout (dtStartup, 1000);
     return;
   }
 
@@ -806,16 +981,8 @@ logit ('dtStartup');
     logit (inspect (C, 6, 1));
     Data.init({options:OptionsDefaults, log:[], targets:{radius:0, center:{x:0, y:0}, mapObjects:[], camps:[], cities:[], outposts:[], grasslands:[], swamps:[], lakes:[], hills:[], plains:[], mountains:[], forests:[]}});
     //checkVersion (); // RESTORE
-    var swfCont = swf;
-    while ((swfCont = swfCont.parentNode) != null && swfCont.style){
-      swfCont.style.margin = '';   
-      swfCont.style.width = '100%';   
-      swfCont.style.background = 'none';
-    }
-    try {
-      document.getElementById('hd').style.width = '735px';   
-      document.getElementById('content').style.margin = '';   
-    } catch (e) {}
+
+
     Seed.init(function(rslt){
       if (rslt.ok){
         gotSeed (rslt);
@@ -827,21 +994,31 @@ logit ('dtStartup');
     });
     
     logit ("* "+ Title +" v"+ Version +" Loaded");
-    var popName = makeid();
-    mainPop = new CPopup (popName, Data.options.ptWinPos.x, Data.options.ptWinPos.y, 400,800, Data.options.ptWinDrag, 
+	
+	// Get client screen width and adjust script popup to suit
+	if (screen.width >= 1240) {
+		var popupWidth = 475 + Math.floor(Math.random()*11);
+	} else {
+		var popupWidth = 395 + Math.floor(Math.random()*11);
+	}
+	
+    mainPop = new CPopup ('main', Data.options.ptWinPos.x, Data.options.ptWinPos.y, popupWidth,785, Data.options.ptWinDrag, 
         function (){
           tabManager.hideTab();
           WinTracker.show (false);
         });
         
     function gotSeed (rslt){    // TODO: check result, retry or disable tools?
-      mainPop.getMainDiv().innerHTML = '<STYLE>'+ Styles +'</style>';
+		console.log('Apply style ' + new Date().getTime());
+      mainPop.getMainDiv().innerHTML = '<style>'+ Styles +'</style>';
+	  
       tabManager.init (mainPop.getMainDiv());
+	  Data.options.ptWinIsOpen = true;
       if (Data.options.ptWinIsOpen){
         mainPop.show (true);
         tabManager.showTab();
       }
-      AddMainTabLink('DOA Tools', eventHideShow, mouseMainTab);
+      //AddMainTabLink('DOA Tools', eventHideShow, mouseMainTab);
       actionLog ("* "+ Title +" v"+ Version +" Loaded");
       AutoCollect.init ();
       TestSomething.init ();
@@ -874,7 +1051,7 @@ var WinTracker = {
     mainPop.show (tf);
     if (tf){
       if (t.but)
-        t.but.className = 'toolbutOff';
+        t.but.className = rndStyle['classPrefix'] + 'toolbutOff';
       clearInterval(t.timer);
     } 
     else {
@@ -886,10 +1063,10 @@ var WinTracker = {
   },
   blink : function (){
     var t = WinTracker;
-    if (t.but.className == 'toolbutOff')
-      t.but.className = 'toolbutOn';
+    if (t.but.className == rndStyle['classPrefix'] + 'toolbutOff')
+      t.but.className = rndStyle['classPrefix'] + 'toolbutOn';
     else
-      t.but.className = 'toolbutOff';
+      t.but.className = rndStyle['classPrefix'] + 'toolbutOff';
   },
 }
 
@@ -900,8 +1077,7 @@ function onUnload (){
 
 // Translation
 function dialogFatal (msg){
-    var popName = makeid();
-    var pop = new CPopup (popName, 200,300, 400,300, true); 
+    var pop = new CPopup ('fatal', 200,300, 400,300, true); 
     pop.getMainDiv ().innerHTML = '<STYLE>'+ Styles +'</style><BR>'+ msg ;
     pop.getTopDiv ().innerHTML = '<B><CENTER>Uh ohs</center></b>' ;
     pop.show(true);
@@ -962,8 +1138,7 @@ function checkVersion (){
       var m = r.responseText.match (/var \s*Version\s*=\s*\'(.*)\'/m);
       if (m && m[1]!=Data.options.version.checkVersion){
         clearTimeout (timer);
-        var popName = makeid();
-        pop = new CPopup (popName, Data.options.ptWinPos.x, Data.options.ptWinPos.y, 300,200, Data.options.ptWinDrag, remindLater); 
+        pop = new CPopup ('checkversion', Data.options.ptWinPos.x, Data.options.ptWinPos.y, 300,200, Data.options.ptWinDrag, remindLater); 
         // Translation
         pop.getTopDiv ().innerHTML = '<CENTER><B>'+ kNewVersionAvailable +'</b></center>';
         pop.getMainDiv ().innerHTML = '<STYLE>'+ Styles +'</style><BR><CENTER>'+ kAnnounceVersion + m[1] 
@@ -1158,7 +1333,7 @@ var Seed = {
   fetchSeed : function (notify) {
     var t = Seed;
     var now = new Date().getTime() / 1000;
-    new MyAjaxRequest ('player.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, '%5Fsession%5Fid':C.attrs.sessionId, version:6, timestamp:parseInt(serverTime()) }, function (rslt){
+    new MyAjaxRequest ('player.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, '%5Fsession%5Fid':C.attrs.sessionId, version:getVersion, timestamp:parseInt(serverTime()) }, function (rslt){
       if (rslt.ok){
         if (rslt.dat.timestamp)
           t.serverTimeOffset = rslt.dat.timestamp - now;
@@ -1181,7 +1356,7 @@ var Seed = {
 	fetchReqs : function (notify) {
 		var t = Seed;
 		var now = new Date().getTime() / 1000;
-		new MyAjaxRequest ('manifest.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:4, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt) {
+		new MyAjaxRequest ('manifest.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:getVersion, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt) {
 			if (rslt.ok) {
 				if (rslt.dat.timestamp)
 					t.serverTimeOffset = rslt.dat.timestamp - now;
@@ -1422,7 +1597,7 @@ var Seed = {
       maxTime = 5000;
     RequestQueue.add ('fetchCity', doit, maxTime);    
     function doit (){    
-      new MyAjaxRequest ('cities/'+ cityId +'.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:6, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt){
+      new MyAjaxRequest ('cities/'+ cityId +'.json', { 'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:getVersion, 'dragon%5Fheart':C.attrs.dragonHeart }, function (rslt){
         var t = Seed;
         if (rslt.ok){
           t.checkIncomingData(rslt);
@@ -1448,7 +1623,7 @@ function generalList (cityIdx){
 Tabs.Waves = {
   tabOrder : WAVE_TAB_ORDER,
   tabLabel : kWave,
-  tabDisabled : false,
+  tabDisabled : !WAVE_TAB_ENABLE,
   cont : null,
   troopList : [kSpy, kLBM, kBatDrg, kSSDrg, kFireM, kFang, kATrans],
   enabled : false,
@@ -1461,39 +1636,39 @@ Tabs.Waves = {
     t.cont = div;
 
     if (Data.options.waves == null){
-      Data.options.waves = {enabled:false, timeLimit:240, iterationMin:15, iterationMax:22, stopOnLoss:true, deleteReports:false, curTarget:0, targets:[], tsStarted:serverTime(), runTime:0};
+      Data.options.waves = {enabled:false, timeLimit:240, iterationMin:30, iterationMax:45, stopOnLoss:true, deleteReports:false, curTarget:0, targets:[], tsStarted:serverTime(), runTime:0};
       for (var i=0; i<5; i++)
         Data.options.waves.targets[i] = {enabled:false, lastAttack:0, troopsWave1:{}, troopsWave2:{}, targetX:0, targetY:0, terrainType:null, terrainLevel:0, stats:{numAttacks:0, spoils:{}}};
     }
     if (!Data.options.waves.iterationMin)
       Data.options.waves.iterationMin = 15;
     var gensel = htmlSelector (generalList(0), '', 'id=pbrptGenSel');
-    var m = '<DIV class=pbTitle>'+kWaveTitle+'</div>\
-       <DIV id=pbwaveStatus class=pbStatBox style="margin-bottom:5px !important">\
-       <CENTER><INPUT type=submit value="OnOff" id=pbwaveEnable></input></center>\
-       <DIV id=pbwaveMarches style="height:165px; max-height:165px; overflow-y:auto;"></div>\
-      <DIV id=pbwaveFeedback style="height: 34px; border:1px solid black; background-color:#ffeeee; padding: 2px 0px 2px 2px; text-align:left; font-weight:bold"></div></div>\
-      <DIV class=pbInput>\
-      <DIV style="height:48px;"><B>'+ kTargetCoords +'</b> &nbsp; X:<INPUT id=pbwaveX size=1 maxlength=3 type=text value="'+ Data.options.waves.targets[0].targetX +'" /> Y:<INPUT id=pbwaveY size=2 maxlength=3 value="'+ Data.options.waves.targets[0].targetY +'" type=text/> &nbsp <B>'+ kDistance1 +'</b> <SPAN id=pbwaveDist></span><BR>\
-        <DIV class=pbStatBox style="margin:0px 10px !important"><CENTER><SPAN id=pbwaveTile></span></center></div></div>\
-      <TABLE class=pbTab id=pbwaveTroops><TR align=center class=pbTabHdr1><TD colspan=8>'+ kWaveTroops +'</td></tr></table>\
-      <BR><TABLE class=pbTabPad><TR><TD class=pbTableft>'+ kDeleteBattleReports +'</td><TD><INPUT id=pbwaveDBR type=checkbox '+ (Data.options.waves.deleteReports?'CHECKED ':'') +'/></td></tr>\
-      <TR><TD class=pbTableft>'+ kStopOnLoss +'</td><TD><INPUT id=pbwaveSTL type=checkbox '+ (Data.options.waves.stopOnLoss?'CHECKED ':'') +'/></td></tr>\
-      <TR><TD class=pbTableft>'+ kDelayBetweenAttacks +'</td><TD><INPUT id=pbwaveDelay type=text size=1 maxlength=4 value="'+ Data.options.waves.iterationMin +'" \> to <SPAN id=pbwaveDelMax>'+ Data.options.waves.iterationMax +'</span>'+ kSeconds +'</td></tr></table></div>\
-      <DIV class=pbStatBox style="margin-top:10px !important">\
-        <CENTER><INPUT class=greenButton id=pbwaveResStat type=submit value='+ kResetStats +' /></center>\
-      <DIV id=pbwaveStats  style="height:200px; max-height:200px; overflow-y:auto"></div>\
-      <HR class=thin><DIV id=pbwaveCurSpoil> &nbsp; </div></div>';
+    var m = '<DIV class=' + rndClass['tab_title'] + '>'+kWaveTitle+'</div>\
+       <DIV id=' + rndStyle['idPrefix'] + 'Status class=' + rndStyle['status_ticker'] + ' style="margin-bottom:5px !important">\
+       <CENTER><INPUT type=submit value="OnOff" id=' + rndStyle['idPrefix'] + 'Enable></input></center>\
+       <DIV id=' + rndStyle['idPrefix'] + 'Marches style="height:140px; max-height:140px; overflow-y:auto;"></div>\
+      <DIV id=' + rndStyle['idPrefix'] + 'Feedback class='+ rndStyle['status_feedback'] +'></div></div>\
+	  <DIV class=' + rndStyle['classPrefix'] + 'Input>\
+      <DIV style="height:48px;"><B>'+ kTargetCoords +'</b> &nbsp; X:<INPUT id=' + rndStyle['idPrefix'] + 'X size=1 maxlength=3 type=text value="'+ Data.options.waves.targets[0].targetX +'" /> Y:<INPUT id=' + rndStyle['idPrefix'] + 'Y size=2 maxlength=3 value="'+ Data.options.waves.targets[0].targetY +'" type=text/> &nbsp <B>'+ kDistance1 +'</b> <SPAN id=' + rndStyle['idPrefix'] + 'Dist></span><BR>\
+        <DIV class=' + rndStyle['status_ticker'] + ' style="margin:0px 10px !important"><CENTER><SPAN id=' + rndStyle['idPrefix'] + 'Tile></span></center></div></div>\
+      <TABLE class=' + rndStyle['classPrefix'] + 'Tab id=' + rndStyle['idPrefix'] + 'Troops><TR align=center class=' + rndStyle['classPrefix'] + 'TabHdr1><TD colspan=8>'+ kWaveTroops +'</td></tr></table>\
+      <BR><TABLE class=' + rndStyle['classPrefix'] + 'TabPad><TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kDeleteBattleReports +'</td><TD><INPUT id=' + rndStyle['idPrefix'] + 'DBR type=checkbox '+ (Data.options.waves.deleteReports?'CHECKED ':'') +'/></td></tr>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kStopOnLoss +'</td><TD><INPUT id=' + rndStyle['idPrefix'] + 'STL type=checkbox '+ (Data.options.waves.stopOnLoss?'CHECKED ':'') +'/></td></tr>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kDelayBetweenAttacks +'</td><TD><INPUT id=' + rndStyle['idPrefix'] + 'Delay type=text size=1 maxlength=4 value="'+ Data.options.waves.iterationMin +'" \> to <SPAN id=' + rndStyle['idPrefix'] + 'DelMax>'+ Data.options.waves.iterationMax +'</span>'+ kSeconds +'</td></tr></table></div>\
+      <DIV class=' + rndStyle['status_ticker'] + ' style="margin-top:10px !important">\
+        <CENTER><INPUT class=' + rndClass['green_button'] + ' id=' + rndStyle['idPrefix'] + 'ResStat type=submit value='+ kResetStats +' /></center>\
+      <DIV id=' + rndStyle['idPrefix'] + 'Stats  style="height:200px; max-height:200px; overflow-y:auto"></div>\
+      <HR class=thin><DIV id=' + rndStyle['idPrefix'] + 'CurSpoil> &nbsp; </div></div>';
     t.cont.innerHTML = m;
-    document.getElementById('pbwaveEnable').addEventListener ('click', function(){t.setWaveEnable(!Data.options.waves.enabled)}, false);
-    document.getElementById('pbwaveX').addEventListener ('change', t.eventCoords, false);
-    document.getElementById('pbwaveY').addEventListener ('change', t.eventCoords, false);
-    document.getElementById('pbwaveResStat').addEventListener ('click', t.resetStats, false);
-    document.getElementById('pbwaveDBR').addEventListener ('click', function(e){Data.options.waves.deleteReports=e.target.checked}, false);
-    document.getElementById('pbwaveSTL').addEventListener ('click', function(e){Data.options.waves.stopOnLoss=e.target.checked}, false);
-    document.getElementById('pbwaveDelay').addEventListener ('change', delayChanged, false);
-//    troopTable (document.getElementById('pbwaveTroops'), 1, 'FW', t.eventTroops);
-    troopTable (document.getElementById('pbwaveTroops'), 1, 'AW', t.eventTroops);
+    document.getElementById(rndStyle['idPrefix'] + 'Enable').addEventListener ('click', function(){t.setWaveEnable(!Data.options.waves.enabled)}, false);
+    document.getElementById(rndStyle['idPrefix'] + 'X').addEventListener ('change', t.eventCoords, false);
+    document.getElementById(rndStyle['idPrefix'] + 'Y').addEventListener ('change', t.eventCoords, false);
+    document.getElementById(rndStyle['idPrefix'] + 'ResStat').addEventListener ('click', t.resetStats, false);
+    document.getElementById(rndStyle['idPrefix'] + 'DBR').addEventListener ('click', function(e){Data.options.waves.deleteReports=e.target.checked}, false);
+    document.getElementById(rndStyle['idPrefix'] + 'STL').addEventListener ('click', function(e){Data.options.waves.stopOnLoss=e.target.checked}, false);
+    document.getElementById(rndStyle['idPrefix'] + 'Delay').addEventListener ('change', delayChanged, false);
+//    troopTable (document.getElementById(rndStyle['idPrefix'] + 'Troops'), 1, 'FW', t.eventTroops);
+    troopTable (document.getElementById(rndStyle['idPrefix'] + 'Troops'), 1, 'AW', t.eventTroops);
     window.addEventListener('unload', t.onUnload, false);
     t.setWaveEnable (false);
     t.marchTick();
@@ -1528,12 +1703,12 @@ Tabs.Waves = {
     function delayChanged (e){
       var min = parseIntZero(e.target.value);
       var max = parseInt(min * 1.5);
-      if (min<15 || min>3600){
+      if (min<30 || min>3600){
         // error dialog, etc ...
         e.target.style.backgroundColor = 'red';
         return;
       }
-      document.getElementById('pbwaveDelMax').innerHTML = max;
+      document.getElementById(rndStyle['idPrefix'] + 'DelMax').innerHTML = max;
         e.target.style.backgroundColor = '';
       Data.options.waves.iterationMin = min;
       Data.options.waves.iterationMax = max;
@@ -1550,7 +1725,7 @@ Tabs.Waves = {
           Data.options.waves.targets[0].stats.spoils[rpt.report.spoils.items[i]] = 1;
         else
           ++Data.options.waves.targets[0].stats.spoils[rpt.report.spoils.items[i]];
-        document.getElementById('pbwaveCurSpoil').innerHTML = new Date().toTimeString().substring (0,8) + kGot + Names.itemAbbr(rpt.report.spoils.items[i]);
+        document.getElementById(rndStyle['idPrefix'] + 'CurSpoil').innerHTML = new Date().toTimeString().substring (0,8) + kGot + Names.itemAbbr(rpt.report.spoils.items[i]);
       }
       t.dispStats();
       
@@ -1565,7 +1740,7 @@ Tabs.Waves = {
           }
         }
       }
-      if (Data.options.waves.deleteReports)
+      if (Data.options.waves.deleteReports && rpt.report.attacker.name == Seed.s.name)
         Messages.deleteMessage(rpt.report_notification.id);
     }
   },
@@ -1586,22 +1761,22 @@ Tabs.Waves = {
     var runTime = Data.options.waves.runTime;
     if (Data.options.waves.enabled)
       runTime += (serverTime()-t.curRunStart);
-    var msg = '<TABLE class=pbTabPad width=100%><TR><TD class=pbTabLeft>'+ kRunTime +'</td><TD width=90%>'+ timestr(runTime, true) +'</td></tr>\
-        <TR><TD class=pbTabLeft>'+ kAttack2 +'</td><TD>'+ Data.options.waves.numAttacks +'</td></tr>\
+    var msg = '<TABLE class=' + rndStyle['classPrefix'] + 'TabPad width=100%><TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kRunTime +'</td><TD width=90%>'+ timestr(runTime, true) +'</td></tr>\
+        <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kAttack2 +'</td><TD>'+ Data.options.waves.numAttacks +'</td></tr>\
         <TR><TD colspan=2><HR class=thin></td></tr>';
     for (var p in  Data.options.waves.targets[0].stats.spoils){
       var num = Data.options.waves.targets[0].stats.spoils[p];
       var perHour = num / (runTime/3600);
       var item = Names.itemAbbr(p);
-      msg += '<TR><TD class=pbTabLeft>'+ item +':</td><TD>'+ num +' ('+ perHour.toFixed(2) +' per hour)</td></tr>';
+      msg += '<TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ item +':</td><TD>'+ num +' ('+ perHour.toFixed(2) +' per hour)</td></tr>';
     }
-    document.getElementById('pbwaveStats').innerHTML = msg + '</table>';
+    document.getElementById(rndStyle['idPrefix'] + 'Stats').innerHTML = msg + '</table>';
   },
   
   dispFeedback : function (msg){
     if (msg && msg!='')
       msg = new Date().toTimeString().substring (0,8) +' '+ msg;
-    document.getElementById('pbwaveFeedback').innerHTML = msg;
+    document.getElementById(rndStyle['idPrefix'] + 'Feedback').innerHTML = msg;
   },
   
   eventTroops : function (e){
@@ -1616,7 +1791,7 @@ Tabs.Waves = {
 
   setWaveEnable : function (onOff){
     var t = Tabs.Waves;
-    var but = document.getElementById('pbwaveEnable');
+    var but = document.getElementById(rndStyle['idPrefix'] + 'Enable');
     clearTimeout (t.attackTimer);
     Data.options.waves.enabled = onOff;
     if (onOff){
@@ -1722,22 +1897,22 @@ Tabs.Waves = {
    marchTick : function (){
     var t = Tabs.Waves;
     clearTimeout (t.marchTimer);
-    document.getElementById('pbwaveMarches').innerHTML = marchTable('wave');
+    document.getElementById(rndStyle['idPrefix'] + 'Marches').innerHTML = marchTable('wave');
     t.marchTimer = setTimeout (t.marchTick, 2000);
   },
 
   // Calls scanMapCirc
   eventCoords : function (e){
-    var ex = document.getElementById('pbwaveX');
-    var ey = document.getElementById('pbwaveY');
+    var ex = document.getElementById(rndStyle['idPrefix'] + 'X');
+    var ey = document.getElementById(rndStyle['idPrefix'] + 'Y');
     var x = parseIntZero (ex.value);
     var y = parseIntZero (ey.value);
     ex.value = x;
     ey.value = y;
     Data.options.waves.targets[0].targetX = x;
     Data.options.waves.targets[0].targetY = y;
-    document.getElementById('pbwaveDist').innerHTML = distance(Seed.s.cities[0].x, Seed.s.cities[0].y, x, y);
-    document.getElementById('pbwaveTile').innerHTML = '&nbsp;';
+    document.getElementById(rndStyle['idPrefix'] + 'Dist').innerHTML = distance(Seed.s.cities[0].x, Seed.s.cities[0].y, x, y);
+    document.getElementById(rndStyle['idPrefix'] + 'Tile').innerHTML = '&nbsp;';
     if (x<0 || x>749){
       ex.style.backgroundColor = 'red';
       return;
@@ -1761,7 +1936,7 @@ Tabs.Waves = {
         return;
       Data.options.waves.targets[0].terrainType = Map.names[tile.type];
       Data.options.waves.targets[0].terrainLevel = tile.lvl;
-      document.getElementById('pbwaveTile').innerHTML = '<B>'+ Map.names[tile.type] +' level '+ tile.lvl +'</b>';
+      document.getElementById(rndStyle['idPrefix'] + 'Tile').innerHTML = '<B>'+ Map.names[tile.type] +' level '+ tile.lvl +'</b>';
     }
   },
  
@@ -1776,101 +1951,61 @@ Tabs.Waves = {
   },
 }
 
-
-
 var Data = {
-  isChrome : navigator.userAgent.toLowerCase().indexOf('chrome') > -1,
-  cookieName : 'DoaPowerTools',
-  serverID : getServerId(),
-  names : [],
+	serverID : getServerId(),
+	names : [],
   
-  init : function (list){
-    var t = Data;
-    for (var p in list){
-      t[p] = t.readMergeOptions (p, list[p]);
-      t.names.push(p);
-    }
-  },
+	init : function (list) {
+		try {
+			var t = Data;
+			for (var p in list) {
+				t[p] = t.readMergeOptions (p, list[p]);
+				t.names.push(p);
+			}
+		} catch (e) {
+			alert ('This browser does not support LocalStorage');
+			return false;
+		}
+	},
 
-  onUnload : function (){
-    var t = Data;
-    logit ('===========  Data.onUnload');
-    for (var i=0; i<t.names.length; i++)
-      if (t.isChrome){
-        localStorage.setItem(t.names[i], JSON2.stringify(t[t.names[i]]));
-      }else{
-        GM_setValue (t.names[i] +'_'+ t.serverID, JSON2.stringify(t[t.names[i]]));
-      }
-  },
+	onUnload : function () {
+		var t = Data;
+		for (var i=0; i<t.names.length; i++)
+			localStorage.setItem(t.names[i], JSON.stringify(t[t.names[i]]));
+	},
 
-  readMergeOptions : function (label, defaults){
-    var t = Data, s;
-    s = (t.isChrome) ? localStorage.getItem(label) : GM_getValue (label +'_'+ t.serverID);           
-    if (s != null){
-        opts = JSON2.parse (s);
- 
-        // Copy Cache to Data
-        if (matTypeof(defaults)=='object')
-            for (d in defaults)
-                for (o in opts)
-                    if (d == o)
-                        switch (matTypeof(defaults[d])) {
-                            case 'object':
-                                for (dd in defaults[d])
-                                    for (oo in opts[o])
-                                        if (dd == oo)
-                                            defaults[d][dd] = opts[o][oo];
-                                break;
-                            default:
-                                defaults[d] = opts[o];
-                        }
-    }        
-    return defaults;
-},
-
-/*
-  // TODO: recurse, don't modify defaults
-  readMergeOptions : function (label, defaults){
-    var t = Data;
-    var s;
-    if (t.isChrome)
-        s = localStorage.getItem(label);
-    else
-      s = GM_getValue (label +'_'+ t.serverID);
-    if (s == null)
-      return defaults;
-    if (s != null){
-      opts = JSON2.parse (s);
-      //logit ('readmerge: '+ inspect (opts, 5, 1));    
-      if (matTypeof(defaults)=='array')
-        defaults = defaults.concat(opts);
-      else if (matTypeof(opts)=='object'){
-        for (k in opts)
-          defaults[k] = opts[k];
-      }
-    }
-    return defaults;
-  },
-*/ 
-  getCookie : function (name){
-    var i = document.cookie.indexOf(name+'=');
-    if (i < 0)
-      return null;
-    var ii = document.cookie.indexOf(';', i);
-    if (ii<0)
-      ii = document.cookie.length;
-    return unescape(document.cookie.substring(i+name.length+1, ii));
-  },
+	readMergeOptions : function (label, defaults) {
+		var t = Data;  
+		var s = localStorage.getItem(label);
+		if (s != null){
+			opts = JSON.parse (s);
+	 
+			// Copy Cache to Data
+			if (matTypeof(defaults)=='object')
+				for (d in defaults)
+					for (o in opts)
+						if (d == o)
+							switch (matTypeof(defaults[d])) {
+								case 'object':
+									for (dd in defaults[d])
+										for (oo in opts[o])
+											if (dd == oo)
+												defaults[d][dd] = opts[o][oo];
+									break;
+								default:
+									defaults[d] = opts[o];
+							}
+		}        
+		return defaults;
+	},
 }
-
-
 
 //******************************** Attacks Tab *****************************
 // References to camp and camps changed to mapObject to make sure that other data does not overwrite the camps
 Tabs.AutoAttack = {
   tabOrder      : ATTACK_TAB_ORDER,
   tabLabel      : kAttack,
-  tabDisabled   : false,
+  tabDisabled   : !ATTACK_TAB_ENABLE,
   cont          : null,
   attackTimer   : null,
   marchTimer    : null,
@@ -1905,18 +2040,18 @@ Tabs.AutoAttack = {
     //    Data.options.objAttack.troops[x] = {};
     //}
    
-    div.innerHTML = '<DIV class=pbTitle>' + Data.options.mapChoice + ' </div>\
-      <DIV class=pbStatBox id=pbatStatus style="margin-bottom:5px !important">\
+    div.innerHTML = '<DIV><DIV class=' + rndClass['tab_title'] + '>' + Data.options.mapChoice + ' </div>\
+      <DIV class=' + rndStyle['status_ticker'] + ' id=pbatStatus style="margin-bottom:5px !important">\
       <CENTER><INPUT type=submit value="OnOff" id=pbatEnable></input></center>\
       <DIV id=pbatMarches style="height:165px; max-height:165px; overflow:auto;"></div>\
-      <DIV id=pbatFeedback style="height: 34px; border:1px solid black; background-color:#ffeeee; padding: 2px 0px 2px 2px; text-align:left; font-weight:bold"></div></div>\
-      <TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
+	  <DIV id=pbatFeedback class='+ rndStyle['status_feedback'] +'></div></div>\
+      <DIV><TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
       <INPUT class=button type=submit value='+ kLevels +' id=pbatConfigL></input>\
       <INPUT class=button type=submit value='+ kConfig +' id=pbatConfigG></input>\
       <INPUT class=button type=submit value='+ kTargets +' id=pbatTargets></input>\
       <INPUT class=button type=submit value='+ kStats +' id=pbatStats></input>\
-      <INPUT class=button type=submit value='+ kMaps +' id=pbatMaps></input></td></tr></table>\
-      <DIV id=pbatContent style="padding-top:5px; height:470px; max-height:470px; overflow:auto; background-color:white"></div>';
+      <INPUT class=button type=submit value='+ kMaps +' id=pbatMaps></input></td></tr></table></div>\
+      <DIV id=pbatcon style="padding-top:5px; max-height:470px; overflow:auto; background-color:white"></div></div>';
      
     // Add the event listeners
     document.getElementById('pbatEnable').addEventListener ('click', function (){
@@ -1960,7 +2095,7 @@ Tabs.AutoAttack = {
       }, 0);
     }
     if (t.contentType == 2)
-        document.getElementById('pbatContent').scrollTop = gAttScrollPos;
+        document.getElementById('pbatcon').scrollTop = gAttScrollPos;
 
     switch (t.contentType) {
         case 0: t.tabConfigLevels(); break;
@@ -2062,27 +2197,27 @@ Tabs.AutoAttack = {
       
     var trueRunTime = (runTime > 0) ? (runTime/3600) : 1;
       
-    var m = '<TABLE class=pbTabPad> <TR><TD class=pbTabLeft>'+ kStatsStarted +'</td><TD>'+  new Date(Data.options.objStats.tsStart * 1000).myString() +'</td></tr>\
-    <TR><TD class=pbTabLeft>'+ kRunTime +'</td><TD>'+ timestr(runTime, true) +'</td></tr>\
-    <TR><TD class=pbTabLeft>'+ kAttack2 +'</td><TD>'+ Data.options.objStats.numAttacks +'</td></tr>\
-    <TR valign=top><TD class=pbTabLeft>'+ kResources +'</td><TD><TABLE class=pbTabPad>';
+    var m = '<TABLE class=' + rndStyle['classPrefix'] + 'TabPad> <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kStatsStarted +'</td><TD>'+  new Date(Data.options.objStats.tsStart * 1000).myString() +'</td></tr>\
+    <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kRunTime +'</td><TD>'+ timestr(runTime, true) +'</td></tr>\
+    <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kAttack2 +'</td><TD>'+ Data.options.objStats.numAttacks +'</td></tr>\
+    <TR valign=top><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kResources +'</td><TD><TABLE class=' + rndStyle['classPrefix'] + 'TabPad>';
     for (var p in Data.options.objStats.resources){
       var perHour = Data.options.objStats.resources[p] / trueRunTime;
       m += '<TR align=right><TD>'+ p +':</td><TD>'+ addCommasInt(Data.options.objStats.resources[p]) +'</td><TD>('+ addCommasInt(perHour) +' /hr)</td></tr>';
     }
     m += '</table></td></tr></table>';
     
-    m += '<BR><DIV class=pbSubtitle>'+ kStatsBy + Data.options.mapChoice + kLevel1 +'</div><DIV style="overflow:auto"><TABLE class=pbTabPad><TR class=pbTabHdr1 align=center><TD style="background:none !important;"></td><TD align=right colspan=10>'+ titleLine(kLevels) +'</td></tr><TR align=right class=pbTabHdr1><TD style="background:none !important;"></td>';
+    m += '<BR><DIV class=' + rndStyle['classPrefix'] + 'Subtitle>'+ kStatsBy + Data.options.mapChoice + kLevel1 +'</div><DIV style="overflow:auto"><TABLE class=' + rndStyle['classPrefix'] + 'TabPad><TR class=' + rndStyle['classPrefix'] + 'TabHdr1 align=center><TD style="background:none !important;"></td><TD align=right colspan=10>'+ titleLine(kLevels) +'</td></tr><TR align=right class=' + rndStyle['classPrefix'] + 'TabHdr1><TD style="background:none !important;"></td>';
     for (i=1; i<11; i++)
       m += '<TD width=45>'+ i +'</td>';
-    m += '</tr><TR><TD colspan=11><HR class=thin></td></tr><TR align=right><TD class=pbTabLeft># Attacks:</td>';
+    m += '</tr><TR><TD colspan=11><HR class=thin></td></tr><TR align=right><TD class=' + rndStyle['classPrefix'] + 'TabLeft># Attacks:</td>';
     for (i=1; i<11; i++)
       m += '<TD>'+ Data.options.objStats.byLevel[i].numAttacks +'</td>';
     m += '</tr><TR><TD colspan=11><HR class=thin></td></tr>'; 
       
     var items =  flipStats ('items');     
     for (var p in items){
-      m += '<TR align=right><TD class=pbTabLeft>'+ Names.itemAbbr(p) +':</td>';
+      m += '<TR align=right><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ Names.itemAbbr(p) +':</td>';
       for (i=1; i<11; i++)
         m += '<TD>'+ items[p][i] +'</td>';
     }
@@ -2122,10 +2257,10 @@ Tabs.AutoAttack = {
     document.getElementById('pbatStats').style.backgroundColor = "#eed"; 
     document.getElementById('pbatStats').style.color = "black"; 
    
-    var m = '<DIV class=pbTitle>'+kAttackStatsTitle+'</div>\
-      <CENTER><INPUT class=greenButton id=pmcampRS type=submit value='+ kClearStats +' \></center>\
-      <DIV class=pbStatBox id=pbcampSO></div>';
-    document.getElementById('pbatContent').innerHTML = m;
+    var m = '<DIV class=' + rndClass['tab_title'] + '>'+kAttackStatsTitle+'</div>\
+      <CENTER><INPUT class=' + rndClass['green_button'] + ' id=pmcampRS type=submit value='+ kClearStats +' \></center>\
+      <DIV class=' + rndStyle['status_ticker'] + ' id=pbcampSO></div>';
+    document.getElementById('pbatcon').innerHTML = m;
     document.getElementById('pmcampRS').addEventListener('click', function(){t.clearStats(); t.showStats();}, false);
     t.showStats();  
   },
@@ -2187,7 +2322,7 @@ Tabs.AutoAttack = {
         }
       }
     }
-    if (Data.options.objAttack.deleteObjAttacks)
+    if (Data.options.objAttack.deleteObjAttacks && rpt.report.attacker.name == Seed.s.name)
       Messages.deleteMessage (rpt.report_notification.id);
   },
   
@@ -2506,7 +2641,7 @@ Tabs.AutoAttack = {
  // Data.options.campAttack {enabled:false, maxDist:7, repeatTime:3660, delayMin:15, delayMax:25, levelEnable:[], levelDist:[]}
   
   //*** Attacks Tab - Levels Sub-Tab ***
-  troopTypes : [kPorter, kConscript, kSpy, kHalberdsman, kMinotaur, kLongbowman, kSwiftStrikeDragon, kBattleDragon, kArmoredTransport, kGiant, kFireMirror, kAquaTroop, kStoneTroop, kFireTroop, kGreatDragon, kWaterDragon, kStoneDragon],
+  troopTypes : [kPorter, kConscript, kSpy, kHalberdsman, kMinotaur, kLongbowman, kSwiftStrikeDragon, kBattleDragon, kArmoredTransport, kGiant, kFireMirror, kAquaTroop, kStoneTroop, kFireTroop, kWindTroop, kGreatDragon, kWaterDragon, kStoneDragon, kFireDragon, kWindDragon],
   tabConfigLevels : function (){
     var t = Tabs.AutoAttack;
      
@@ -2524,30 +2659,30 @@ Tabs.AutoAttack = {
     document.getElementById('pbatConfigL').style.color = "black";
     
     // New content area here
-    var m = '<DIV class=pbTitle>'+ kAutoAttack + Data.options.mapChoice + kLevels +'</div>\
+    var m = '<DIV class=' + rndClass['tab_title'] + '>'+ kAutoAttack + Data.options.mapChoice + kLevels +'</div>\
         <DIV style="overflow:auto">\
-        <TABLE class=pbTabPad><TR class=pbTabHdr1><TD style="background:none !important;"></td><TD align=center colspan=10>'+ titleLine(kLevels) +'</td></tr>\
-        <TR align=center class=pbTabHdr1><TD style="background:none !important;"></td><TD>1</td><TD>2</td><TD>3</td><TD>4</td><TD>5</td><TD>6</td><TD>7</td><TD>8</td><TD>9</td><TD>10</td></tr>\
-        </div><TR align=center><TD class=pbTabLeft>'+ kEnable +'</td>';
+        <TABLE class=' + rndStyle['classPrefix'] + 'TabPad><TR class=' + rndStyle['classPrefix'] + 'TabHdr1><TD style="background:none !important;"></td><TD align=center colspan=10>'+ titleLine(kLevels) +'</td></tr>\
+        <TR align=center class=' + rndStyle['classPrefix'] + 'TabHdr1><TD style="background:none !important;"></td><TD>1</td><TD>2</td><TD>3</td><TD>4</td><TD>5</td><TD>6</td><TD>7</td><TD>8</td><TD>9</td><TD>10</td></tr>\
+        </div><TR align=center><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kEnable +'</td>';
     for (var x=1; x<=10; x++)
       m += '<TD><INPUT type=checkbox id=pbatEn_'+ x +(Data.options.objAttack.levelEnable[x]?' CHECKED':'')   +' \></td>';
-    m += '</tr><TR align=center><TD class=pbTabLeft>'+ kMaxDist +'</td>';
+    m += '</tr><TR align=center><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kMaxDist +'</td>';
     for (var x=1; x<=10; x++)
-      m += '<TD><INPUT type=text id=pbatDist_'+ x +' maxlength=2 style="width:30px" value="'+ Data.options.objAttack.levelDist[x] +'"\></td>';
+      m += '<TD><INPUT type=text id=pbatDist_'+ x +' maxlength=2 style="width:34px" value="'+ Data.options.objAttack.levelDist[x] +'"\></td>';
     m += '</tr><TR><TD><DIV class=short></td></tr>';
     
     for (i=0; i<t.troopTypes.length; i++){
-      m += '<TR><TD class=pbTabLeft>'+ Names.troops.byName[t.troopTypes[i]][2] +':</td>';
+      m += '<TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ Names.troops.byName[t.troopTypes[i]][2] +':</td>';
       for (var x=1; x<=10; x++){
         var num = Data.options.objAttack.troops[x][t.troopTypes[i]];
         if (!num)
           num = 0;
-        m += '<TD><INPUT type=text id=pbatTrp_'+ x +'_'+ i +' maxlength=6 size=2 value="'+ num +'"\></td>';
+        m += '<TD><INPUT type=text id=pbatTrp_'+ x +'_'+ i +' maxlength=6 size=2  style="width:34px" value="'+ num +'"\></td>';
       }
       m += '</tr>';
     }    
     m += '</table><DIV class=short></div></div>';
-    document.getElementById('pbatContent').innerHTML = m;
+    document.getElementById('pbatcon').innerHTML = m;
  
     // add event listeners ...
     for (var x=1; x<=10; x++)
@@ -2616,20 +2751,20 @@ Tabs.AutoAttack = {
     document.getElementById('pbatConfigG').style.color = "black"; 
     
 
-    var m = '<DIV class=pbTitle>'+ kAutoAttackConfig + '</div>\
-      <DIV style="overflow:auto"><TABLE class=pbTabPad>\
-      <TR><TD class=pbTabLeft>'+ kRandomDelay +'</td><TD>\
+    var m = '<DIV class=' + rndClass['tab_title'] + '>'+ kAutoAttackConfig + '</div>\
+      <DIV style="overflow:auto"><TABLE class=' + rndStyle['classPrefix'] + 'TabPad>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kRandomDelay +'</td><TD>\
       <INPUT class=short id=pbaacfgRD1 maxlength=4 type=text value="'+ Data.options.objAttack.delayMin +'"/>'+ kTo +'\
       <INPUT class=short id=pbaacfgRD2 maxlength=4 type=text value="'+ Data.options.objAttack.delayMax +'"/>'+ kSeconds +'</td></tr>\
-      <TR><TD class=pbTabLeft>'+ kSameTargetDelay +'</td><TD>'+ kOneHour +'</td></tr>\
-      <TR><TD class=pbTabLeft>'+ kLogAttacks +'</td><TD><INPUT id=pbaacfgLA '+ (Data.options.objAttack.logAttacks?'CHECKED ':'') +' type=checkbox \></td></tr>\
-      <TR><TD class=pbTabLeft>'+ kDeleteMarchReports +'</td><TD><INPUT id=pbaacfgDMR '+ (Data.options.objAttack.deleteObjAttacks?'CHECKED ':'') +' type=checkbox \></td></tr>\
-      <TR><TD class=pbTabLeft>'+ kStopOnLoss +'</td><TD><INPUT id=pbaacfgSTL '+ (Data.options.objAttack.stopAttackOnLoss?'CHECKED ':'') +' type=checkbox \></td></tr>\
-      <TR><TD class=pbTabLeft>'+ kMaxMarches +'</td><TD><INPUT class=short id=pbaacfgMM maxlength=2 type=text value="'+ Data.options.objAttack.maxMarches +'"\></td></tr>\
-      <TR><TD class=pbTabLeft>'+ kClearLast +'</td><TD><INPUT class=greenButton type=submit id=pbaacfgClr value='+ kClear +'></td></tr>\
-      <TR><TD class=pbTabLeft>'+ kClearAll +'</td><TD><INPUT id=pbaacfgCA '+ (Data.options.objAttack.clearAllTargets?'CHECKED ':'') +' type=checkbox \></td></tr>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kSameTargetDelay +'</td><TD>'+ kOneHour +'</td></tr>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kLogAttacks +'</td><TD><INPUT id=pbaacfgLA '+ (Data.options.objAttack.logAttacks?'CHECKED ':'') +' type=checkbox \></td></tr>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kDeleteMarchReports +'</td><TD><INPUT id=pbaacfgDMR '+ (Data.options.objAttack.deleteObjAttacks?'CHECKED ':'') +' type=checkbox \></td></tr>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kStopOnLoss +'</td><TD><INPUT id=pbaacfgSTL '+ (Data.options.objAttack.stopAttackOnLoss?'CHECKED ':'') +' type=checkbox \></td></tr>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kMaxMarches +'</td><TD><INPUT class=short id=pbaacfgMM maxlength=2 type=text value="'+ Data.options.objAttack.maxMarches +'"\></td></tr>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kClearLast +'</td><TD><INPUT class=' + rndClass['green_button'] + ' type=submit id=pbaacfgClr value='+ kClear +'></td></tr>\
+      <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kClearAll +'</td><TD><INPUT id=pbaacfgCA '+ (Data.options.objAttack.clearAllTargets?'CHECKED ':'') +' type=checkbox \></td></tr>\
       </table>';
-    document.getElementById('pbatContent').innerHTML = m;
+    document.getElementById('pbatcon').innerHTML = m;
     
     // Add event listeners
     document.getElementById('pbaacfgDMR').addEventListener('change', function (e){Data.options.objAttack.deleteObjAttacks = e.target.checked;}, false);
@@ -2722,7 +2857,11 @@ Tabs.AutoAttack = {
     
 
     var timer = null;
-    var m = '<DIV class=pbTitle>'+ kAutoAttack + Data.options.mapChoice + kLevels +'</div><TABLE id=pbatTargTab class=pbTab><TR class=pbTabHdr2><TD>'+ kDistance +'</td><TD>'+ kCoords +'</td><TD>'+ kLevel +'</td><TD width=65>'+ kLastAttack +'</td></tr>';
+    var m = '<DIV class=' + rndClass['tab_title'] + '>'+ kAutoAttack + Data.options.mapChoice + kLevels +'</div>\
+    <DIV style="overflow:auto;"><TABLE id=pbatTargTab class=' + rndStyle['classPrefix'] + 'Tab>\
+    <TR class=' + rndStyle['classPrefix'] + 'TabHdr2>\
+    <TD>'+ kDistance +'</td><TD>'+ kCoords +'</td>\
+    <TD>'+ kLevel +'</td><TD width=65>'+ kLastAttack +'</td></tr>';
 //logit (inspect (Data.targets.mapObjects, 5, 1));
     
     // Owned resources have a red background color and white text
@@ -2731,48 +2870,43 @@ Tabs.AutoAttack = {
         t.dispFeedback ( kSelectLevelsReminder );
 
     // Hilite owned wildernesses
-    var ownedWilderness = Seed.s.player_wildernesses; 
+    var ownedWilderness = Seed.s.player_wildernesses;
+ 
     var bFound = false;
     for (var i=0; i<mapObjects.length; i++){
         m += '<TR id=pbatRow_'+ i +'><TD>'+ mapObjects[i].dist +'</td><TD align=center>'+ mapObjects[i].x +','+ mapObjects[i].y +'</td><TD align=center>'+ mapObjects[i].lvl +'</td>\
               <TD><span id=pbatList_'+ i +'> --- </span></td><TD><INPUT class=small id=pbattargAN_'+ i +' type=submit value=' + kAttackNow + '\></td>';
         
         // Add the skip attack button for cities and outposts
-        if (t.selectedMapName == kCity || t.selectedMapName == kOutpost)
+        // All terrain attacks can now be skipped
+        //if (t.selectedMapName == kCity || t.selectedMapName == kOutpost)
+        if (t.selectedMapName != kAntCamp)
             m += '<TD><INPUT class=small id=pbskipAN_'+ i +' type=submit value=' + kSkipAttack + '\></td><TD>'+ mapObjects[i].playerAlliance +'</td>';
             
         m += '</tr>';
-        /*
-        // Hilight owned resources and don't attack them
-        for (var j=0;j<ownedWilderness.length; j++) {
-            if (ownedWilderness[j].x == mapObjects[i].x && ownedWilderness[j].y == mapObjects[i].y) {
-                document.getElementById('pbatRow_'+j).setAttribute("class", "pbOwned");
-                mapObjects[j].attackable = false;
-                break;
-            }
-        }
-        */
      }
 
-    document.getElementById('pbatContent').innerHTML = m + '</table>';
-    document.getElementById('pbatContent').scrollTop = gAttScrollPos;
+    document.getElementById('pbatcon').innerHTML = m + '</table></div>';
+    document.getElementById('pbatcon').scrollTop = gAttScrollPos;
     
      for (var i=0; i<mapObjects.length; i++)
         for (var j=0;j<ownedWilderness.length; j++) {
             if (ownedWilderness[j].x == mapObjects[i].x && ownedWilderness[j].y == mapObjects[i].y) {
-                document.getElementById('pbatRow_'+i).setAttribute("class", "pbOwned");
+                document.getElementById('pbatRow_'+i).setAttribute("class", "' + rndStyle['classPrefix'] + 'Owned");
                 mapObjects[i].attackable = false;
                 break;
             }
         }
     
     // Add the event listeners
-    document.getElementById('pbatContent').addEventListener('scroll', onScroll, false);
+    document.getElementById('pbatcon').addEventListener('scroll', onScroll, false);
     
     for (var i=0; i<mapObjects.length; i++) {
         var butAttack = document.getElementById('pbattargAN_'+ i);
         butAttack.addEventListener ('click', butAttackNow, false);
-        if (t.selectedMapName == kCity || t.selectedMapName == kOutpost) 
+        // All terrain attacks can now be skipped
+        //if (t.selectedMapName == kCity || t.selectedMapName == kOutpost)
+        if (t.selectedMapName != kAntCamp) 
             document.getElementById('pbskipAN_'+ i).addEventListener ('click', butSkipAttack, false);
         setButtonStyle (butAttack, mapObjects[i].attackable);         
     }
@@ -2794,7 +2928,7 @@ Tabs.AutoAttack = {
     
     function onScroll (e){
       if (t.contentType == 2)
-        gAttScrollPos = document.getElementById('pbatContent').scrollTop;
+        gAttScrollPos = document.getElementById('pbatcon').scrollTop;
     }
 
     function butAttackNow (e){
@@ -2899,10 +3033,10 @@ Tabs.AutoAttack = {
     document.getElementById('pbatMaps').style.backgroundColor = "#eed"; 
     document.getElementById('pbatMaps').style.color = "black";
 
-    var m = '<DIV class=pbSubtitle>'+ kMapCategories +'</div>\
+    var m = '<DIV class=' + rndStyle['classPrefix'] + 'Subtitle>'+ kMapCategories +'</div>\
         <DIV style="overflow:auto">\
-        <TABLE class=pbTabPad>\
-        <TR align=center class=pbTabHdr1><TD style="background:none !important;" colspan=2></td></tr>\
+        <TABLE class=' + rndStyle['classPrefix'] + 'TabPad>\
+        <TR align=center class=' + rndStyle['classPrefix'] + 'TabHdr1><TD style="background:none !important;" colspan=2></td></tr>\
         </div>';
     
     // Add the radio buttons  
@@ -2918,11 +3052,11 @@ Tabs.AutoAttack = {
     m += '<TR><TD><INPUT type=radio name=pbatMapRadio value="Forest" ></td><td>'+ kForest +'</td></tr>';
     
     // Add the Search button - triggers an immediate map search when clicked
-    m += '<TR><TD colspan="2"><INPUT class=greenButton type=submit id=pbatMapSearch value='+ kSearch +'></td></tr>'; 
+    m += '<TR><TD colspan="2"><INPUT class=' + rndClass['green_button'] + ' type=submit id=pbatMapSearch value='+ kSearch +'></td></tr>'; 
     m += '</table><DIV class=short></div>';
     
     // Display the inputs
-    document.getElementById('pbatContent').innerHTML = m;
+    document.getElementById('pbatcon').innerHTML = m;
 
     // add event listeners
     var r = document.getElementsByName('pbatMapRadio');
@@ -2964,13 +3098,13 @@ Tabs.AutoAttack = {
                     case 'A': Data.targets.camps.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, attackable:true}); break;
                     case 'C': Data.targets.cities.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, cityName:tile.cityName, cityLvl:tile.cityLvl, playerName:tile.playerName, playerLvl:tile.playerLvl, playerMight:tile.playerMight, playerAlliance:tile.playerAlliance, last:null, fromCity:0, attackable:(tile.playerAlliance == '---')}); break;
                     case 'O': Data.targets.outposts.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, cityName:tile.cityName, cityLvl:tile.cityLvl, playerName:tile.playerName, playerLvl:tile.playerLvl, playerMight:tile.playerMight, playerAlliance:tile.playerAlliance, last:null, fromCity:0, attackable:(tile.playerAlliance == '---')}); break;
-                    case 'G': Data.targets.grasslands.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, attackable:true}); break;
-                    case 'B': Data.targets.swamps.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, attackable:true}); break;
-                    case 'L': Data.targets.lakes.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, attackable:true}); break;
-                    case 'H': Data.targets.hills.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, attackable:true}); break;
-                    case 'P': Data.targets.plains.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, attackable:true}); break;
-                    case 'M': Data.targets.mountains.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, attackable:true}); break;
-                    case 'F': Data.targets.forests.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, attackable:true}); break;
+                    case 'G': Data.targets.grasslands.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, playerAlliance:tile.playerAlliance, attackable:(tile.playerAlliance == '---')}); break;
+                    case 'B': Data.targets.swamps.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, playerAlliance:tile.playerAlliance, attackable:(tile.playerAlliance == '---')}); break;
+                    case 'L': Data.targets.lakes.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, playerAlliance:tile.playerAlliance, attackable:(tile.playerAlliance == '---')}); break;
+                    case 'H': Data.targets.hills.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, playerAlliance:tile.playerAlliance, attackable:(tile.playerAlliance == '---')}); break;
+                    case 'P': Data.targets.plains.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, playerAlliance:tile.playerAlliance, attackable:(tile.playerAlliance == '---')}); break;
+                    case 'M': Data.targets.mountains.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, playerAlliance:tile.playerAlliance, attackable:(tile.playerAlliance == '---')}); break;
+                    case 'F': Data.targets.forests.push ({x:tile.x, y:tile.y, dist:tile.dist, lvl:tile.lvl, last:null, fromCity:0, playerAlliance:tile.playerAlliance, attackable:(tile.playerAlliance == '---')}); break;
                     default: break;
                 }
             }      
@@ -3055,9 +3189,9 @@ Tabs.AutoAttack = {
 //******************************** End Attacks *************************
 
 function trainTable (myId){
-  var m = '<TABLE class=pbTab>';
+  var m = '<TABLE class=' + rndStyle['classPrefix'] + 'Tab>';
   var now = serverTime();
-  var mtClass = 'pbMarchMine';
+  var mtClass = '' + rndStyle['classPrefix'] + 'MarchMine';
   for (var c=0; c<Seed.s.cities.length; c++){
     var jobs = Seed.s.cities[c].jobs;
     for (var j=0; j<jobs.length; j++){
@@ -3073,14 +3207,14 @@ function trainTable (myId){
 }
 
 function marchTable (myId){
-  var m = '<TABLE class=pbTab>';
+  var m = '<TABLE class=' + rndStyle['classPrefix'] + 'Tab>';
   var now = serverTime();
   for (var p in Seed.marches){
     var march = Seed.marches[p];
     var time = march.run_at - now;
-    var mtClass='pbMarchOther';
+    var mtClass='' + rndStyle['classPrefix'] + 'MarchOther';
     if (march.ownerId == myId)
-      mtClass = 'pbMarchMine';
+      mtClass = '' + rndStyle['classPrefix'] + 'MarchMine';
     if (time < 0)
       time = '?';
     else if (isNaN (time))
@@ -3158,7 +3292,7 @@ var Ajax = {
   messageList : function (cat, callback){
     if (!cat)
       cat = 'all';
-    new MyAjaxRequest ('reports.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, count:12, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, category:cat, page:1, version:6 }, mycb, false);
+    new MyAjaxRequest ('reports.json', {'user%5Fid':C.attrs.userId, 'dragon%5Fheart':C.attrs.dragonHeart, count:12, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, category:cat, page:1, version:getVersion }, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3170,7 +3304,7 @@ var Ajax = {
   },
   
   messageDetail : function (id, callback){
-    new MyAjaxRequest ('reports/'+ id +'.json', {'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:6, 'dragon%5Fheart':C.attrs.dragonHeart }, mycb, false);
+    new MyAjaxRequest ('reports/'+ id +'.json', {'user%5Fid':C.attrs.userId, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, version:getVersion, 'dragon%5Fheart':C.attrs.dragonHeart }, mycb, false);
     function mycb (rslt){
       if (rslt.ok && rslt.dat.result.success){
         if (callback)
@@ -3189,7 +3323,7 @@ var Ajax = {
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['ids'] = ids.join('%7C');
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 4;
+	p['version'] = postVersion;
     new MyAjaxRequest ('reports/bulk_delete.json', p, mycb, true);
     function mycb (rslt){
       if (rslt.ok && !rslt.dat.result.success)
@@ -3207,7 +3341,7 @@ var Ajax = {
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
     p['%5Fmethod'] = 'put';
-	p['version'] = 6;
+	p['version'] = postVersion;
 	p['timestamp'] = parseInt(serverTime());
     new MyAjaxRequest ('cities/'+ cityId +'/buildings/'+ buildingId +'.json', p, mycb, true);
     function mycb (rslt){
@@ -3234,7 +3368,7 @@ var Ajax = {
 	p['units%5Bquantity%5D'] = troopQty;
 	p['units%5Bunit%5Ftype%5D'] = troopType;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 6;
+	p['version'] = postVersion;
     new MyAjaxRequest ('cities/'+ cityId +'/units.json', p, mycb, true);
     function mycb (rslt){
 	  //logit ("Troop Training Response:\n" + inspect (rslt, 10, 1));
@@ -3261,7 +3395,7 @@ var Ajax = {
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
 	p['research%5Bresearch%5Ftype%5D'] = researchType;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 4;
+	p['version'] = postVersion;
     new MyAjaxRequest ('cities/'+ cityId +'/researches.json', p, mycb, true);
     function mycb (rslt){
         //logit ("RESEARCH RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3357,11 +3491,8 @@ if (this._queue.length > 0 && this._currentRequest == null) {
     var t = Ajax;
     var p = {};
     ++t.marchBusy;
+	p['user%5Fid'] = C.attrs.userId;
 	p['march%5Bmarch%5Ftype%5D'] = 'attack';
-	p['march%5By%5D'] = y;
-	p['%5Fmethod'] = 'post';
-	p['march%5Bgeneral%5Fid%5D'] = genId;
-	p['timestamp'] = parseInt(serverTime());
     var u = {}
 	var mt = false;
 	var sendTroops = "%7B";
@@ -3374,12 +3505,15 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 		mt = true;
 	}
 	sendTroops += "%7D";
-    p['march%5Bunits%5D'] = sendTroops; //JSON2.stringify(u);     //ie: '{"Longbowman":500}';
-    p['march%5Bx%5D'] = x;
+    p['march%5Bunits%5D'] = sendTroops; //JSON.stringify(u);     //ie: '{"Longbowman":500}';
+	p['march%5By%5D'] = y;
+	p['timestamp'] = parseInt(serverTime());
+	p['march%5Bgeneral%5Fid%5D'] = genId;
+	p['march%5Bx%5D'] = x;
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
-	p['user%5Fid'] = C.attrs.userId;
+	p['%5Fmethod'] = 'post';
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
-	p['version'] = 6;
+	p['version'] = postVersion;
     new MyAjaxRequest ('cities/'+ cityId +'/marches.json', p, mycb, true);
     function mycb (rslt){
         //logit ("MARCH RESPONSE:\n" + inspect (rslt, 10, 1));
@@ -3413,7 +3547,7 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
     p['%5Fmethod'] = 'delete';
-	p['version'] = 6;
+	p['version'] = postVersion;
 	p['timestamp'] = parseInt(serverTime());
     new MyAjaxRequest ('cities/'+ cityId +'/marches/'+ marchId +'.json', p, mycb, true);
     function mycb (rslt){
@@ -3438,7 +3572,7 @@ if (this._queue.length > 0 && this._currentRequest == null) {
 	p['user%5Fid'] = C.attrs.userId;
 	p['timestamp'] = parseInt(serverTime());
 	p['%5Fsession%5Fid'] = C.attrs.sessionId;
-	p['version'] = 6;
+	p['version'] = postVersion;
 	p['dragon%5Fheart'] = C.attrs.dragonHeart;
     new MyAjaxRequest ('cities/'+ cityId +'/move_resources.json', p, mycb, true);
     function mycb (rslt){
@@ -3489,19 +3623,31 @@ var AutoCollect = {
 	},
 }
 
+var VerboseLog = {
+	init : function () {
+		var t = VerboseLog;
+		t.setEnable(Data.options.verboseLog.enabled);
+	},
+	
+	setEnable : function (onOff) {
+		var t = VerboseLog;
+		Data.options.verboseLog.enabled = onOff;
+	},
+}
+
 
 //******************************** Info Tab *****************************
 Tabs.Info = {
   tabOrder : INFO_TAB_ORDER,
-  tabDisabled : false,
+  tabDisabled : !INFO_TAB_ENABLE,
   cont : null,
   timer : null,
   
   init : function (div){
     var t = Tabs.Info;
     t.cont = div;
-    div.innerHTML = '<DIV class=pbTitle>'+ kDOAVersionString + Version +'<BR>'+ WebSite +'</div>\
-      <TABLE width=100%><TR><TD><INPUT class=greenButton type=submit value='+ kRefresh +' id=pbinfRefresh></input>\
+    div.innerHTML = '<DIV class=' + rndClass['tab_title'] + '>'+ kDOAVersionString + Version +'<BR>'+ WebSite +'</div>\
+      <TABLE width=100%><TR><TD><INPUT class=' + rndClass['green_button'] + ' type=submit value='+ kRefresh +' id=pbinfRefresh></input>\
       </td><TD align=right><SPAN id=pbinfGmt></span></td></tr></table><DIV id=pbinfCont></div>';
     document.getElementById('pbinfRefresh').addEventListener ('click', t.refresh, false);
     //t.showStuff();
@@ -3529,10 +3675,10 @@ Tabs.Info = {
               <TR valign=top align=center><TD width=50% style="border-right: 1px solid;">';
       
         // Troops
-        m += '<TABLE class=pbTabPad>';
+        m += '<TABLE class=' + rndStyle['classPrefix'] + 'TabPad>';
         for (var i=0; i<Names.troops.names.length; i++){
             var name = Names.troops.names[i][1];
-            if (name==kGreatDragon || name==kWaterDragon || name==kStoneDragon) continue;
+            if (name==kGreatDragon || name==kWaterDragon || name==kStoneDragon || name==kFireDragon || name==kWindDragon) continue;
             var num = city.units[name];
             if (!num) num = 0;
             var marchNum = 0;
@@ -3542,12 +3688,12 @@ Tabs.Info = {
                         marchNum += city.marches[p].units[q];
                         
             var marchStr = (marchNum > 0) ? '<B>(' + marchNum + ')</b>' : '';
-            m += '<TR><TD class=pbTabLeft>'+ name +':</td><TD align=right>'+ num +'</td><TD align=right>'+ marchStr +'</td></tr>';
+            m += '<TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ name +':</td><TD align=right>'+ num +'</td><TD align=right>'+ marchStr +'</td></tr>';
         }
         m += '</table></td><TD width=50% style=" padding-left:7px">';
     
         // Generals
-        m += '<TABLE class=pbTabPad>';
+        m += '<TABLE class=' + rndStyle['classPrefix'] + 'TabPad>';
         var loc = '';
         for (var ig=0; ig<city.generals.length; ig++){
             if (Seed.numMarches)
@@ -3565,14 +3711,14 @@ Tabs.Info = {
             m += '<TR><TD align=right>'+ city.generals[ig].name +' ('+ city.generals[ig].rank +')</td><TD width=75%>'+ (city.generals[ig].busy?loc:'') +'</td></tr>';
         }
         
-        m += '</table></td></tr></table><BR><TABLE class=pbTabPad>\
-              <TR><TD class=pbTabLeft>'+ kMarches +'</td><TD>'+ Seed.numMarches +'</td></tr></table>'
+        m += '</table></td></tr></table><BR><TABLE class=' + rndStyle['classPrefix'] + 'TabPad>\
+              <TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kMarches +'</td><TD>'+ Seed.numMarches +'</td></tr></table>'
 //        + dispBuildingJob(0) + dispResearchJob(0) + dispTrainingJobs(0) + '</td></tr></table>';
   
         // outposts ...
         //if (Seed.s.cities.length > 0){
         //    for (var i=1; i<Seed.s.cities.length; i++){
-        //        m += '<DIV class=short></div>'+ cityTitle(i) + '<TABLE class=pbTabPad><TR><TD></td></tr></table>'
+        //        m += '<DIV class=short></div>'+ cityTitle(i) + '<TABLE class=' + rndStyle['classPrefix'] + 'TabPad><TR><TD></td></tr></table>'
 //      //    + dispBuildingJob(i) + dispTrainingJobs(i) + '</td></tr></table>';
         //    }
         //}
@@ -3586,7 +3732,7 @@ Tabs.Info = {
  
 /*   
     function dispBuildingJob (cityIdx){
-      var m = '<TR><TD class=pbTabLeft>'+ kBuilding +'</td>';
+      var m = '<TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kBuilding +'</td>';
       var job = getBuildingJob (cityIdx);
       // TODO: very rare occurance: Error: job.building is null
       if (job && job.job.run_at > serverTime()) {
@@ -3600,7 +3746,7 @@ Tabs.Info = {
     }
     
     function dispResearchJob (cityIdx){
-      var m = '<TR><TD class=pbTabLeft>'+ kResearch +'</td>';
+      var m = '<TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kResearch +'</td>';
       var job = getResearchJob (cityIdx);
       if (job && job.run_at > serverTime())
         m += '<TD>'+ job.research_type +' level '+ job.level +'</td><TD>'+ timestr(job.run_at - serverTime(), true) +'</td></tr>';
@@ -3625,7 +3771,7 @@ Tabs.Info = {
           tot = ' &nbsp <B>('+ timestrShort(timeRemaining) +')</b>';
         }
         timeRemaining = (trains[i].run_at-last > 0) ? trains[i].run_at-last : 0;
-        m += '<TR><TD class=pbTabLeft>'+ left +'</td><TD>'+ trains[i].quantity +' '+ trains[i].unit_type +' </td><TD> '
+        m += '<TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ left +'</td><TD>'+ trains[i].quantity +' '+ trains[i].unit_type +' </td><TD> '
           + timestr(timeRemaining, true) + tot + '</td></tr>';
         last = trains[i].run_at;
       }      
@@ -3642,7 +3788,7 @@ Tabs.Info = {
             else
                 wallStatus = '<font class="defending">'+ kDefending +'</font>';
       
-            return '<div class=pbSubtitle><TABLE class=pbTab><TR><TD>'+ kCityNumber + (cityIdx+1) +'</td><TD align=center>'+ city.type +'</td><TD align=right>'+ city.x +','+ city.y + ' ' + alliance_name +'</td><TD width=220px align=right>'+ wallStatus +'</td></tr></table></div>';
+			return '<div class=' + rndStyle['classPrefix'] + 'Subtitle><TABLE class=' + rndStyle['classPrefix'] + 'Tab><TR><TD align=left>'+ city.name +'</td><TD align=center>'+ city.x +','+ city.y + '</td><TD align=center width=200px><font color=yellow>' + alliance_name +'</font></td><TD width=80px align=right>'+ wallStatus +'</td></tr></table></div>';
         }
     },
 
@@ -3723,9 +3869,12 @@ var Names = {
     [11, kGreatDragon, kGrtDrg],
     [12, kWaterDragon, kWatDrg],
     [13, kStoneDragon, kStnDrg],
-    [14, kAquaTroop, kFang],
-    [15, kStoneTroop, kOgre],
-    [16, kFireTroop, kLavaJaw],
+    [14, kFireDragon, kFireDrg],
+    [15, kWindDragon, kWndDrg],
+    [16, kAquaTroop, kFang],
+    [17, kStoneTroop, kOgre],
+    [18, kFireTroop, kLavaJaw],
+    [19, kWindTroop, kWindUnknown],
     ],
   }, 
   
@@ -3741,33 +3890,42 @@ var Names = {
     [101, 'AquaTroopRespiratorStack100', 'Respirator-100'],
     [102, 'AquaTroopRespiratorStack500', 'Respirator-500'],
     [103, 'AquaTroopRespiratorStack1000', 'Respirator-1000'],
-    [110, 'GreatDragonBodyArmor', 'GD Armor-1'],
-    [111, 'GreatDragonHelmet', 'GD Armor-2'],
-    [112, 'GreatDragonTailGuard', 'GD Armor-3'],
-    [113, 'GreatDragonClawGuards', 'GD Armor-4'],
-    [120, 'WaterDragonBodyArmor', 'WD Armor-1'],
-    [121, 'WaterDragonHelmet', 'WD Armor-2'],
-    [122, 'WaterDragonTailGuard', 'WD Armour-3'],
-    [123, 'WaterDragonClawGuards', 'WD Armor-4'],
+    [110, 'GreatDragonBodyArmor', 'GD Body Armor'],
+    [111, 'GreatDragonHelmet', 'GD Helmet'],
+    [112, 'GreatDragonTailGuard', 'GD Tail Guard'],
+    [113, 'GreatDragonClawGuards', 'GD Claw Guards'],
+    [120, 'WaterDragonBodyArmor', 'WD Body Armor'],
+    [121, 'WaterDragonHelmet', 'WD Helmet'],
+    [122, 'WaterDragonTailGuard', 'WD Tail Guard'],
+    [123, 'WaterDragonClawGuards', 'WD Claw Guards'],
     [124, 'WaterDragonEgg', 'WaterDragonEgg'],
-    [130, 'StoneDragonBodyArmor', 'SD Armor-1'],
-    [131, 'StoneDragonHelmet', 'SD Armor-2'],
-    [132, 'StoneDragonTailGuard', 'SD Armour-3'],
-    [133, 'StoneDragonClawGuards', 'SD Armor-4'],
+    [130, 'StoneDragonBodyArmor', 'SD Body Armor'],
+    [131, 'StoneDragonHelmet', 'SD Helmet'],
+    [132, 'StoneDragonTailGuard', 'SD Tail Guard'],
+    [133, 'StoneDragonClawGuards', 'SD Claw Guards'],
     [134, 'StoneDragonEgg', 'StoneDragonEgg'],
     [140, 'StoneTroopItem', 'GlowingMandrake'],
     [141, 'StoneTroopItemStack100', 'GlowingMandrake-100'],
     [142, 'StoneTroopItemStack500', 'GlowingMandrake-500'],
     [143, 'StoneTroopItemStack1000', 'GlowingMandrake-1000'],
     [144, 'FireDragonEgg', 'FireDragonEgg'],
-    [150, 'FireDragonBodyArmor', 'SD Armor-1'],
-    [151, 'FireDragonHelmet', 'SD Armor-2'],
-    [152, 'FireDragonTailGuard', 'SD Armour-3'],
-    [153, 'FireDragonClawGuards', 'SD Armor-4'],
+    [150, 'FireDragonBodyArmor', 'FD Body Armor'],
+    [151, 'FireDragonHelmet', 'FD Helmet'],
+    [152, 'FireDragonTailGuard', 'FD Tail Guard'],
+    [153, 'FireDragonClawGuards', 'FD Claw Guards'],
     [160, 'FireTroopItem', 'VolcanicRune'],
     [161, 'FireTroopItemStack100', 'VolcanicRune-100'],
     [162, 'FireTroopItemStack500', 'VolcanicRune-500'],
-    [163, 'FireTroopItemStack1000', 'VolcanicRune-1000'],
+    [163, 'FireTroopItemStack1000', 'VolcanicRune-1000'],   
+    [170, 'WindDragonEgg', 'WindDragonEgg'],
+    [171, 'WindDragonBodyArmor', 'AD Body Armor'],
+    [172, 'WindDragonHelmet', 'AD Helmet'],
+    [173, 'WindDragonTailGuard', 'AD Tail Guard'],
+    [174, 'WindDragonClawGuards', 'AD Claw Guards'],
+    [175, 'WindTroopItem', 'BansheeTalon'],
+    [176, 'WindTroopItemStack100', 'BansheeTalon-100'],
+    [177, 'WindTroopItemStack500', 'BansheeTalon-500'],
+    [178, 'WindTroopItemStack1000', 'BansheeTalon-1000'],
    ],
   }, 
 
@@ -3837,7 +3995,7 @@ Names.init ();
 Tabs.Debug = {
   tabOrder : DEBUG_TAB_ORDER,
   tabLabel : 'Dbg',
-  tabDisabled : !ENABLE_DEBUG_TAB,
+  tabDisabled : !DEBUG_TAB_ENABLE,
   cont : null,
   
   init : function (div){
@@ -3890,8 +4048,7 @@ Tabs.Debug = {
   },
   
   dispScripts : function (){
-    var popName = makeid();
-    pop = new CPopup (popName, 0,0, 1000,800, true); 
+    pop = new CPopup ('debug', 0,0, 1000,800, true); 
     pop.getTopDiv ().innerHTML = '<B><CENTER>Debug - List Scripts</center></b>' ;
     var scripts = document.getElementsByTagName('script');
     var m = '<DIV style="height:560px; max-height:560px; overflow:auto">';
@@ -4091,11 +4248,10 @@ function parseIntNan (n){
   var x = parseInt(n, 10);
   return (isNaN(x)) ? 0 : x;
 }
+
 function parseIntZero (n){
   return (!n || n=='') ? 0 : parseInt(n, 10);
 }
-
-
 
 // class
 function MarchTracker (){
@@ -4138,1713 +4294,6 @@ function MarchTracker (){
         return null;
     }
 
-/*
-//********************************   Train Tab *****************************
-Tabs.Train = {
-  tabOrder      : TRAIN_TAB_ORDER,
-  tabLabel      : kTrain,
-  cont          : null,
-  trainTimer    : null,
-  statTimer     : null,
-  capitolTroops : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror'],
-  outpost1Troops: ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop'],
-  outpost2Troops: ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'StoneTroop'],
-  outpost3Troops: ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'FireTroop'],
-  allTroops     : ['Porter', 'Conscript', 'Spy', 'Halberdsman', 'Minotaur', 'Longbowman', 'SwiftStrikeDragon', 'BattleDragon', 'ArmoredTransport', 'Giant', 'FireMirror', 'AquaTroop', 'StoneTroop'],
-  contentType   : 0, // 0 = train, 1 = config
-  selectedQ     : kMinHousing,
-  trainJobs     : [],
-  
-  init : function (div){
-    var t = Tabs.Train;
-    t.cont = div;
-
-   
-    // Initialize autoTrain
-	for (var c=0; c<Seed.s.cities.length; c++)
-		if (!Data.options.autoTrain.city[c])
-			Data.options.autoTrain.city[c] = {};
-	
-	for (var c=0; c<Seed.s.cities.length; c++) {
-		if (!Data.options.autoTrain.city[c].troopType) {
-			Data.options.autoTrain.city[c].troopType = [];
-			for (tt=0; tt<t.capitolTroops.length; tt++)
-				Data.options.autoTrain.city[c].troopType[tt] = {};
-		}
-	}
-               
-	// Initialize troopCap
-    if (Data.options.troopCap == false) {
-        Data.options.troopCap.city = []
-        Data.options.troopCap.city.troopType = [];
-        for (var c=0; c<Seed.s.cities.length; c++)
-            for (var tt=0; tt<t.allTroops.length; tt++)
-                Data.options.troopCap.city[c].troopType[tt] = {};        
-    }
-    
-	if (!Data.options.troopCap.city) {
-		Data.options.troopCap.city = [];
-		for (var c=0; c<Seed.s.cities.length; c++)
-			Data.options.troopCap.city[c] = {};
-	}
-	
-	for (var c=0; c<Seed.s.cities.length; c++) {
-		if (!Data.options.troopCap.city[c].troopType) {
-			Data.options.troopCap.city[c].troopType = [];
-			for (tt=0; tt<t.allTroops.length; tt++)
-				Data.options.troopCap.city[c].troopType[tt] = {};
-		}
-	}
-	
-	// Create status ticker
-    div.innerHTML = '<DIV class=pbTitle>'+ kAutoTrain +'</div>\
-      <DIV class=pbStatBox style="margin-bottom: 5px !important"><CENTER><INPUT id=pbtrnOnOff type=submit\></center>\
-      <DIV id=pbtrnTrnStat style="height:165px; max-height: 165px; overflow:auto;"></div> <BR>\
-      <DIV id=pbtrnFeedback style="font-weight:bold; border: 1px solid green; padding: 2px 0px 2px 2px; height:34px"></div>  </div>\
-      <TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
-      <INPUT class=button type=submit value='+ kTrain +' id=pbttTrain></input>\
-      <INPUT class=button type=submit value='+ kConfig +' id=pbttConfigTrain></input></td></tr></table>\
-      <DIV id=pbtrnConfig style="padding-top: 5px; overflow:auto;"class=pbInput>';
-      
- 	// Add event listener for auto on/off button
-    document.getElementById('pbtrnOnOff').addEventListener ('click', function (){
-      t.setTrainEnable (!Data.options.autoTrain.enabled);
-    }, false);
-    document.getElementById('pbttTrain').addEventListener ('click', t.tabTrain, false);
-    document.getElementById('pbttConfigTrain').addEventListener ('click', t.tabConfigTrain, false);
-    
-    t.tabTrain();
-    window.addEventListener ('unload', t.onUnload, false);
-    t.setTrainEnable (Data.options.autoTrain.enabled);	
-	t.selectedQ = Data.options.trainQChoice;
-	
-	// Display error message
-    function dispError (msg){
-		var dial = new ModalDialog (t.cont, 300, 150, '', true);
-		dial.getContentDiv().innerHTML = msg;
-    }	
-  },
-  
-  hide : function (){
-    var t = Tabs.Train;
-    clearTimeout (t.statTimer);
-  },
-  show : function (){
-    var t = Tabs.Train;
-    switch (t.contentType) {
-        case 0: t.tabTrain(); break;
-        case 1: t.tabConfigTrain(); break;
-    }
-    t.statTimer = setInterval (t.statTick, 1000);
-    //t.statTick();
-  },
-  
-  onUnload : function (){
-    var t = Tabs.Train;
-    logit ('===============  Tabs.Train.onUnload');
-    Data.options.trainTab = t.contentType;
-    Data.options.trainQChoice = t.selectedQ;
-  },
-  
-  // *** Train tab - Train sub-tab ***
-  tabTrain : function(){
-    var t = Tabs.Train;
-    
-	// Create troop table for each city
-	var el = [];
-	var m = '';
-    for (var c=0; c<Seed.s.cities.length; c++){
-		switch (c) {
-			case 1:
-				troopTypes = t.outpost1Troops;
-				break;
-			case 2:
-				troopTypes = t.outpost2Troops;
-				break;
-			default:
-				troopTypes = t.capitolTroops;
-		}
-		var city = Seed.s.cities[c];
-		m += '<DIV class=pbSubtitle>City #'+ (c+1) +' ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
-		for (tt=0; tt<troopTypes.length; tt++){
-		    // Use less room in the table layout
-            if (tt%3 == 0) m += '<TR>';
-			m += '<TD class=pbTabLeft>'+ Names.troops.byName[troopTypes[tt]][2] +':</td>';
-			var num = Data.options.autoTrain.city[c].troopType[tt];
-			if (!num || isNaN(num))
-				num = 0;
-			m += '<TD><INPUT type=text id=pbtrnTrp_'+ c +'_'+ tt +' maxlength=6 size=2 value="'+ num +'"\></td>';
-			if (tt>0 && (tt+1)%3 == 0) m += '</tr>';
-			el.push('pbtrnTrp_'+ c +'_'+ tt);
-		}
-		m += ((tt+1)%3 == 0) ? '</tr></table></td></tr></table>' : '</table></td></tr></table>';
-    }    
-    m += '</div>';
-    document.getElementById('pbtrnConfig').innerHTML = m;
-
-    // Hilite the sub-tabs correctly
-    document.getElementById('pbttConfigTrain').style.backgroundColor = BUTTON_BGCOLOR; 
-    document.getElementById('pbttConfigTrain').style.color = "white";
-
-    t.contentType = 0;
-    document.getElementById('pbttTrain').style.backgroundColor = "#eed"; 
-    document.getElementById('pbttTrain').style.color = "black";
-
-	// Add event listeners for troop quantities 
-    for (var i=0; i<el.length; i++)
-      document.getElementById(el[i]).addEventListener('change', troopsChanged, false);
- 
- 	// Update troops on change
-    function troopsChanged (e){
-		var args = e.target.id.split('_');
-		var x = parseIntZero(e.target.value);
-		var lvl = getMusterPointLevel(0);
-		var maxLvl = lvl * 10000;
-	    maxLvl = (lvl == 11) ? 120000 : maxLvl;
-		if (isNaN(x) || x<0 || x>maxLvl){
-			e.target.style.backgroundColor = 'red';
-			dispError (kInvalidNumberTroops);
-		} 
-        else {
-			e.target.value = x;
-			Data.options.autoTrain.city[args[1]].troopType[args[2]] = x;
-			e.target.style.backgroundColor = '';
-		}
-    }
-  },
-  
-  // *** Train tab - Config sub-tab ***
-  tabConfigTrain : function(){
-    var t = Tabs.Train;
-    
-     // Hilite the sub-tabs correctly
-    document.getElementById('pbttTrain').style.backgroundColor = BUTTON_BGCOLOR; 
-    document.getElementById('pbttTrain').style.color = "white";
-
-    t.contentType = 1;
-    document.getElementById('pbttConfigTrain').style.backgroundColor = "#eed"; 
-    document.getElementById('pbttConfigTrain').style.color = "black";
-    
-    var m = '<DIV class=pbSubtitle>'+ kConfigTrain +'</div>\
-        <DIV style="overflow:auto">\
-        <TABLE class=pbTabPad>\
-        <TR align=center class=pbTabHdr1><TD style="background:none !important;" colspan=2></td></tr>\
-        </div>';
-    
-    // Add the radio buttons  
-    m += '<TR><TD><INPUT type=radio name=pbttQRadio value="Minimum Housing" ></td><td>'+ kMinHousing +'</td></tr>';
-    m += '<TR><TD><INPUT type=radio name=pbttQRadio value="Minimum Resource Levels" ></td><td>'+ kMinResourceLevels +'</td></tr>';
-    m += '</table><DIV class=short></div>'; 
-    
-	// Create an all troop table
-	var el = [];
-    var troopTypes = t.allTroops;
-   
-	m += '<DIV class=pbSubtitle style="background-color:#0044a0;">Troop Cap (Max Troops, 0 = no max)</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
-	for (tt=0; tt<troopTypes.length; tt++){
-        // Use less room in the table layout
-        if (tt%3 == 0) m += '<TR>';
-        m += '<TD class=pbTabLeft>'+ Names.troops.byName[troopTypes[tt]][2] +':</td>';
-        var num = Data.options.troopCap.city[0].troopType[tt];
-        if (!num || isNaN(num))
-            num = 0;
-        m += '<TD><INPUT type=text id=pbtrnCap_'+ 0 +'_'+ tt +' maxlength=6 size=2 value="'+ num +'"\></td>';
-        if (tt>0 && (tt+1)%3 == 0) m += '</tr>';
-            el.push('pbtrnCap_'+ 0 +'_'+ tt);
-	}
-	m += ((tt+1)%3 == 0) ? '</tr></table></td></tr></table>' : '</table></td></tr></table>';
-    m += '</div>';
-    
-    // Display the page
-    document.getElementById('pbtrnConfig').innerHTML = m;
-
-    // add event listeners for the radio buttons
-    var r = document.getElementsByName('pbttQRadio');
-    for (i=0;i<r.length;i++) {
-        r[i].addEventListener('change', enableChanged, false);
-        // Select the radio button that was last selected
-        r[i].checked = (r[i].value == Data.options.trainQChoice);
-    }
-   
-	// Add event listeners for troop quantities 
-    for (var i=0; i<el.length; i++)
-      document.getElementById(el[i]).addEventListener('change', troopsChanged, false);
-
-    // radio buttons are weird    
-    function enableChanged(e){
-        var t = Tabs.Train;
-        
-        if (Data.options.autoTrain.enabled) {
-            t.setTrainEnable(false); // It would be very bad to leave training on when switching queue types. 
-            t.dispFeedback (kTrainSafetyFeature);
-        }
-        
-        Tabs.Train.selectedQ = e.target.value;
-        Data.options.trainQChoice = e.target.value;
-    }
-    
- 	// Update troops on change
-    function troopsChanged (e){
-		var args = e.target.id.split('_');
-		var x = parseIntZero(e.target.value);
-		// The upper limit is not important because we are looking at a maximum number of troops
-		if (isNaN(x) || x<0){
-			e.target.style.backgroundColor = 'red';
-			dispError (kInvalidNumberTroops);
-		} 
-        else {
-			e.target.value = x;
-			Data.options.troopCap.city[args[1]].troopType[args[2]] = x;
-			e.target.style.backgroundColor = '';
-		}
-    }
-  },
-  
-  checkPorterReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Food: 40
-    // Garrison Level: 1
-    // Idle Population: 1
-    // Lumber: 150
-    // Metals: 10
-    // Upkeep: 2 food
-        
-    var food = troopQty * 40;
-    var garrisonLevel = 1;
-    var idlePop = troopQty * 1;
-    var lumber = troopQty * 150;
-    var metal = troopQty * 10;
-    var upkeep = troopQty * 2;
-    var city = Seed.s.cities[0];
-    var troopType = 'Porter';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kPorter, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-    
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m += '<TD>&nbsp;training queue</td>';
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty + ' ' + kPorter +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;    
-  },
-   
- checkConscriptReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Food: 80
-    // Garrison Level: 1
-    // Idle Population: 1
-    // Lumber: 100
-    // Metals: 50
-    // Upkeep: 3 food
-        
-    var food = troopQty * 80;
-    var garrisonLevel = 1;
-    var idlePop = troopQty * 1;
-    var lumber = troopQty * 100;
-    var metal = troopQty * 50;
-    var upkeep = troopQty * 3;
-    var city = Seed.s.cities[0];
-    var troopType = 'Conscript';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kConscript, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-    
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m += '<TD>&nbsp;training queue</td>';
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kConscript +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;    
-  },
-  
- checkSpyReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Clairvoyance: 1
-    // Food: 120
-    // Garrison Level: 2
-    // Idle Population: 1
-    // Lumber: 200
-    // Metals: 150
-    // Upkeep: 5 food
-        
-    var food = troopQty * 120;
-    var garrisonLevel = 1;
-    var idlePop = troopQty * 1;
-    var lumber = troopQty * 200;
-    var metal = troopQty * 150;
-    var upkeep = troopQty * 5;
-    var clairvoyanceLevel = 1;
-    var city = Seed.s.cities[0];
-    var troopType = 'Spy';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        clairvoyanceLevel = seedReqs.research['Clairvoyance'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kSpy, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m += '<TD>&nbsp;training queue</td>';
-    if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel + '</td>';
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kSpies +' eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;       
-  },
-  
- checkHalberdsmanReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Metallurgy: 1
-    // Food: 150
-    // Garrison Level: 2
-    // Idle Population: 1
-    // Lumber: 500
-    // Metals: 100
-    // Upkeep: 6 food
-        
-    var food = troopQty * 150;
-    var garrisonLevel = 1;
-    var idlePop = troopQty * 1;
-    var lumber = troopQty * 500;
-    var metal = troopQty * 100;
-    var upkeep = troopQty * 6;
-    var metallurgyLevel = 1;
-    var city = Seed.s.cities[0];
-    var troopType = 'Halberdsman';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        metallurgyLevel = seedReqs.research['Metallurgy'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kHalberdsman, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
-    if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kHalberdsmen +' eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;       
-  },
-
-  checkMinotaurReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Metallurgy: 1
-    // Metalsmith: 1
-    // Food: 200
-    // Garrison Level: 3
-    // Idle Population: 1
-    // Lumber: 150
-    // Metals: 400
-    // Upkeep: 7 food
-        
-    var food = troopQty * 200;
-    var garrisonLevel = 3;
-    var idlePop = troopQty * 1;
-    var lumber = troopQty * 150;
-    var metal = troopQty * 400;
-    var upkeep = troopQty * 7;
-    var metallurgyLevel = 1;
-    var metalsmithLevel = 1;
-    var city = Seed.s.cities[0];
-    var troopType = 'Minotaur';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        metallurgyLevel = seedReqs.research['Metallurgy'];
-        metalsmithLevel = seedReqs.research['Metalsmith'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kMinotaur, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
-    if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
-    if (Seed.s.research.Metalsmith < metalsmithLevel) m += '<TD>&nbsp;Metalsmith ' + metalsmithLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kMinotaur +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;          
-  },
-
-  checkLongbowmanReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Weapons Calibration: 1
-    // Food: 300
-    // Garrison Level: 4
-    // Idle Population: 2
-    // Lumber: 350
-    // Metals: 300
-    // Upkeep: 9 food
-    
-    var food = troopQty * 300;
-    var garrisonLevel = 4;
-    var idlePop = troopQty * 2;
-    var lumber = troopQty * 350;
-    var metal = troopQty * 300;
-    var upkeep = troopQty * 9;
-    var weaponCalibrationLevel = 1;
-    var city = Seed.s.cities[0];
-    var troopType = 'Longbowman';
-       
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        weaponCalibrationLevel = seedReqs.research['Ballistics'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-        
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kLongbowman, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
-    if (Seed.s.research.WeaponsCalibration < weaponCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponCalibrationLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kLongbowmen +' eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;    
-  },
-  
-  checkSwiftStrikeDragonReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Dragonry: 2
-    // Rapid Deployment: 1
-    // Rookery: 1
-    // Food: 1000
-    // Garrison Level: 5
-    // Idle Population: 3
-    // Lumber: 600
-    // Metals: 500
-    // Upkeep: 18 food
-        
-    var food = troopQty * 1000;
-    var garrisonLevel = 5;
-    var idlePop = troopQty * 3;
-    var lumber = troopQty * 600;
-    var metal = troopQty * 500;
-    var upkeep = troopQty * 18;
-    var dragonryLevel = 2;
-    var rapidDeploymentLevel = 1;
-    var rookeryLevel = 1;
-    var city = Seed.s.cities[0];
-    var troopType = 'SwiftStrikeDragon';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        rookeryLevel = seedReqs.buildings['Rookery'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kSwiftStrikeDragon, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-     if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (t.getBuildingLevel(0, kRookery, rookeryLevel) == 0) m += '<TD>&nbsp;Rookery '+ rookeryLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
-    if (Seed.s.research.Dragonry < dragonryLevel) m += '<TD>&nbsp;Dragonry ' + dragonryLevel +'</td>'; 
-    if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kSwiftStrikeDragon +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret; 
-  },
-  
-  checkBattleDragonReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Dragonry: 3
-    // Rapid Deployment: 5
-    // Rookery: 5
-    // Food: 1000
-    // Garrison Level: 7
-    // Idle Population: 6
-    // Lumber: 500
-    // Metals: 2500
-    // Upkeep: 35 food
-       
-    var food = troopQty * 1000;
-    var garrisonLevel = 7;
-    var idlePop = troopQty * 6;
-    var lumber = troopQty * 500;
-    var metal = troopQty * 2500;
-    var upkeep = troopQty * 35;
-    var dragonryLevel = 3;
-    var rapidDeploymentLevel = 5;
-    var rookeryLevel = 5;
-    var metalsmithLevel = 5;
-    var city = Seed.s.cities[0];
-    var troopType = 'BattleDragon';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        rookeryLevel = seedReqs.buildings['Rookery'];
-        metalsmithLevel = seedReqs.buildings['Metalsmith'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
-        dragonryLevel = seedReqs.research['Dragonry'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kBattleDragon, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
-    if (t.getBuildingLevel(0, kRookery, rookeryLevel) == 0) m += '<TD>&nbsp;Rookery '+ rookeryLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
-    if (Seed.s.research.Dragonry < dragonryLevel) m += '<TD>&nbsp;Dragonry ' + dragonryLevel +'</td>'; 
-    if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kBattleDragon +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;     
-  },
- 
-  checkArmoredTransportReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Factory: 3
-    // Levitation: 3
-    // Food: 600
-    // Garrison Level: 6
-    // Idle Population: 4
-    // Lumber: 1500
-    // Metals: 350
-    // Upkeep: 10 food
-    
-    var t = Tabs.Train;    
-    var food = troopQty * 600;
-    var garrisonLevel = 6;
-    var idlePop = troopQty * 4;
-    var lumber = troopQty * 1500;
-    var metal = troopQty * 350;
-    var upkeep = troopQty * 10;
-    var factoryLevel = 3;
-    var levitationLevel = 3;
-    var city = Seed.s.cities[0];
-    var troopType = 'ArmoredTransport';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        factoryLevel = seedReqs.buildings['Factory'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        levitationLevel = seedReqs.research['Levitation'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kArmoredTransport, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (t.getBuildingLevel(0, kFactory, factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ ((lumber - city.resources.wood)) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ ((metal - city.resources.ore)) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
-    if (Seed.s.research.Levitation < levitationLevel) m += '<TD>&nbsp;Levitation ' + levitationLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kArmoredTransport +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;    
-  },
-  
-  checkGiantReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Clairvoyance: 3
-    // Factory: 7
-    // Metallurgy: 8
-    // Metalsmith: 5
-    // Food: 4000
-    // Garrison Level: 9
-    // Idle Population: 8
-    // Lumber: 6000
-    // Metals: 1500
-    // Upkeep: 100 food
-    
-    var t = Tabs.Train;    
-    var food = troopQty * 4000;
-    var garrisonLevel = 8;
-    var idlePop = troopQty * 8;
-    var lumber = troopQty * 6000;
-    var metal = troopQty * 1500;
-    var upkeep = troopQty * 100;
-    var factoryLevel = 7;
-    var metalsmithLevel = 7;
-    var clairvoyanceLevel = 3;
-    var metallurgyLevel = 8;
-    var city = Seed.s.cities[0];
-    var troopType = 'Giant';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        factoryLevel = seedReqs.buildings['Factory'];
-        metalsmithLevel = seedReqs.buildings['Metalsmith'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        clairvoyanceLevel = seedReqs.research['Clairvoyance'];
-        metallurgyLevel = seedReqs.research['Metallurgy'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kGiant, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (t.getBuildingLevel(0, kFactory, factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
-    if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;wood '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<TD>&nbsp;training queue</td>';
-    if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kGiant +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;    
-  },
-
-  checkFireMirrorReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Weapons Calibration: 10
-    // Factory: 9
-    // Metallurgy: 10
-    // Food: 5000
-    // Garrison Level: 10
-    // Idle Population: 10
-    // Lumber: 5000
-    // Metals: 1200
-    // Stone: 8000
-    // Upkeep: 250 food
-    
-    var t = Tabs.Train;    
-    var food = troopQty * 5000;
-    var garrisonLevel = 10;
-    var idlePop = troopQty * 10;
-    var lumber = troopQty * 5000;
-    var metal = troopQty * 1200;
-    var stone = troopQty * 8000;
-    var upkeep = troopQty * 250;
-    var factoryLevel = 9;
-    var metallurgyLevel = 10;
-    var weaponsCalibrationLevel = 10;
-    var city = Seed.s.cities[0];
-    var troopType = 'FireMirror';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        factoryLevel = seedReqs.buildings['Factory'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        stone = troopQty * seedReqs.resources['stone'];
-        weaponsCalibrationLevel = seedReqs.research['Ballistics'];
-        metallurgyLevel = seedReqs.research['Metallurgy'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kFireMirror, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (ic == 0){ 
-        if (t.getBuildingLevel(ic, kGarrison, garrisonLevel) == 0) m += '<TD>&nbsp;garrison '+ garrisonLevel +'</td>';
-    }
-    else if (t.getBuildingLevel(ic, kTrainingCamp, garrisonLevel) == 0) m += '<TD>&nbsp;training camp '+ garrisonLevel +'</td>';
-    if (t.getBuildingLevel(0, kFactory, factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
-    if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
-    if (Seed.s.research.WeaponsCalibration < weaponsCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponsCalibrationLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kFireMirror +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;    
-  },
-
-  checkAquaTroopReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Clairvoyance: 4
-    // Rapid Deployment: 8
-    // Factory: 7
-    // Metallurgy: 10
-    // Food: 4000
-    // TrainingCampe Level: 10
-    // Idle Population: 10
-    // Lumber: 5500
-    // Metals: 2500
-    // Stone: 7000
-    // Upkeep: 125 food
-    
-    var t = Tabs.Train;    
-    var food = troopQty * 5000;
-    var trainingCampLevel = 10;
-    var idlePop = troopQty * 10;
-    var lumber = troopQty * 5000;
-    var metal = troopQty * 1200;
-    var stone = troopQty * 8000;
-    var upkeep = troopQty * 250;
-    var factoryLevel = 7;
-    var metalsmithLevel = 7;
-    var rapidDeploymentLevel = 8;
-    var clairvoyanceLevel = 4;
-    var respiratorQty = troopQty;
-    var city = Seed.s.cities[0];
-    var troopType = 'AquaTroop';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        factoryLevel = seedReqs.buildings['Factory'];
-        metalsmithLevel = seedReqs.buildings['Metalsmith'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        stone = troopQty * seedReqs.resources['stone'];
-        rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
-        clairvoyanceLevel = seedReqs.research['Clairvoyance'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kAquaTroop, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
-    if (t.getBuildingLevel(0, kFactory, factoryLevel) == 0) m += '<TD>&nbsp;Factory '+ factoryLevel +'</td>';
-    if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
-    var availableRespirators = t.getItem(ic, kAquaTroopRespirator);
-    if (availableRespirators < respiratorQty) m += '<TD>&nbsp;Respirators '+ (respiratorQty - availableRespirators) +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
-    if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
-    if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kAquaTroop +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;    
-  },
- 
- checkStoneTroopReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Clairvoyance: 5
-    // Metalsmith: 9
-    // Metallurgy: 10
-    // Masonry: 10
-    // Food: 3000
-    // TrainingCamp Level: 10
-    // Idle Population: 8
-    // Lumber: 4000
-    // Metals: 2000
-    // Stone: 8000
-    // Upkeep: 110 food
-    // Glowing Mandrake: 1
-    
-    var t = Tabs.Train;    
-    var food = troopQty * 3000;
-    var trainingCampLevel = 10;
-    var idlePop = troopQty * 8;
-    var lumber = troopQty * 4000;
-    var metal = troopQty * 2000;
-    var stone = troopQty * 8000;
-    var upkeep = troopQty * 100;
-    var metalsmithLevel = 9;
-    var metallurgyLevel = 9;
-    var masonryLevel = 10;
-    var clairvoyanceLevel = 5;
-    var mandrakeQty = troopQty;
-    var city = Seed.s.cities[0];
-    var troopType = 'StoneTroop';
-    
-    try {
-        var seedReqs = Seed.requirements.troop[troopType];
-        food = troopQty * seedReqs.resources['food'];
-        garrisonLevel = seedReqs.buildings['Garrison'];
-        factoryLevel = seedReqs.buildings['Factory'];
-        metalsmithLevel = seedReqs.buildings['Metalsmith'];
-        idlePop = troopQty * seedReqs.population['idle'];
-        lumber = troopQty * seedReqs.resources['wood'];
-        metal = troopQty * seedReqs.resources['ore'];
-        stone = troopQty * seedReqs.resources['stone'];
-        metallurgyLevel = seedReqs.research['Metallurgy'];
-        clairvoyanceLevel = seedReqs.research['Clairvoyance'];
-        masonryLevel = seedReqs.research['Masonry'];
-    }
-    catch(e){
-        actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
-    }
-
-    var m = '';
-    var n = '<TABLE><TR><TD>Need: </td>';
-    var t = Tabs.Train;
-    var ret = {trainable:false, msg:[]};
-    var troopCapped = t.getTroopCap(kStoneTroop, troopQty);
-    
-    // If the troop is capped, are we about to exceed the limit?
-    if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
-        
-    // Returns zero or the building level
-    if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
-    if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
-    var availableMandrakes = t.getItem(ic, kStoneTroopItem);
-    if (availableMandrakes < mandrakeQty) m += '<TD>&nbsp;Mandrakes '+ (mandrakeQty - availableMandrakes) +'</td>';
-    if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-    if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
-    if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-    if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
-    var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
-    availablePop = (availablePop > 0) ? availablePop : 0;
-    if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
-    if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
-    if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
-    if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
-    if (Seed.s.research.Masonry < masonryLevel) m += '<TD>&nbsp;Masonry ' + masonryLevel +'</td>'; 
-    if (m.length == 0) {
-        ret.trainable = true;
-        ret.msg = troopQty +' '+ kStoneTroop +'s eat ' + upkeep + ' food';
-    }
-    else {
-        ret.trainable = false;
-        ret.msg = n + m + '</tr></table>';
-    }
-    return ret;    
-  },
-  
-  // Return the total number troops of the specified type adding in the qty about to 
-  // be produced. If this number is less than the cap, return zero     
-  getTroopCap : function(troopType, qty){
-    var t = Tabs.Train;
-    var cap = 0;
-    var completedTroops = 0;
-    var marchingTroops = 0;
-    
-    // Get the cap set for this troop type
-    for (var i=0; i<t.allTroops.length;i++)
-        if (troopType == t.allTroops[i]) {
-            cap = Data.options.troopCap.city[0].troopType[i];
-            break;
-        }
-        
-    // If there is no cap, we are done
-    if (cap == 0)
-        return cap;
-    
-    // Find the number of troops still in the city    
-    for (var p in Seed.s.cities[0].units)
-        if (p == troopType) {
-            completedTroops = Seed.s.cities[0].units[p];
-            break;
-        }
-    
-    // Find additional troops in marches
-    for (var p in Seed.marches) {
-        for (var q in Seed.marches[p].units)
-            if (q == troopType)
-                marchingTroops += Seed.marches[p].units[q];
-    }
-
-    // Find troops in training jobs
-    for (var i=0; i< Seed.s.cities.length; i++)
-        var job = getTrainJob(0);
-               
-    return ((completedTroops + marchingTroops + qty) > cap) ? (completedTroops + marchingTroops + qty) : 0;
-  },
-  
-  getItem : function(ic, itemType){
-    var items = Seed.s.items;
-    var ret = 0;
-    for (var p in items) {
-        if (p == itemType){
-            ret = items[p];
-            break;
-        }
-    }
-    return ret;
-  },
-  
-  // This would be simple if only one building of each type existed, but you may build multiple garrisons/training camps
-  // So we have to look through the entire list and use an additional parameter to specify the building level needed
-  // Returns zero if the specified building is not the at the required level
-  getBuildingLevel : function(ic, buildingType, buildingLevel){
-    var buildings = Seed.s.cities[ic].buildings;
-    var ret = 0;
-    for (var p=0; p<buildings.length;p++) {
-        if (buildings[p].type == buildingType && buildings[p].level >= buildingLevel){
-            ret = buildings[p].level;
-            break;
-        }
-    }
-    return ret;
-  }, 
-
-  // Get the remainin queue length
-  getRemainingQueue : function (ic, queueType){
-    var city = Seed.s.cities[ic];
-    var jobs = city.jobs;
-    var maxQueueLength = city.figures.queue_lengths.units;
-    var usedQueue = 0;
-    // Count the number of jobs in the queue
-    for (var i=0; i<jobs.length; i++) {
-        if (jobs[i].queue == queueType) ++usedQueue;
-    }
-    return maxQueueLength - usedQueue;
-  },
-  
-  checkReqs : function(troopType, troopQty, ic, count, troopsLength) {
-    var t = Tabs.Train;
-    var ret = {};
-    switch (troopType) {
-        case kPorter: ret = t.checkPorterReqs(troopQty, ic, count, troopsLength); break;
-        case kConscript: ret = t.checkConscriptReqs(troopQty, ic, count, troopsLength); break;
-        case kSpy: ret = t.checkSpyReqs(troopQty, ic, count, troopsLength); break;
-        case kHalberdsman: ret = t.checkHalberdsmanReqs(troopQty, ic, count, troopsLength); break;
-        case kMinotaur: ret = t.checkMinotaurReqs(troopQty, ic, count, troopsLength); break;
-        case kLongbowman: ret = t.checkLongbowmanReqs(troopQty, ic, count, troopsLength); break;
-        case kSwiftStrikeDragon: ret = t.checkSwiftStrikeDragonReqs(troopQty, ic, count, troopsLength); break;
-        case kBattleDragon: ret = t.checkBattleDragonReqs(troopQty, ic, count, troopsLength); break;
-        case kArmoredTransport: ret = t.checkArmoredTransportReqs(troopQty, ic, count, troopsLength); break;
-        case kGiant: ret = t.checkGiantReqs(troopQty, ic, count, troopsLength); break;
-        case kFireMirror: ret = t.checkFireMirrorReqs(troopQty, ic, count, troopsLength); break;
-        case kAquaTroop: ret = t.checkAquaTroopReqs(troopQty, ic, count, troopsLength); break;
-        case kStoneTroop: ret = t.checkStoneTroopReqs(troopQty, ic, count, troopsLength); break;
-    }
-    return ret;
-  },
-  
-  setTrainEnable : function (onOff){
-    var t = Tabs.Train;
-    var but = document.getElementById('pbtrnOnOff');
-    Data.options.autoTrain.enabled = onOff;
-    if (onOff){
-      but.value = kAutoOn;
-      but.className = 'butAttackOn';
-      t.trainTimer = setInterval(function() {t.trainTick(0) }, 3000);
-      //t.trainTick(0);
-    } else {
-      but.value = kAutoOff;
-      but.className = 'butAttackOff';
-      t.dispFeedback(""); // Erase previous feedback
-      clearTimeout (t.trainTimer);
-    }
-  },
-  
-  statTick : function (){
-    var t = Tabs.Train;
-    //clearTimeout (t.statTimer);
-    var statElement = document.getElementById('pbtrnTrnStat');
-    if (statElement != null) statElement.innerHTML = trainTable('train');
-    //t.statTimer = setTimeout (t.statTick, 2000);
-  },
-  
-  dispFeedback : function (msg){
-    if (msg == '') 
-        document.getElementById('pbtrnFeedback').innerHTML = msg;
-    else
-        document.getElementById('pbtrnFeedback').innerHTML = new Date().toTimeString().substring (0,8) +' '+  msg;    
-  },
-
-    // The training heartbeat
-    // Parameters:
-    //      ic - the city number (0 = capitol, 1 = outpost 1, 2 = outpost 2
-    //
-    // Calls Seed.notifyOnUpdate() to find completed training jobs for the specified city
-    // If the city number is the same as the number of cities, recurse with city number zero (the capitol)
-    // This is weird, how would trainTick get called with ic = 3? If it does not, and ic really is 2, then 
-    // there is a logic error: trainTick() should not recurse until it has finished calling () for
-    // outpost 2
-    // Also recurses (using setTimeout()) in three seconds if the call to getTrainJob() is not null. 
-    // This happens if a training job already exists for the specified city. In this case, ic is incremented first.
-    // Called from setTrainEnable() with a starting city of zero (capitol), attemptTrainShortQ() uses setTimeout() to call 
-    // trainTick() in two different places. First, it uses it to prevent all the jobs from queueing immediately
-    // but the logic is flawed on this because it calls loops calling getTrainJob(i) starting with the 
-    // capitol city, but the loop ends prematurely if getTrainJob() finds an active job. In the second case, it 
-    // uses setTimeout() to call trainTick() with the current city index if an one of the training jobs
-    // does not meet the requirements. This will retry the job on the next tick (3 seconds).
-  errorCount : 0,
-  reChecked : false,
-  trainTick : function (ic){
-    var t = Tabs.Train;
-    //clearTimeout (t.trainTimer);
-
-    if (!Data.options.autoTrain.enabled)
-      return;
-      
-    if (ic == undefined)
-        ic = 0;	
-    Seed.notifyOnUpdate(function(){ 
-		if (ic == Seed.s.cities.length) {
-			//t.trainTick(0);
-			return;
-		}
-		// The length here is the number of troop types it is possible to train
-		switch (ic) {
-			case 1:
-				troopsLength = t.outpost1Troops.length;
-				break;
-			case 2:
-				troopsLength = t.outpost2Troops.length;
-				break;
-			default:
-				troopsLength = t.capitolTroops.length;
-		}
-		// Only check the job queue if we are in short queue mode
-		if (t.selectedQ == kMinHousing){
-            if (getTrainJob (ic) == null) {
-				var count = 0;
-                t.attemptTrainShortQ(ic, count, troopsLength);
-                return;
-            } 
-            else {
-                ic = ic + 1;
-                //t.trainTimer = setTimeout (function() {t.trainTick(ic) }, 3000);
-                return;
-            }
-		}
-		else {
-            t.attemptTrainLongQ(ic, count, troopsLength);
-            return;
-		}
-    }); 
-  },
-  
-    // Parameters: 
-    //      ic - city index (0 = capitol, 1 = outpost 1, 2 = outpost 2)
-    //      count - error count
-    //      troopsLength - number of troops to be queued in this city
-    // Called from trainTick() and doTrain()
-    // trainTick() calls attemptTrainShortQ() when a city (ic) has no jobs in the queue
-    // doTrain() calls attemptTrainShortQ() after making the Ajax call and getting a succesful result
-    // doTrain() also calls Seed.fetchCity() (before calling attemptTrainShortQ()) to ensure that the data is current
-    // attemptTrainShortQ() will examine the training queues to determine when/if a new job should be sent to doTrain()
-    //
-    // Short queue training (minimum housing model)
-    //
-	attemptTrainShortQ : function (ic, count, troopsLength){
-		var t = Tabs.Train;
-		//clearTimeout (t.trainTimer);
-		
-		// Attempt to train if no jobs are in the queue already for the specified city
-        // If any city has a job, set the recheck flag and reset the timer
-        // This ensures that we will check every city and only after rechecking all of them will
-        // we reset the timer if doRecheck is true
-        // Each city may have jobs and we now allow them to execute asynchronously
-        var doRecheck = false;
-        var i = 0;
-		for (i=0; i<Seed.s.cities.length; i++){
-            if (getTrainJob (i)) {
-                doRecheck = true;
-            }
-            else {
-                // Get the troop types and quantities to build
-                for (var j=0; j<Data.options.autoTrain.city[i].troopType.length; j++){
-                    var troopType = '', troopQty = 0, cap = 0;
-                    switch (i) {
-                        case 1:
-                            troopType = t.outpost1Troops[j];
-                            troopQty = Data.options.autoTrain.city[i].troopType[j];
-                            cap = t.getTroopCap(troopType, troopQty);
-                            try {
-                                if (cap) {
-                                    troopQty = 0;
-                                    t.dispFeedback("Troops Capped");
-                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                                }
-                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
-                            }
-                            catch (e) {
-                            }
-                            break;
-                        case 2:
-                            troopType = t.outpost2Troops[j];
-                            troopQty = Data.options.autoTrain.city[i].troopType[j];
-                            cap = t.getTroopCap(troopType, troopQty);
-                            try {
-                                if (cap) {
-                                    troopQty = 0;
-                                    t.dispFeedback("Troops Capped");
-                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                                }
-                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
-                            }
-                            catch (e) {
-                            }
-                            break;
-                        default:
-                            troopType = t.capitolTroops[j];
-                            troopQty = Data.options.autoTrain.city[i].troopType[j];
-                            cap = t.getTroopCap(troopType, troopQty);
-                            try {
-                                if (cap) {
-                                    troopQty = 0;
-                                    t.dispFeedback("Troops Capped");
-                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                                }
-                                else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                    document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
-                            }
-                            catch (e) {
-                            }
-                            break;
-                    }
-                    if (troopQty > 0) {
-                        var ret = t.checkReqs(troopType, troopQty, i, j, troopsLength);
-                        t.dispFeedback (ret.msg);
-                        if (ret.trainable) {
-                            t.doTrain(troopType, troopQty, i);
-                        }
-                        else {
-                            // Error condition prevents training, try again later
-                            doRecheck = true;
-                            break;
-                        }
-                    } 
-                }
-            }
-        }
-        if (doRecheck) {
-            Seed.fetchSeed();
-            //t.trainTimer = setTimeout (function() {t.trainTick(i)}, 20000);
-        }		
-	},
-  
-    // Parameters: 
-    //      ic - city index (0 = capitol, 1 = outpost 1, 2 = outpost 2)
-    //      count - error count
-    //      troopsLength - number of troops to be queued in this city
-    // Called from trainTick() and doTrain()
-    // trainTick() calls attemptTrainLongtQ() when a city (ic) has no jobs in the queue
-    // doTrain() calls attemptTrainLongtQ() after making the Ajax call and getting a succesful result
-    // doTrain() also calls Seed.fetchCity() (before calling attemptTrainShortQ()) to ensure that the data is current
-    //
-    // Long queue training (minimum resource levels model)
-    //
-	attemptTrainLongQ : function (ic, count, troopsLength){
-		var t = Tabs.Train;
-		//clearTimeout (t.trainTimer);
-		
-		// Attempt to train if no jobs are in the queue already for the specified city
-        // If any city has a job, set the recheck flag and reset the timer
-        // This ensures that we will check every city and only after rechecking all of them will
-        // we reset the timer if doRecheck is true
-        // Each city may have jobs and we now allow them to execute asynchronously
-        var doRecheck = false;
-        var i = 0;
-		for (i=0; i<Seed.s.cities.length; i++){
-            // Get the troop types and quantities to build
-            for (var j=0; j<Data.options.autoTrain.city[i].troopType.length; j++){
-                var troopType = '';
-                var troopQty = 0;
-                var cap = null;
-                switch (i) {
-                    case 1:
-                        troopType = t.outpost1Troops[j];
-                        troopQty = Data.options.autoTrain.city[i].troopType[j];
-                        cap = t.getTroopCap(troopType, troopQty);
-                        try {
-                            if (cap) {
-                                troopQty = 0;
-                                t.dispFeedback("Troops Capped");
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                            }
-                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
-                            }
-                        catch (e) {
-                        }
-                        break;
-                    case 2:
-                        troopType = t.outpost2Troops[j];
-                        troopQty = Data.options.autoTrain.city[i].troopType[j];
-                        cap = t.getTroopCap(troopType, troopQty);
-                        try {
-                            if (cap) {
-                                troopQty = 0;
-                                t.dispFeedback("Troops Capped");
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                            }
-                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
-                            }
-                        catch (e) {
-                        }
-                        break;
-                    default:
-                        troopType = t.capitolTroops[j];
-                        troopQty = Data.options.autoTrain.city[i].troopType[j];
-                        cap = t.getTroopCap(troopType, troopQty);
-                        try {
-                            if (cap) {
-                                troopQty = 0;
-                                t.dispFeedback("Troops Capped");
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "red";
-                            }
-                            else if (document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor == "red")
-                                document.getElementById('pbtrnTrp_' + i + '_' + j).style.backgroundColor = "white";
-                            }
-                        catch (e) {
-                        }
-                        break;
-                }
-                if (troopQty > 0) {
-                    var ret = t.checkReqs(troopType, troopQty, i, j, troopsLength);
-                    t.dispFeedback (ret.msg);
-                    if (ret.trainable) {
-                        var d = {tType:troopType, tQty:troopQty, cityIdx:i, troopIdx:j, tLen:troopsLength};
-                        t.trainJobs.push (d);
-                        //t.trainTime = setTimeout ("t.doTrain(troopType, troopQty, i, j, troopsLength)", 3000);
-                    }
-                    else {
-                        // Error condition prevents training, try again later
-                        doRecheck = true;
-                        break;
-                    }
-                } 
-            }
-        }
-        if (doRecheck) {
-           // t.trainTimer = setTimeout (function() {t.trainTick(i)}, 3000);
-        }
-        // See if we have space in the queue before we try to run the jobs
-        var qLen = 0;
-        for (var i=0; i<Seed.s.cities.length; i++) {
-            qLen += t.getRemainingQueue(i, kUnits);
-        }
-        if (qLen)
-            t.runJobs();   		
-	},
-
-    // Algorithm change
-    // Examine the training queue for the city, if there is space, run the job
-    // Possible side effects are implied prioritization based on queue availability
-    // and speed of training
-    runJobs : function(){
-        var t = Tabs.Train;
-        if (t.trainJobs.length > 0) {
-        
-            // Create a set of training jobs in each city
-            for (var i=0; i<Seed.s.cities.length; i++){
-                var jList = []; // list of troops for this city
-                
-                // Iterate the training list looking for all the troops from this city
-                // Could be none up to every troop type available
-                // Might be a problem if the user selects all the troops but doesn't have
-                // enough garrisons/training camps to do them all at once
-                var j=0;
-                while (j < t.trainJobs.length) {
-                    if (t.trainJobs[j].cityIdx == i)
-                        jList[j] = t.trainJobs[j];
-                    ++j;
-                }
-   
-                // Get the remaining queue length for this city        
-                var qLen = t.getRemainingQueue(i, kUnits);
-               
-                // Are there enough queue slots for the jobs?
-                var len = jList.length; // length is modified inside the loop
-                if (qLen >= len)
-                    // Yes, do the job
-                    for (var j=0; j<len; j++) {
-                    
-                        var tJob = jList.shift();
-                        t.doTrain (tJob.tType, tJob.tQty, i);                   
-                    }
-                // Remove this city's job set from the training list
-                t.trainJobs.splice(0, len);
-            }
-            
-            //var d = t.trainJobs.shift();
-            //t.doTrain(d.tType, d.tQty, d.cityIdx, d.troopIdx, d.tLen);
-            setTimeout( "t.runJobs()", 3000);
-        }
-        //else
-        //    t.trainTimer = setTimeout (function() {t.trainTick(0)}, 3000);
-
-    },
-    
-    // Queue the training job
-    // Parameters:
-    //      troopType - Porter, Conscript, etc.
-    //      troopQty - number of troops to train
-    //      ic - city index (0=capitol, 1=outpost 1, 2 = outpost 2)
-    //      count - error count
-    //      troopsLength - number of troop types
-    // Calls Ajax.troopTraining with city troop type, qty, city id, and a function for the rslt
-    // The rlst function fetches the city, does a status update through statTick
-    // If the rslt is ok, we set the Train Tab errorCount back to zero, log the training, increment the count (why?)
-    // and attempt to train more troops - this seems like it should come from trainTick() instead being called directly here
-    // If the rslt is not ok, we refetch the city info, log the error, increment the Train Tab errorCount (if we have more than
-    // three errors we disable training and show the feedback) and display the error message, reset the training time for 20 seconds
-    // but do not disable training
-	doTrain : function (troopType, troopQty, ic){
-		var t = Tabs.Train;
-		var city = Seed.s.cities[ic];
-		var msg = kTraining1 + troopQty +' '+ troopType + kAt + city.type;
-		//t.dispFeedback (msg);
-
-		Ajax.troopTraining (troopType, troopQty, city.id, function (rslt){
-			Seed.fetchCity (city.id, 1000);
-			//t.statTick();
-			if (rslt.ok){
-				t.errorCount = 0;
-				actionLog (msg);
-				//count = count + 1;
-				// Funnel all calls to attempTrain through the trainTimer
-				//t.trainTime = setTimeout (t.trainTick, 3000);
-				//if (t.selectedQ == kMinHousing)
-                //    t.trainTimer = setTimeout (function(){ t.attemptTrainShortQ(ic, count, troopsLength) }, 3000);
-                //else
-                //    t.trainTimer = setTimeout (function(){ t.attemptTrainLongQ(ic, count, troopsLength) }, 3000);
-				return;
-			} 
-            else {
-				Seed.fetchSeed();
-				actionLog (kTrainError + rslt.errmsg);
-				// The queue is frequently full, but we could be getting server errors (500) too
-				// Wait a couple of minutes
-				if (++t.errorCount > 5){
-					t.dispFeedback (kDisablingAutoTrain);
-					t.setTrainEnable (false);
-					return;
-				}
-				t.dispFeedback (kTrainError + rslt.errmsg);
-				//t.trainTimer = setTimeout (t.trainTick, 180000);
-				return;
-			}
-		});
-	},
-}
-*/
 function getTrainJob (cityIdx){
 	var cid = Seed.s.cities[cityIdx].id;
 	var jobs = Seed.jobs[cid];
@@ -5859,6 +4308,7 @@ function getTrainJob (cityIdx){
 Tabs.Jobs = {
 	tabOrder        : JOBS_TAB_ORDER,
 	tabLabel        : kJobs,
+	tabDisabled			: !JOBS_TAB_ENABLE,
 	cont            : null,
 	timer           : null,
 //    buildTimer      : null,
@@ -5884,25 +4334,27 @@ Tabs.Jobs = {
     contentType     : 0, // 0 = info, 1 = train, 2 = build, 3 = research, these should be enums but Javascript doesn't support that type
     trainContentType: 0, // 0 = train, 1 = config
     buildScrollPos  : 0,
+    jobInfoScrollPos: 0,
     
 	init : function (div){
 		var t = Tabs.Jobs;
 		
 		// Tab initialization
 		t.cont = div;
-		div.innerHTML =  '<TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
-			<INPUT class=button type=submit value="Job Info" id=pbjobInfo></INPUT>\
-			<INPUT class=button type=submit value="Train" id=pbjobTrain></INPUT>\
-			<INPUT class=button type=submit value="Build" id=pbjobBuild></INPUT>\
-			<INPUT class=button type=submit value="Research" id=pbjobResearch></INPUT>\
-			</TD></TR></TABLE>\
-			<DIV id=pbjobHeader style="padding-top:5px; height:260px; max-height:260px;"></div>\
-			<DIV id=pbjobContent style="padding-top:5px; height:435px; max-height:800px; overflow-y:auto;"></div>';
+		div.innerHTML =  '<DIV style="padding-top:2px;">\
+            <TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
+			<INPUT class=button type=submit value="Job Info" id=' + rndStyle['subtab_info'] + '></INPUT>\
+			<INPUT class=button type=submit value="Train" id=' + rndStyle['subtab_train'] + '></INPUT>\
+			<INPUT class=button type=submit value="Build" id=' + rndStyle['subtab_build'] + '></INPUT>\
+			<INPUT class=button type=submit value="Research" id=' + rndStyle['subtab_research'] + '></INPUT>\
+			</TD></TR></TABLE></DIV>\
+			<DIV id=' + rndStyle['job_header'] + ' style="padding-top:5px; height:260px; max-height:260px;"></div>\
+			<DIV id=' + rndStyle['job_content'] + ' style="padding-top:5px; height:435px; max-height:800px; overflow-y:auto;"></div>';
 			
-		document.getElementById('pbjobInfo').addEventListener ('click', t.tabJobInfo, false);
-		document.getElementById('pbjobTrain').addEventListener ('click', t.tabJobTrain, false);	
-		document.getElementById('pbjobBuild').addEventListener ('click', t.tabJobBuild, false);
-		document.getElementById('pbjobResearch').addEventListener ('click', t.tabJobResearch, false);
+		document.getElementById(rndStyle['subtab_info']).addEventListener ('click', t.tabJobInfo, false);
+		document.getElementById(rndStyle['subtab_train']).addEventListener ('click', t.tabJobTrain, false);	
+		document.getElementById(rndStyle['subtab_build']).addEventListener ('click', t.tabJobBuild, false);
+		document.getElementById(rndStyle['subtab_research']).addEventListener ('click', t.tabJobResearch, false);
 		
 		// Restore the views
 		t.contentType = Data.options.jobsTab;
@@ -5969,6 +4421,17 @@ Tabs.Jobs = {
         
         // Add the unload event listener
         window.addEventListener('unload', t.onUnload, false);
+        
+        // Add the scroll event listener
+        document.getElementById(rndStyle['job_content']).addEventListener('scroll', onScroll, false); // CHECK
+
+        function onScroll (e){
+            if (t.contentType == 0)
+                t.jobInfoScrollPos = document.getElementById(rndStyle['job_content']).scrollTop;        
+            if (t.contentType == 2)
+                t.buildScrollPos = document.getElementById(rndStyle['job_content']).scrollTop;        
+        }
+
 	},
 
 	show : function (){
@@ -6005,42 +4468,43 @@ Tabs.Jobs = {
     
 	tabJobInfo : function (){
 		var t = Tabs.Jobs;
-        document.getElementById('pbjobBuild').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobBuild').style.color = "white"; 
-        document.getElementById('pbjobResearch').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobResearch').style.color = "white"; 
-        document.getElementById('pbjobTrain').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobTrain').style.color = "white"; 
+        document.getElementById(rndStyle['subtab_build']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_build']).style.color = "white"; 
+        document.getElementById(rndStyle['subtab_research']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_research']).style.color = "white"; 
+        document.getElementById(rndStyle['subtab_train']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_train']).style.color = "white"; 
 
         t.contentType = 0;
-	    document.getElementById('pbjobInfo').style.backgroundColor = "#eed"; 
-        document.getElementById('pbjobInfo').style.color = "black";
+	    document.getElementById(rndStyle['subtab_info']).style.backgroundColor = "#eed"; 
+        document.getElementById(rndStyle['subtab_info']).style.color = "black";
         
         // Timers
 		t.clearTimers();
 		t.timer = setInterval (t.tabJobInfo, 1000);
 		
 		var city = Seed.s.cities[0];
-		var n = '<DIV class=pbTitle>Information</DIV>';
+		var n = '<DIV class=' + rndClass['tab_title'] + '>Information</DIV>';
 		n += cityTitle(0);
-		document.getElementById('pbjobHeader').style.height = "45px";
-		document.getElementById('pbjobHeader').innerHTML = n;
+		document.getElementById(rndStyle['job_header']).style.height = "45px";
+		document.getElementById(rndStyle['job_header']).innerHTML = n;
 		
-		var m = '<TABLE class=pbTabPad>' + dispBuildingJob(0) + dispResearchJob(0) + dispTrainingJobs(0) + '</td></tr></table>';
+		var m = '<TABLE class=' + rndStyle['classPrefix'] + 'TabPad>' + dispBuildingJob(0) + dispResearchJob(0) + dispTrainingJobs(0) + '</td></tr></table>';
   
 		// outposts ...
 		if (Seed.s.cities.length > 0){
 			for (var i=1; i<Seed.s.cities.length; i++){
-				m += '<DIV class=short></div>'+ cityTitle(i) + '<TABLE class=pbTabPad>' + dispBuildingJob(i) + dispTrainingJobs(i) + '</td></tr></table>';
+				m += '<DIV class=short></div>'+ cityTitle(i) + '<TABLE class=' + rndStyle['classPrefix'] + 'TabPad>' + dispBuildingJob(i) + dispTrainingJobs(i) + '</td></tr></table>';
 			}
 		}
     
-		document.getElementById('pbjobContent').style.height = "665px";
-		document.getElementById('pbjobContent').innerHTML = m; 
+		document.getElementById(rndStyle['job_content']).style.height = "665px";
+		document.getElementById(rndStyle['job_content']).innerHTML = m; 
+        document.getElementById(rndStyle['job_content']).scrollTop = t.jobInfoScrollPos; // CHECK
     	
 		// Display build queue
 		function dispBuildingJob (cityIdx){
-            var m = '<TR><TD class=pbTabLeft>'+ kBuilding +'</td>';
+            var m = '<TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kBuilding +'</td>';
             var job = getBuildingJob (cityIdx);
             // TODO: very rare occurance: Error: job.building is null
             if (job && job.job.run_at > serverTime()) {
@@ -6055,7 +4519,7 @@ Tabs.Jobs = {
 	
 		// Display research queue
 		function dispResearchJob (cityIdx){
-            var m = '<TR><TD class=pbTabLeft>'+ kResearch +'</td>';
+            var m = '<TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ kResearch +'</td>';
             var job = getResearchJob (cityIdx);
             if (job && job.run_at > serverTime())
                 m += '<TD>'+ job.research_type +' level '+ job.level +'</td><TD>'+ timestr(job.run_at - serverTime(), true) +'</td></tr>';
@@ -6083,7 +4547,7 @@ Tabs.Jobs = {
                 }
                 
                 timeRemaining = (trains[i].run_at-last > 0) ? trains[i].run_at-last : 0;
-                m += '<TR><TD class=pbTabLeft>'+ left +'</td><TD>'+ trains[i].quantity +' '+ trains[i].unit_type +' </td><TD> '
+                m += '<TR><TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ left +'</td><TD>'+ trains[i].quantity +' '+ trains[i].unit_type +' </td><TD> '
                   + timestr(timeRemaining, true) + tot + '</td></tr>';
                 last = trains[i].run_at;
             }      
@@ -6103,41 +4567,41 @@ Tabs.Jobs = {
             else
                 wallStatus = '<font class="defending">'+ kDefending +'</font>';               
       
-            return '<div class=pbSubtitle><TABLE class=pbTab><TR><TD align=left>'+ city_type +'</td><TD align=center>'+ city.x +','+ city.y + '</td><TD align=center width=200px><font color=yellow>' + alliance_name +'</font></td><TD width=80px align=right>'+ wallStatus +'</td></tr></table></div>';
+            return '<div class=' + rndStyle['classPrefix'] + 'Subtitle><TABLE class=' + rndStyle['classPrefix'] + 'Tab><TR><TD align=left>'+ city.name +'</td><TD align=center>'+ city.x +','+ city.y + '</td><TD align=center width=200px><font color=yellow>' + alliance_name +'</font></td><TD width=80px align=right>'+ wallStatus +'</td></tr></table></div>';
         }
 	},
   
 	tabJobTrain : function (){
 		var t = Tabs.Jobs;
-   	    document.getElementById('pbjobInfo').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobInfo').style.color = "white";
-        document.getElementById('pbjobBuild').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobBuild').style.color = "white"; 
-        document.getElementById('pbjobResearch').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobResearch').style.color = "white"; 
+   	    document.getElementById(rndStyle['subtab_info']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_info']).style.color = "white";
+        document.getElementById(rndStyle['subtab_build']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_build']).style.color = "white"; 
+        document.getElementById(rndStyle['subtab_research']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_research']).style.color = "white"; 
 
         t.contentType = 1;
-        document.getElementById('pbjobTrain').style.backgroundColor = "#eed"; 
-        document.getElementById('pbjobTrain').style.color = "black"; 
+        document.getElementById(rndStyle['subtab_train']).style.backgroundColor = "#eed"; 
+        document.getElementById(rndStyle['subtab_train']).style.color = "black"; 
        
 		t.clearTimers();
 		t.trainStatTimer = setInterval(t.trainStatTick, 1000);
 
 	   // Create status ticker
-        var n = '<DIV class=pbTitle>'+ kAutoTrain +'</div>\
-                 <DIV class=pbStatBox style="margin-bottom: 5px !important"><CENTER><INPUT id=pbtrnOnOff type=submit\></center>\
+        var n = '<DIV class=' + rndClass['tab_title'] + '>'+ kAutoTrain +'</div>\
+                 <DIV class=' + rndStyle['status_ticker'] + ' style="margin-bottom: 5px !important"><CENTER><INPUT id=pbtrnOnOff type=submit\></center>\
                  <DIV id=pbtrnTrnStat style="height: 126px; max-height: 126px; overflow:auto;"></div> <BR>\
-                 <DIV id=pbtrnFeedback style="font-weight:bold; border: 1px solid green; padding: 2px 0px 2px 2px; height:34px"></div>  </div>\
+                 <DIV id=pbtrnFeedback class='+ rndStyle['status_feedback'] +'></div>  </div>\
                  <TABLE width=100% bgcolor=#ffffd0 align=center><TR><TD>\
                  <INPUT class=button type=submit value='+ kTrain +' id=pbttTrain></input>\
                  <INPUT class=button type=submit value='+ kConfig +' id=pbttConfigTrain></input></td></tr></table>';
-		document.getElementById('pbjobHeader').style.height = "258px";
-        document.getElementById('pbjobHeader').innerHTML = n;
+		document.getElementById(rndStyle['job_header']).style.height = "258px";
+        document.getElementById(rndStyle['job_header']).innerHTML = n;
         
-        var m = '<DIV id=pbtrnConfig style="padding-top: 5px; overflow:auto;"class=pbInput>';
+        var m = '<DIV id=pbtrnConfig style="padding-top: 5px; overflow:auto;"class=' + rndStyle['classPrefix'] + 'Input>';
         
-		document.getElementById('pbjobContent').style.height = "435px";
-        document.getElementById('pbjobContent').innerHTML = m;
+		document.getElementById(rndStyle['job_content']).style.height = "435px";
+        document.getElementById(rndStyle['job_content']).innerHTML = m;
       
  	  // Add event listener for auto on/off button
         document.getElementById('pbtrnOnOff').addEventListener ('click', function (){ t.setTrainEnable (!Data.options.autoTrain.enabled);}, false);
@@ -6164,32 +4628,32 @@ Tabs.Jobs = {
 
 	tabJobBuild : function (){
 		var t = Tabs.Jobs;
-	    document.getElementById('pbjobInfo').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobInfo').style.color = "white"; 
-        document.getElementById('pbjobResearch').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobResearch').style.color = "white"; 
-        document.getElementById('pbjobTrain').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobTrain').style.color = "white"; 
+	    document.getElementById(rndStyle['subtab_info']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_info']).style.color = "white"; 
+        document.getElementById(rndStyle['subtab_research']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_research']).style.color = "white"; 
+        document.getElementById(rndStyle['subtab_train']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_train']).style.color = "white"; 
 
         t.contentType = 2;
-        document.getElementById('pbjobBuild').style.backgroundColor = "#eed"; 
-        document.getElementById('pbjobBuild').style.color = "black"; 
+        document.getElementById(rndStyle['subtab_build']).style.backgroundColor = "#eed"; 
+        document.getElementById(rndStyle['subtab_build']).style.color = "black"; 
     
         // Timers
         t.clearTimers();
         t.buildStatTimer = setInterval (t.buildStatTick, 1000); // start the build statistics timer
 
-		//var m = '<DIV class=pbTitle>Auto Build</div>';
-		//document.getElementById('pbjobContent').innerHTML = m;	
+		//var m = '<DIV class=' + rndClass['tab_title'] + '>Auto Build</div>';
+		//document.getElementById(rndStyle['job_content']).innerHTML = m;	
 
-        var n = '<DIV class=pbTitle>'+ kAutoUpgradeBuildings +'</div>\
-                 <DIV class=pbStatBox><CENTER><INPUT id=pbbldOnOff type=submit\></center>\
+        var n = '<DIV class=' + rndClass['tab_title'] + '>'+ kAutoUpgradeBuildings +'</div>\
+                 <DIV class=' + rndStyle['status_ticker'] + '><CENTER><INPUT id=pbbldOnOff type=submit\></center>\
                  <DIV id=pbbldBldStat style="height: 126px; max-height: 126px; overflow:auto;"></div> <BR>\
-                 <DIV id=pbbldFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>';
-		document.getElementById('pbjobHeader').style.height = "240px";
-        document.getElementById('pbjobHeader').innerHTML = n;
+                 <DIV id=pbbldFeedback class='+ rndStyle['status_feedback'] +'></div>  </div>';
+		document.getElementById(rndStyle['job_header']).style.height = "240px";
+        document.getElementById(rndStyle['job_header']).innerHTML = n;
         
-        var m = '<DIV id=pbbldConfig class=pbInput>';
+        var m = '<DIV id=pbbldConfig class=' + rndStyle['classPrefix'] + 'Input>';
     
         var el = [], listC = [], listF = [];
     
@@ -6207,12 +4671,12 @@ Tabs.Jobs = {
             // on defense, the list of generals, what and where the dragon is, a list of jobs (e.g. research, building, troops training and pending training, current marches)
             // the marches alone say where the troops are, whether or not they are returning or attacking, general assigned, etc.
             var city = Seed.s.cities[i];
-            m += '<DIV class=pbSubtitle>'+ kCityNumber + (i+1) +' ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+            m += '<DIV class=' + rndStyle['classPrefix'] + 'Subtitle>'+ kCityNumber + (i+1) +' ('+ city.type +')</div><TABLE class=' + rndStyle['classPrefix'] + 'Tab><TR valign=top><TD width=150><TABLE class=' + rndStyle['classPrefix'] + 'Tab>';
             for (var ii=0; ii<listC.length; ii++){
                 m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listC[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listC[ii]]?'CHECKED':'') +' /></td><TD>'+ listC[ii] +'</td>'+ buildDisplayCap(i,ii) +'</tr>';  
                 el.push('pbbldcb_'+ i +'_'+ listC[ii]);
             }
-            m += '</table></td><TD><TABLE class=pbTab>';  
+            m += '</table></td><TD><TABLE class=' + rndStyle['classPrefix'] + 'Tab>';  
             for (var ii=0; ii<listF.length; ii++){
                 m += '<TR><TD><INPUT type=checkbox id="pbbldcb_'+ i +'_'+ listF[ii] +'" '+ (Data.options.autoBuild.buildingEnable[i][listF[ii]]?'CHECKED':'') +' /></td><TD>'+ listF[ii] +'</td>'+ buildDisplayCap(i,(listC.length + ii)) +'</tr>';  
                 el.push('pbbldcb_'+ i +'_'+ listF[ii]);
@@ -6220,9 +4684,9 @@ Tabs.Jobs = {
             m += '</table></td></tr></table>';
         }    
         m += '</div>';
-		document.getElementById('pbjobContent').style.height = "475px";
-        document.getElementById('pbjobContent').innerHTML = m;
-        document.getElementById('pbjobContent').scrollTop = t.buildScrollPos;
+		document.getElementById(rndStyle['job_content']).style.height = "475px";
+        document.getElementById(rndStyle['job_content']).innerHTML = m;
+        document.getElementById(rndStyle['job_content']).scrollTop = t.buildScrollPos; // CHECK
     
         // Add the event listeners for each city's building types
         for (var i=0; i<el.length; i++)
@@ -6256,7 +4720,6 @@ Tabs.Jobs = {
         // Add the event listeners for the auto-build button and scrollbar
         document.getElementById('pbbldOnOff').addEventListener ('click', function (){t.setBuildEnable (!Data.options.autoBuild.enabled);}, false);
         t.refreshBuildButton (Data.options.autoBuild.enabled);
-        document.getElementById('pbjobContent').addEventListener('scroll', onScroll, false);
     
         function checked (evt){
             var id = evt.target.id.split ('_');
@@ -6292,53 +4755,48 @@ Tabs.Jobs = {
             if (Data.options.autoBuild.enabled)
                 t.buildTick();      
         }
-        
-        function onScroll (e){
-            if (t.contentType == 2)
-                t.buildScrollPos = document.getElementById('pbjobContent').scrollTop;
-        }
 	},
   
 	tabJobResearch : function (){
 		var t = Tabs.Jobs;	
-	    document.getElementById('pbjobInfo').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobInfo').style.color = "white"; 
-        document.getElementById('pbjobBuild').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobBuild').style.color = "white"; 
-        document.getElementById('pbjobTrain').style.backgroundColor = JOB_BUTTON_BGCOLOR; 
-        document.getElementById('pbjobTrain').style.color = "white"; 
+	    document.getElementById(rndStyle['subtab_info']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_info']).style.color = "white"; 
+        document.getElementById(rndStyle['subtab_build']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_build']).style.color = "white"; 
+        document.getElementById(rndStyle['subtab_train']).style.backgroundColor = JOB_BUTTON_BGCOLOR; 
+        document.getElementById(rndStyle['subtab_train']).style.color = "white"; 
 
         t.contentType = 3;
-        document.getElementById('pbjobResearch').style.backgroundColor = "#eed"; 
-        document.getElementById('pbjobResearch').style.color = "black"; 
+        document.getElementById(rndStyle['subtab_research']).style.backgroundColor = "#eed"; 
+        document.getElementById(rndStyle['subtab_research']).style.color = "black"; 
 
         // Timers
 		t.clearTimers();
         t.resStatTimer = setInterval (t.resStatTick, 1000); // start the research statistics timer
         
-        var n = '<DIV class=pbTitle>'+ kAutoResearch +'</div>\
-                 <DIV class=pbStatBox><CENTER><INPUT id=pbresOnOff type=submit\></center>\
+        var n = '<DIV class=' + rndClass['tab_title'] + '>'+ kAutoResearch +'</div>\
+                 <DIV class=' + rndStyle['status_ticker'] + '><CENTER><INPUT id=pbresOnOff type=submit\></center>\
                  <DIV id=pbresStat style="height: 126px; max-height: 126px; overflow:auto;"></div> <BR>\
-                 <DIV id=pbresFeedback style="font-weight:bold; border: 1px solid green; height:34px; padding:2px 0px 2px 2px;"></div>  </div>';
-		document.getElementById('pbjobHeader').style.height = "230px";
-		document.getElementById('pbjobHeader').innerHTML = n;
+                 <DIV id=pbresFeedback class='+ rndStyle['status_feedback'] +'></div>  </div>';
+		document.getElementById(rndStyle['job_header']).style.height = "230px";
+		document.getElementById(rndStyle['job_header']).innerHTML = n;
 		
-        var m = '<DIV id=pbresConfig class=pbInput>';
+        var m = '<DIV id=pbresConfig class=' + rndStyle['classPrefix'] + 'Input>';
     
         var el = [];
         var city = Seed.s.cities[0];
     
-        m += '<DIV class=pbSubtitle>'+ kCityNumber +'1 ('+ city.type +')</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+        m += '<DIV class=' + rndStyle['classPrefix'] + 'Subtitle>'+ kCityNumber +'1 ('+ city.type +')</div><TABLE class=' + rndStyle['classPrefix'] + 'Tab><TR valign=top><TD width=150><TABLE class=' + rndStyle['classPrefix'] + 'Tab>';
         var i=0;
         for (var p in t.capitolResearch){
             m += '<TR><TD><INPUT type=checkbox id="pbrescb_'+ 0 + '_' +t.capitolResearch[p] +'" '+ (Data.options.autoResearch.researchEnable[0][t.capitolResearch[p]]?'CHECKED':'') +' /></td><TD>'+ t.capitolResearch[p] +'</td><TD>'+ researchDisplayCap(i) +'</td></tr>';  
             el.push('pbrescb_' + 0 + '_' +t.capitolResearch[p]);
             ++i;
         }
-        m += '</table></td><TD><TABLE class=pbTab>';  
+        m += '</table></td><TD><TABLE class=' + rndStyle['classPrefix'] + 'Tab>';  
         m += '</div>';
-		document.getElementById('pbjobContent').style.height = "435px";
-		document.getElementById('pbjobContent').innerHTML = m;
+		document.getElementById(rndStyle['job_content']).style.height = "435px";
+		document.getElementById(rndStyle['job_content']).innerHTML = m;
     
         // Add the event listeners for the research types
         for (var i=0; i<el.length; i++)
@@ -6523,7 +4981,7 @@ Tabs.Jobs = {
     buildStatFetch : false,
     buildStatTick : function (){
         var t = Tabs.Jobs;
-        var m = '<TABLE class=pbTabPad>';
+        var m = '<TABLE class=' + rndStyle['classPrefix'] + 'TabPad>';
         var len = Data.options.tJobs.length;
     
         for (var i=0; i<Seed.s.cities.length; i++){
@@ -6564,7 +5022,7 @@ Tabs.Jobs = {
     // Calls getResearchJob(), deleteResearchJob(), Seed.fetchSeed(), resUITranslate(), serverTime()
     resStatFetch : false,
     resStatTick : function (){
-        var t = Tabs.Jobs, m = '<TABLE class=pbTabPad>', city = Seed.s.cities[0];
+        var t = Tabs.Jobs, m = '<TABLE class=' + rndStyle['classPrefix'] + 'TabPad>', city = Seed.s.cities[0];
         var job = getResearchJob (0);
     
         m += '<TR><TD>'+ kCityNumber +' 1</td><TD>';
@@ -7579,6 +6037,7 @@ Tabs.Jobs = {
         var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
         availablePop = (availablePop > 0) ? availablePop : 0;
         if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
         if (t.getRemainingQueue(ic, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
         if (Seed.s.research.Metallurgy < metallurgyLevel) m += '<TD>&nbsp;Metallurgy ' + metallurgyLevel +'</td>'; 
         if (Seed.s.research.WeaponsCalibration < weaponsCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponsCalibrationLevel +'</td>'; 
@@ -7759,51 +6218,51 @@ Tabs.Jobs = {
         return ret;    
     },
 
-    checkFireTroopReqs : function(troopQty, ic, count, troopsLength) {
-    // Requirements
-    // Clairvoyance: 5
-    // Metalsmith: 9
-    // Metallurgy: 10
-    // Masonry: 10
-    // Food: 3000
-    // TrainingCamp Level: 10
-    // Idle Population: 8
-    // Lumber: 4000
-    // Metals: 2000
-    // Stone: 8000
-    // Upkeep: 110 food
-    // Glowing Mandrake: 1
+    checkFireTroopReqs : function (troopQty, ic, count, troopsLength) {
+		// Requirements
+		// Clairvoyance: 5
+		// Food: 5000
+		// Idle Population: 12
+		// Lumber: 3000
+		// Metals: 9000
+		// Metalsmith: 8
+		// Rapid Deployment: 9
+		// Stone: 4000
+		// TrainingCamp Level: 10
+		// Volcanic Rune: 1
+		// Weapons Calibration: 10
     
-        var t = Tabs.Jobs;    
+        var t = Tabs.Jobs;  
+		var clairvoyanceLevel = 5;		
         var food = troopQty * 5000;
-        var trainingCampLevel = 10;
-        var idlePop = troopQty * 12;
+		var idlePop = troopQty * 12;
         var lumber = troopQty * 3000;
         var metal = troopQty * 9000;
-        var stone = troopQty * 4000;
-        var upkeep = troopQty * 260;
         var metalsmithLevel = 8;
         var rapidDeploymentLevel = 9;
-        var weaponsCalibrationLevel = 10;
-        var clairvoyanceLevel = 5;
-        var volcanicRunesQty = troopQty;
+		var stone = troopQty * 4000;
+        var trainingCampLevel = 10;
+		var volcanicRunesQty = troopQty;
+		var weaponsCalibrationLevel = 10;
+       
+        var upkeep = troopQty * 260;
+
         var city = Seed.s.cities[0];
         var troopType = 'FireTroop';
     
         try {
             var seedReqs = Seed.requirements.troop[troopType];
+			clairvoyanceLevel = seedReqs.research['Clairvoyance'];
             food = troopQty * seedReqs.resources['food'];
-            garrisonLevel = seedReqs.buildings['TrainingCamp'];
-            metalsmithLevel = seedReqs.buildings['Metalsmith'];
-            idlePop = troopQty * seedReqs.population['idle'];
+			idlePop = troopQty * seedReqs.population['idle'];
             lumber = troopQty * seedReqs.resources['wood'];
             metal = troopQty * seedReqs.resources['ore'];
-            stone = troopQty * seedReqs.resources['stone'];
-            rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
-            clairvoyanceLevel = seedReqs.research['Clairvoyance'];
+            metalsmithLevel = seedReqs.buildings['Metalsmith'];
+			rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
+			stone = troopQty * seedReqs.resources['stone'];
+			garrisonLevel = seedReqs.buildings['TrainingCamp'];
             weaponsCalibrationLevel = seedReqs.research['Ballistics'];
-        }
-        catch(e){
+        } catch (e) {
             actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
         }
 
@@ -7816,33 +6275,113 @@ Tabs.Jobs = {
         if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
         
         // Returns zero or the building level
-        if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
-        if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
-        var availableRunes = t.getItem(kFireTroopItem);
-        if (availableRunes < volcanicRunesQty) m += '<TD>&nbsp;Mandrakes '+ (volcanicRunesQty - availableRunes) +'</td>';
-        if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
-        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
-        if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+		if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>';
+		if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
         var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
         availablePop = (availablePop > 0) ? availablePop : 0;
         if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+		if (t.getBuildingLevel(0, kMetalsmith, metalsmithLevel) == 0) m += '<TD>&nbsp;Metalsmith '+ metalsmithLevel +'</td>';
+		if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
+		if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
+        var availableRunes = t.getItem(kFireTroopItem);
+        if (availableRunes < volcanicRunesQty) m += '<TD>&nbsp;Runes '+ (volcanicRunesQty - availableRunes) +'</td>';
+		if (Seed.s.research.Ballistics < weaponsCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponsCalibrationLevel +'</td>'; 
         if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
-        if (Seed.s.research.Clairvoyance < clairvoyanceLevel) m += '<TD>&nbsp;Clairvoyance ' + clairvoyanceLevel +'</td>'; 
-        if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
-        if (Seed.s.research.Ballistics < weaponsCalibrationLevel) m += '<TD>&nbsp;Weapons Calibration ' + weaponsCalibrationLevel +'</td>'; 
         if (m.length == 0) {
             ret.trainable = true;
             ret.msg = troopQty +' '+ kFireTroop +'s eat ' + upkeep + ' food';
-        }
-        else {
+        } else {
             ret.trainable = false;
             ret.msg = n + m + '</tr></table>';
         }
         return ret;    
     },
     
+    checkWindTroopReqs : function (troopQty, ic, count, troopsLength) {
+		// Requirements
+		
+		// Aerial Combat 3
+		// Banshee Talons: 1
+		// Food 2000
+		// Idle Population: 6
+		// Levitation 9
+		// Lumber: 3000
+		// Metals: 3000
+		// Rapid Deployment: 9
+		// Stone: 1000
+		// TrainingCamp Level: 10
+		
+    
+        var t = Tabs.Jobs;  
+		var aerialCombatLevel = 3;		
+        var food = troopQty * 2000;
+		var idlePop = troopQty * 6;
+        var lumber = troopQty * 3000;
+        var metal = troopQty * 3000;
+        var levitationLevel = 8;
+        var rapidDeploymentLevel = 9;
+		var stone = troopQty * 1000;
+        var trainingCampLevel = 10;
+		var bansheeTalonsQty = troopQty;
+       
+        var upkeep = troopQty * 50;
+
+        var city = Seed.s.cities[0];
+        var troopType = 'AirTroop';
+    
+        try {
+            var seedReqs = Seed.requirements.troop[troopType];
+			aerialCombatLevel = seedReqs.research['AerialCombat'];
+            food = troopQty * seedReqs.resources['food'];
+			idlePop = troopQty * seedReqs.population['idle'];
+            lumber = troopQty * seedReqs.resources['wood'];
+            metal = troopQty * seedReqs.resources['ore'];
+            levitationLevel = seedReqs.research['Levitation'];
+			rapidDeploymentLevel = seedReqs.research['RapidDeployment'];
+			stone = troopQty * seedReqs.resources['stone'];
+			garrisonLevel = seedReqs.buildings['TrainingCamp'];
+        } catch (e) {
+            actionLog('Training: ' + e.msg + ' Manifest not available, using defaults');
+        }
+
+        var m = '';
+        var n = '<TABLE><TR><TD>Need: </td>';
+        var ret = {trainable:false, msg:[]};
+        var troopCapped = t.getTroopCap(kFireTroop, troopQty);
+    
+        // If the troop is capped, are we about to exceed the limit?
+        if (troopCapped > 0) m += '<TD>&nbsp; Cap limit '+ troopCapped +'</td>';
+        
+        // Returns zero or the building level
+		if (Seed.s.research.Levitation < levitationLevel) m += '<TD>&nbsp;Levitation ' + levitationLevel +'</td>';
+		if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
+        var availablePop = city.figures.population.current - city.figures.population.laborers - city.figures.population.armed_forces;
+        availablePop = (availablePop > 0) ? availablePop : 0;
+        if (availablePop < idlePop) m += '<TD>&nbsp;people ' + (idlePop - availablePop) + '</td>';
+        if (city.resources.wood < lumber) m += '<TD>&nbsp;lumber '+ (lumber - city.resources.wood) +'</td>';
+        if (city.resources.ore < metal) m += '<TD>&nbsp;metal '+ (metal - city.resources.ore) +'</td>';
+		if (Seed.s.research.AerialCombat < aerialCombatLevel) m += '<TD>&nbsp;Aerial Combat ' + aerialCombatLevel +'</td>'; 
+		if (Seed.s.research.RapidDeployment < rapidDeploymentLevel) m += '<TD>&nbsp;Rapid Deployment ' + rapidDeploymentLevel +'</td>'; 
+		if (city.resources.stone < stone) m += '<TD>&nbsp;stone '+ (stone - city.resources.stone) +'</td>';
+        if (t.getBuildingLevel(ic, kTrainingCamp, trainingCampLevel) == 0) m += '<TD>&nbsp;training camp '+ trainingCampLevel +'</td>';
+        var availableTalons = t.getItem(kWindTroopItem);
+        if (availableTalons < bansheeTalonsQty) m += '<TD>&nbsp;Banshee Talons '+ (bansheeTalonsQty - availableTalons) +'</td>';
+        if (t.getRemainingQueue(1, kUnits) == 0) m+= '<td>&nbsp;training queue</td>';
+        if (m.length == 0) {
+            ret.trainable = true;
+            ret.msg = troopQty +' '+ kWindTroop +'s eat ' + upkeep + ' food';
+        } else {
+            ret.trainable = false;
+            ret.msg = n + m + '</tr></table>';
+        }
+        return ret;    
+    },
+
     checkTrainReqs : function(troopType, troopQty, ic, count, troopsLength) {
+	actionLog('checkTrainReqs');
         var t = Tabs.Jobs;
         var ret = {};
         switch (troopType) {
@@ -7860,6 +6399,7 @@ Tabs.Jobs = {
             case kAquaTroop: ret = t.checkAquaTroopReqs(troopQty, ic, count, troopsLength); break;
             case kStoneTroop: ret = t.checkStoneTroopReqs(troopQty, ic, count, troopsLength); break;
             case kFireTroop: ret = t.checkFireTroopReqs(troopQty, ic, count, troopsLength); break;
+            case kWindTroop: ret = t.checkAirTroopReqs(troopQty, ic, count, troopsLength); break;
         }
         return ret;
     },
@@ -8566,7 +7106,7 @@ Tabs.Jobs = {
         var researchLevel = t.getCurrentResearchLevel(researchType);
         var gold = 3500 * Math.pow(2,researchLevel +1);
         var food = 2500 * Math.pow(2,researchLevel +1);
-        var dragonskeepLevel = 8; 
+        var dragonkeepLevel = 8; 
         var dragonryLevel = 8;
         var bodyArmor = 1;
         var clawGuards = 1;
@@ -8581,7 +7121,7 @@ Tabs.Jobs = {
             var seedReqs = Seed.requirements.research[researchType];
             gold = seedReqs.level[researchLevel + 1].resources['gold'];
             food = seedReqs.level[researchLevel + 1].resources['food'];
-            dragonskeepLevel = seedReqs.level[researchLevel + 1].buildings['DragonsKeep'];
+            dragonkeepLevel = seedReqs.level[researchLevel + 1].buildings['DragonKeep'];
             dragonryLevel = seedReqs.level[researchLevel + 1].research['Dragonry'];
             bodyArmor - seedReqs.level[researchLevel + 1].items['GreatDragonBodyArmor'];
             clawGuards - seedReqs.level[researchLevel + 1].items['GreatDragonClawGuards'];
@@ -8599,7 +7139,7 @@ Tabs.Jobs = {
         if (researchLevel >= researchCap) m += '<TD>&nbsp; Cap limit '+ researchCap +'</td>';
         if (city.resources.gold < gold) m += '<TD>&nbsp;gold '+ (gold - city.resources.gold) +'</td>';
         if (city.resources.food < food) m += '<TD>&nbsp;food '+ (food - city.resources.food) +'</td>';
-        if (t.getBuildingLevel(0, 'DragonsKeep', dragonskeepLevel) == 0) m += '<TD>&nbsp;Dragons Keep '+ dragonskeepLevel +'</td>';
+        if (t.getBuildingLevel(0, 'DragonKeep', dragonkeepLevel) == 0) m += '<TD>&nbsp;Dragons Keep '+ dragonkeepLevel +'</td>';
         if (t.getCurrentResearchLevel('Dragonry') < dragonryLevel) m += '<TD>&nbsp;Dragonry '+ dragonryLevel +'</td>';
         if (t.getItem(kGDBodyArmor) == 0) m += '<TD>&nbsp;Body Armor ' + bodyArmor +'</td>';
         if (t.getItem(kGDClawGuards) == 0) m += '<TD>&nbsp;Claw Guards ' + bodyArmor +'</td>';
@@ -8871,7 +7411,7 @@ Tabs.Jobs = {
                         var rCapped = false;
                         if (level < cap) {
                             var ret = t.checkResearchReqs (researchType);
-                            if (t.contentType == 3) t.dispFeedback (ret.msg);
+                            if (t.contentType == 3) t.dispFeedback (researchType +' '+ ret.msg);
                             if (ret.researchable) {
                                 t.doResearch(researchType, level);
                                 rBuilt = true;
@@ -8881,7 +7421,8 @@ Tabs.Jobs = {
                             }
                             else {
                                 t.doResRecheck = true;
-                                break;
+                                continue;
+                                //break;
                             }
                         }
                         else {
@@ -8921,7 +7462,7 @@ Tabs.Jobs = {
                 t.doResRecheck = false;
                 clearTimeout(Data.options.researchTimer);
                 Data.options.researchTimer = setInterval (t.researchTick, 20000);
-                if (t.contentType == 3) t.dispFeedback ("Completion errors: waiting 20 seconds to try again");               
+                //if (t.contentType == 3) t.dispFeedback ("Completion errors: waiting 20 seconds to try again");               
             }
         }); 
     },
@@ -9336,11 +7877,11 @@ Tabs.Jobs = {
            
             var city = Seed.s.cities[c];
             var city_type = (city.type == 'Capital') ? 'Capitol' : city.type + ' ' + c;
-            m += '<DIV class=pbSubtitle>'+ city_type +'</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+            m += '<DIV class=' + rndStyle['classPrefix'] + 'Subtitle>'+ city.name +'</div><TABLE class=' + rndStyle['classPrefix'] + 'Tab><TR valign=top><TD width=150><TABLE class=' + rndStyle['classPrefix'] + 'Tab>';
             for (tt=0; tt<troopTypes.length; tt++){
                 // Use less room in the table layout
                 if (tt%3 == 0) m += '<TR>';
-                m += '<TD class=pbTabLeft>'+ Names.troops.byName[troopTypes[tt]][2] +':</td>';
+                m += '<TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ Names.troops.byName[troopTypes[tt]][2] +':</td>';
                 var num = Data.options.autoTrain.city[c].troopType[tt];
                 if (!num || isNaN(num)) num = 0;
                 m += '<TD><INPUT type=text id=pbtrnTrp_'+ c +'_'+ tt +' maxlength=6 size=2 value="'+ num +'"\></td>';
@@ -9395,10 +7936,10 @@ Tabs.Jobs = {
         document.getElementById('pbttConfigTrain').style.backgroundColor = "#eed"; 
         document.getElementById('pbttConfigTrain').style.color = "black";
     
-        var m = '<DIV class=pbSubtitle>'+ kConfigTrain +'</div>\
+        var m = '<DIV class=' + rndStyle['classPrefix'] + 'Subtitle>'+ kConfigTrain +'</div>\
                  <DIV style="overflow:auto">\
-                 <TABLE class=pbTabPad>\
-                 <TR align=center class=pbTabHdr1><TD style="background:none !important;" colspan=2></td></tr>\
+                 <TABLE class=' + rndStyle['classPrefix'] + 'TabPad>\
+                 <TR align=center class=' + rndStyle['classPrefix'] + 'TabHdr1><TD style="background:none !important;" colspan=2></td></tr>\
                  </div>';
     
         // Add the radio buttons  
@@ -9410,11 +7951,11 @@ Tabs.Jobs = {
         var el = [];
         var troopTypes = t.allTroops;
    
-        m += '<DIV class=pbSubtitle style="background-color:#0044a0;">Troop Cap (Max Troops, 0 = no max)</div><TABLE class=pbTab><TR valign=top><TD width=150><TABLE class=pbTab>';
+        m += '<DIV class=' + rndStyle['classPrefix'] + 'Subtitle style="background-color:#0044a0;">Troop Cap (Max Troops, 0 = no max)</div><TABLE class=' + rndStyle['classPrefix'] + 'Tab><TR valign=top><TD width=150><TABLE class=' + rndStyle['classPrefix'] + 'Tab>';
         for (tt=0; tt<troopTypes.length; tt++){
             // Use less room in the table layout
             if (tt%3 == 0) m += '<TR>';
-            m += '<TD class=pbTabLeft>'+ Names.troops.byName[troopTypes[tt]][2] +':</td>';
+            m += '<TD class=' + rndStyle['classPrefix'] + 'TabLeft>'+ Names.troops.byName[troopTypes[tt]][2] +':</td>';
             var num = Data.options.troopCap.city[0].troopType[tt];
             if (!num || isNaN(num)) num = 0;
             m += '<TD><INPUT type=text id=pbtrnCap_'+ 0 +'_'+ tt +' maxlength=6 size=2 value="'+ num +'"\></td>';
@@ -9471,15 +8012,7 @@ Tabs.Jobs = {
     
 }
 
-function makeid(){
-    var text = "";
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    for( var i=0; i < 5; i++ )
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
-}
 
 function pickRandomTitle(){
     var len = wordArr.length-1;
@@ -9488,26 +8021,29 @@ function pickRandomTitle(){
     
     Title = wordArr[rnd1] +' '+ wordArr[rnd2];
     
-    kDOAVersionString = translate (Title + ' -v');
-    kFatalSWF = translate ('"<B>Error initializing "'+ Title +'"</b><BR><BR>Unable to find SWF element"');
-    kStartupErr = translate ('"Unable to start "'+ Title +'"<BR>"');
-    kInitErr = translate ('"<B>Error initializing "'+ Title +'"</b><BR><BR>"');
-    kAnnounceVersion = translate ('There is a new version of '+ Title +'<BR><BR>Version: ');
+    kDOAVersionString = Title + ' -v';
+    kFatalSWF = '"<B>Error initializing "'+ Title +'"</b><BR><BR>Unable to find SWF element"';
+    kStartupErr = '"Unable to start "'+ Title +'"<BR>"';
+    kInitErr = '"<B>Error initializing "'+ Title +'"</b><BR><BR>"';
+    kAnnounceVersion = 'There is a new version of '+ Title +'<BR><BR>Version: ';
 }
 
 /***********************************   End Jobs  ***********************************/
 
-/*********************************** Options Tab ***********************************/
-// Added a select box to allow the user to choose the number of hours between autocollecting
-// resources (from 1 to 8)
-
+/********************************************************************************
+ * Options Tab                                                                  *
+ * - Enable window drag                                                         *
+ * - Enable collection of resources from Outposts every 1-99 seconds, minutes,  *
+ *   hours or days                                                              *
+ * - Enable verbose logging                                                     *
+ ********************************************************************************/
 Tabs.Options = {
-  tabOrder : OPTIONS_TAB_ORDER,
-  tabLabel : kOpts,
-  cont : null,
-  fixAvailable : {},
+	tabOrder : OPTIONS_TAB_ORDER,
+	tabLabel : kOpts,
+	tabDisabled	: !OPTIONS_TAB_ENABLE,
+	cont : null,
 
-	init : function (div){
+	init : function (div) {
 		var t = Tabs.Options;
 		t.cont = div;
 
@@ -9532,80 +8068,85 @@ Tabs.Options = {
 		}
 
 		try {      
-			m = '<DIV class=pbTitle style="margin-bottom:10px">'+ kOptions +'</div><TABLE class=pbTab>\
-				<TR valign=top><TD colspan=2><B>Config:</B></TD></TR>\
-				<TR valign=top><TD><INPUT id=ptAllowWinMove type=checkbox /></TD><TD>'+ kEnableDrag +'</TD></TR>\
-				<TR valign=top><TD colspan=2><B><BR>'+ kFeatures +'</B></TD></TR>\
-				<TR><TD><INPUT id=pboptACol type=checkbox /></TD><TD>'+ kAutoCollectAt +'<INPUT id=pboptAColTime size=1 maxlength=2 type=text value="'+ Data.options.autoCollect.delay +'" /></TD><TD>\
-				<SELECT id=pboptAColUnit size=1>\
-				<OPTION value=1 '+selected[1]+'>Second(s)</OPTION>\
-				<OPTION value=60 '+selected[2]+'>Minute(s)</OPTION>\
-				<OPTION value=3600 '+selected[3]+'>Hour(s)</OPTION>\
-				<OPTION value=86400 '+selected[4]+'>Day(s)</OPTION>\
-				</SELECT></TD></TR></TABLE><BR><HR>';
+			m = '<DIV class=' + rndClass['tab_title'] + ' style="margin-bottom:10px">'+ kOptions +'</div>\
+				<TABLE>\
+				<TR valign=top><TD><B>' + kGameOptions + ': </B></TD></TR>\
+				<TR valign=top><TD><INPUT id=' + rndId['enable_collect'] + ' type=checkbox /> ' + kAutoCollect + ' <INPUT id=' + rndId['collect_time'] + ' size=1 maxlength=2 type=text value="' + Data.options.autoCollect.delay + '" />\
+				<SELECT id=' + rndId['collect_unit'] + ' size=1>\
+				<OPTION value=1 ' + selected[1] + '>' + kSeconds + '</OPTION>\
+				<OPTION value=60 ' + selected[2] + '>' + kMinutes + '</OPTION>\
+				<OPTION value=3600 ' + selected[3] + '>' + kHours + '</OPTION>\
+				<OPTION value=86400 ' + selected[4] + '>' + kDays + '</OPTION>\
+				</SELECT>\
+				</TD></TR></TABLE><BR><HR>\
+				<TABLE>\
+				<TR valign=top><TD><B>' + kScriptOptions + ': </B></TD></TR>\
+				<TR valign=top><TD><INPUT id=' + rndId['enable_drag'] + ' type=checkbox /> ' + kEnableDrag + '</TD></TR>\
+				<TR valign=top><TD><INPUT id=' + rndId['enable_verbose'] + ' type=checkbox /> ' + kEnableVerbose + '</TD></TR>\
+				</TABLE><BR><HR>\
+				<TABLE>\
+				<TR valign=top><TD><INPUT id=' + rndId['options_refresh'] + ' class=' + rndClass['blue_button'] + ' type=submit value=' + kRefresh + ' /></TD></TR>\
+				</TABLE><BR><HR>';
+				
 			t.cont.innerHTML = m;
-			t.togOpt ('ptAllowWinMove', Data.options.ptWinDrag, mainPop.setEnableDrag);
-			t.togOpt ('pboptACol', Data.options.autoCollect.enabled, AutoCollect.setEnable);
-			document.getElementById('pboptAColTime').addEventListener ('change', t.timeChanged, false);
-			document.getElementById('pboptAColUnit').addEventListener ('change', t.unitChanged, false);
+			t.togOpt(rndId['enable_collect'], Data.options.autoCollect.enabled, AutoCollect.setEnable);
+			document.getElementById(rndId['collect_time']).addEventListener ('change', t.timeChanged, false);
+			document.getElementById(rndId['collect_unit']).addEventListener ('change', t.unitChanged, false);
+			t.togOpt(rndId['enable_drag'], Data.options.ptWinDrag, mainPop.setEnableDrag);
+			t.togOpt(rndId['enable_verbose'], Data.options.verboseLog.enabled, VerboseLog.setEnable);
+			document.getElementById(rndId['options_refresh']).addEventListener ('click', t.refresh, false);
 		} catch (e) {
 			t.cont.innerHTML = '<PRE>'+ e.name +' : '+ e.message +'</pre>';  
 		}
-	},  
-	
-	timeChanged : function (e){
-		var etime = document.getElementById('pboptAColTime');
-		var time = parseIntZero (etime.value);
-		etime.value = time;
-		Data.options.autoCollect.delay = time;
+	}, 
+
+	hide : function () {
 	},
   
-	unitChanged : function (e){
-		var eunit = document.getElementById('pboptAColUnit');
-		var unit = parseIntZero (eunit.value);
-		eunit.value = unit;
-		Data.options.autoCollect.unit = unit;
+	show : function () {
 	},
 	
-	hide : function (){
-	},
-  
-	show : function (){
-	},
-  
-	togOpt : function (checkboxId, optionVar, callEnable, callIsAvailable){
+	togOpt : function (checkboxId, optionVar, callEnable, callIsAvailable) {
 		var t = Tabs.Options;
 		var checkbox = document.getElementById(checkboxId);
-		if (callIsAvailable && callIsAvailable()==false){
+		if (callIsAvailable && callIsAvailable() == false) {
 			checkbox.disabled = true;
 			return;
 		}
 		if (optionVar)
 			checkbox.checked = true;
 		checkbox.addEventListener ('change', new eventToggle(checkboxId, optionVar, callEnable).handler, false);
-		function eventToggle (checkboxId, optionVar, callOnChange){
+		function eventToggle(checkboxId, optionVar, callOnChange) {
 			this.handler = handler;
 			var optVar = optionVar;
 			var callback = callOnChange;
-			function handler(event){
+			function handler(event) {
 				optVar = this.checked;
 				if (callback != null)
-					callback (this.checked);
+					callback(this.checked);
 			}
 		}
 	},
+	
+	timeChanged : function (e) {
+		var etime = document.getElementById(rndId['collect_time']);
+		var time = parseIntZero(etime.value);
+		etime.value = time;
+		Data.options.autoCollect.delay = time;
+	},
+  
+	unitChanged : function (e) {
+		var eunit = document.getElementById(rndId['collect_unit']);
+		var unit = parseIntZero(eunit.value);
+		eunit.value = unit;
+		Data.options.autoCollect.unit = unit;
+	},
+	
+	refresh : function () {
+		var t = Tabs.Options;
+		Seed.fetchSeed();  
+	},
 }
-
-
-/***
-callback (datObj):
-  minX
-  minY
-  maxX
-  maxY
-  done: true/false
-  tiles [  {x, y, type, dist, lvl, detail{} } ]  type = A, W or C
-***/
 
 // tbd - these may need to be translated
 var Map = {
@@ -9634,7 +8175,7 @@ var Map = {
     t.callback = callback; 
     t.circ = true;
 //WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.firstX, y:t.firstY, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:6 }, t.got, false);
+    new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.firstX, y:t.firstY, timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:getVersion }, t.got, false);
   },  
 
  // TBD: Change the if/else in the detail section to a case for the various types
@@ -9676,8 +8217,8 @@ var Map = {
 //logit ('SCAN 2:\n'+ inspect (t, 5, 1));    
     ret.done = false;
     t.callback (ret);  
-//WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY);    
-    setTimeout (function(){new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:6 }, t.got, false);}, MAP_DELAY);
+//WinLog.writeText ('***** AJAX: '+ t.curX +' , '+ t.curY); 
+    setTimeout (function(){new MyAjaxRequest ('map.json', { 'user%5Fid':C.attrs.userId, x:t.normalize(t.firstX+(t.curIX*15)), y:t.normalize(t.firstY+(t.curIY*15)), timestamp:parseInt(serverTime()), '%5Fsession%5Fid':C.attrs.sessionId, 'dragon%5Fheart':C.attrs.dragonHeart, version:getVersion }, t.got, false);}, MAP_DELAY);
  },
 
      
@@ -9724,7 +8265,7 @@ function ModalDialog (curtainDiv, width, height, styleName, allowClose, notifyCl
   this.curtainDiv = curtainDiv;
   this.curtain = document.createElement ('div');
   this.curtain.style.top = off.top +'px';
-  this.curtain.style.left = off.left + 'px';
+  this.curtain.style.right = off.right + 'px';
   this.curtain.style.width = curtainDiv.clientWidth +'px';
   this.curtain.style.height = curtainDiv.clientHeight +'px';
   this.curtain.style.backgroundColor = '#000';
@@ -9747,6 +8288,7 @@ function ModalDialog (curtainDiv, width, height, styleName, allowClose, notifyCl
   this.div.style.position = 'absolute';
   this.div.style.zindex = parseInt(curtainDiv.style.zIndex) + 2;
   this.div.style.top = ((curtainDiv.clientHeight-height)/2 + off.top) + 'px';
+  //this.div.style.right = ((curtainDiv.clientWidth-width)/2 + off.right) + 'px';
   this.div.style.left = ((curtainDiv.clientWidth-width)/2 + off.left) + 'px';
 
   this.div.innerHTML = '<TABLE HEIGHT=100% WIDTH=100%><TR valign=middle height=80%><TD><DIV id=MD7r8hc style="text-align:center"></div></td></tr>\
@@ -9797,6 +8339,7 @@ var tabManager = {
       if (!Tabs[k].tabDisabled){  
         t.tabList[k] = {};
         t.tabList[k].name = k;
+		t.tabList[k].scrambled = scramble('tab_' + k);
         t.tabList[k].obj = Tabs[k];
         if (Tabs[k].tabLabel != null)
           t.tabList[k].label = Tabs[k].tabLabel;
@@ -9811,9 +8354,10 @@ var tabManager = {
     }
 
     sorter.sort (function (a,b){return a[0]-b[0]});
-    var m = '<TABLE cellspacing=0 class=pbMainTab><TR>';
+	
+    var m = '<TABLE cellspacing=0 class=' + rndStyle['classPrefix'] + 'MainTab><TR>';
     for (var i=0; i<sorter.length; i++)
-      m += '<TD class=spacer></td><TD class=notSel id=pttc'+ sorter[i][1].name +' ><A><SPAN>'+ sorter[i][1].label +'</span></a></td>';
+      m += '<TD class=spacer></td><TD class=notSel id='+ sorter[i][1].scrambled +' ><A><SPAN>'+ sorter[i][1].label +'</span></a></td>';
     m += '<TD class=spacer width=90% align=right></td></tr></table>';
     mainPop.getTopDiv().innerHTML = m;
     
@@ -9821,11 +8365,11 @@ var tabManager = {
     for (k in t.tabList) {
       if (t.tabList[k].name == Data.options.currentTab)
         t.currentTab = t.tabList[k] ;
-      document.getElementById('pttc'+ k).addEventListener('click', this.e_clickedTab, false);
+      document.getElementById(t.tabList[k].scrambled).addEventListener('click', this.e_clickedTab, false);
       var div = t.tabList[k].div; 
       div.style.display = 'none';
       div.style.height = '100%';
-      div.style.maxWidth = '387px';
+      div.style.maxWidth = document.getElementById(t.tabList[k].scrambled).parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.style.width;
       div.style.overflowX = 'auto';
       mainDiv.appendChild(div);
       try {
@@ -9836,7 +8380,7 @@ var tabManager = {
     }
     if (t.currentTab == null)
       t.currentTab = sorter[0][1];    
-    t.setTabStyle (document.getElementById ('pttc'+ t.currentTab.name), true);
+    t.setTabStyle (document.getElementById (t.currentTab.scrambled), true);
     t.currentTab.div.style.display = 'block';
   },
   
@@ -9861,10 +8405,14 @@ var tabManager = {
   
   e_clickedTab : function (e){
     var t = tabManager;
-    var newTab = t.tabList[e.target.parentNode.parentNode.id.substring(4)];
+	for (k in t.tabList)
+		if (t.tabList[k].scrambled == e.target.parentNode.parentNode.id) {
+			var newTab = t.tabList[k];
+			break;
+		}
     if (t.currentTab.name != newTab.name){
-      t.setTabStyle (document.getElementById ('pttc'+ newTab.name), true);
-      t.setTabStyle (document.getElementById ('pttc'+ t.currentTab.name), false);
+      t.setTabStyle (document.getElementById (newTab.scrambled), true);
+      t.setTabStyle (document.getElementById (t.currentTab.scrambled), false);
       t.currentTab.obj.hide ();
       t.currentTab.div.style.display = 'none';
       t.currentTab = newTab;
@@ -10022,8 +8570,7 @@ function CdispCityPicker (id, span, dispName, notify, selbut){
 
 
 function CdialogCancelContinue (msg, canNotify, contNotify, centerElement){
-    var popName = makeid();
-    var pop = new CPopup (popName, 0, 0, 400,200, true, canNotify);
+    var pop = new CPopup ('cancelcontinue', 0, 0, 400,200, true, canNotify);
     if (centerElement)
         pop.centerMe(centerElement);
     else
@@ -10041,10 +8588,10 @@ var cdTimer;
   
 // TODO: add 'Retry Now' button
 function DialogRetry (errMsg, seconds, onRetry, onCancel){
-    var secs, pop, popName = makeid();
+    var secs, pop;
   
     secs = parseInt(seconds);
-    pop = new CPopup (popName, 0, 0, 400,200, true);
+    pop = new CPopup ('retry', 0, 0, 400,200, true);
     pop.centerMe(mainPop.getMainDiv());
     pop.getTopDiv().innerHTML = '<CENTER>'+ Title +'</center>';
     pop.getMainDiv().innerHTML = '<CENTER><BR><FONT COLOR=#550000><B>'+ kErrorOccurred +'</b></font><BR><BR><DIV id=paretryErrMsg></div>\
@@ -10132,10 +8679,10 @@ function MyAjaxRequest (url, params, callback, isPost){
       if (DEBUG_TRACE_AJAX > 1)
         WinLog.writeText (inspect (r, 2, 1));
       if (DEBUG_TRACE_AJAX > 2)
-        WinLog.writeText (inspect (JSON2.parse(r.responseText), 8, 1));  
+        WinLog.writeText (inspect (JSON.parse(r.responseText), 8, 1));  
     }
     if (r.status == 200)
-      callback ({ok:true, dat:JSON2.parse(r.responseText)});
+      callback ({ok:true, dat:JSON.parse(r.responseText)});
     else
       error (r.status, 'Server error: '+ r.statusText);
   }
@@ -10168,11 +8715,15 @@ function AjaxRequest (url, opts){
   var timer = null;
   var method = 'GET';
   var ajax;
-  var headers = {
-//    'X-Requested-With': 'XMLHttpRequest',
-//    'X-Prototype-Version': '1.6.1',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-  };
+  if (IsChrome) {
+	  var headers = {
+		'Accept': '*/*'
+	  };
+  } else {
+	  var headers = {
+		'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+	  };
+  }
   if (window.XMLHttpRequest)
     ajax=new XMLHttpRequest();
   else
@@ -10180,7 +8731,7 @@ function AjaxRequest (url, opts){
   if (opts.method)
     method = opts.method.toUpperCase();  
   if (method == 'POST'){
-    headers['Content-type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+    headers['content-type'] = 'application/x-www-form-urlencoded';
   } 
   else if (method == 'GET'){
     url = addUrlArgs (url, opts.parameters);
@@ -10213,7 +8764,8 @@ function AjaxRequest (url, opts){
     for (var k in opts.parameters)
       a.push (k +'='+ opts.parameters[k] );
     var parmStr = a.join ('&');  
-    ajax.setRequestHeader ('X-S3-AWS', SHA1("playerId" + url + parmStr + "WaterDragon5555"));
+    //ajax.setRequestHeader ('x-s3-aws', SHA1("playerId" + url + parmStr + "WaterDragon5555"));
+	ajax.setRequestHeader ('X-S3-AWS', SHA1("Dracunculiasis" + parmStr + "LandCrocodile" + url  + "Bevar-Asp"));
     ajax.send (parmStr);
   } 
   else {
@@ -10254,6 +8806,7 @@ function logit (msg){
 Tabs.ActionLog = {
   tabOrder: LOG_TAB_ORDER,
   tabLabel : kLog,
+  tabDisabled : !LOG_TAB_ENABLE,
   myDiv : null,
   logTab : null,
   maxEntries: 500,
@@ -10263,8 +8816,8 @@ Tabs.ActionLog = {
   init : function (div){
     var t = Tabs.ActionLog;
     t.myDiv = div;
-    t.myDiv.innerHTML = '<DIV class=pbTitle>ACTION LOG</div><DIV style="height:725px; max-height:725px; overflow-y:auto">\
-      <TABLE cellpadding=0 cellspacing=0 id=pbactionlog class=pbTabLined><TR><TD></td><TD width=95%></td></table></div>';
+    t.myDiv.innerHTML = '<DIV class=' + rndClass['tab_title'] + '>ACTION LOG</div><DIV style="height:725px; max-height:725px; overflow-y:auto">\
+      <TABLE cellpadding=0 cellspacing=0 id=pbactionlog class=' + rndStyle['classPrefix'] + 'TabLined><TR><TD></td><TD width=95%></td></table></div>';
     t.logTab = document.getElementById('pbactionlog');  
     t.state = 1;
     if (matTypeof(Data.log) == 'array'){
@@ -10315,7 +8868,7 @@ function AddMainTabLink(text, eventListener, mouseListener) {
   a.innerHTML = text;
   a.href='javascript:';
   a.addEventListener ('click', eventListener, true);
-  a.className = 'toolbutOff';
+  a.className = rndStyle['classPrefix'] + 'toolbutOff';
   li.appendChild (a);
   WinTracker.setBlinkElement (a);
   ul.insertBefore (li, ul.firstChild);
@@ -10336,7 +8889,7 @@ function getAbsoluteOffsets (e){
   while (e.offsetParent){
     if (e.style.position == 'absolute')
       break;
-    ret.left += e.offsetLeft;
+    ret.right += e.offsetRight;
     ret.top += e.offsetTop;
     e = e.offsetParent;
   }      
@@ -10359,8 +8912,8 @@ DebugTimer = {
 };
 
 function debugPos  (e){
-  return 'client - offset: '+ e.clientLeft +','+ e.clientTop +','+ e.clientWidth +','+ e.clientHeight
-          +' - '+ e.offsetLeft +','+ e.offsetTop +','+ e.offsetWidth +','+ e.offsetHeight +' '+ e +' --OP--> '+ e.offsetParent;
+  return 'client - offset: '+ e.clientRight +','+ e.clientTop +','+ e.clientWidth +','+ e.clientHeight
+          +' - '+ e.offsetRight +','+ e.offsetTop +','+ e.offsetWidth +','+ e.offsetHeight +' '+ e +' --OP--> '+ e.offsetParent;
 }
 
 function searchDOM (node, condition, maxLevel, doMult){
@@ -10393,7 +8946,7 @@ function getClientCoords(e){
   var x=0, y=0;
   ret = {x:0, y:0, width:e.clientWidth, height:e.clientHeight};
   while (e.offsetParent != null){
-    ret.x += e.offsetLeft;
+    ret.x += e.offsetRight;
     ret.y += e.offsetTop;
     e = e.offsetParent;
   }
@@ -10437,8 +8990,8 @@ function CPopup (prefix, x, y, width, height, enableDrag, onClose) {
     pop.show (false);
     return pop;
   }
-  this.BASE_ZINDEX = 111111;
-    
+  this.BASE_ZINDEX = 100;
+	
   // protos ...
   this.show = show;
   this.toggleHide = toggleHide;
@@ -10460,39 +9013,36 @@ function CPopup (prefix, x, y, width, height, enableDrag, onClose) {
   this.prefix = prefix;
   this.onClose = onClose;
   
+	// Scramble
+	rndPopup = ['outer', 'bar', 'top', 'main', 'X'];
+	
+	for (var s=0; s<rndPopup.length; s++) {
+		rndPopup[rndPopup[s]] = scramble(prefix + '_' + rndPopup[s]);
+	}
+  
   var t = this;
-  //this.div.className = 'CPopup '+ prefix +'_CPopup';
-  this.div.className = 'CP '+ prefix +'_CP';
-  this.div.id = prefix +'_outer';
+  this.div.id = rndPopup['outer'];
   this.div.style.background = "#fff";
   this.div.style.zIndex = this.BASE_ZINDEX        // KOC modal is 100210 ?
   this.div.style.display = 'none';
   this.div.style.width = width + 'px';
   this.div.style.height = height + 'px';
-  this.div.style.position = "absolute";
+  this.div.style.position = 'absolute';
   this.div.style.top = y +'px';
-  this.div.style.left = x + 'px';
-  
-  if (CPopUpTopClass==null)
-//    topClass = 'CPopupTop '+ prefix +'_CPopupTop';
-    topClass = 'CPTop '+ prefix +'_CPTop';
-  else
-    topClass = CPopUpTopClass +' '+ prefix +'_'+ CPopUpTopClass;
+  this.div.style.right = x + 'px';
+  this.div.style.border = '3px ridge #666';
     
-  var m = '<TABLE cellspacing=0 widthe=100% height=100%>\
-           <TR id="'+ prefix +'_bar" class="'+ topClass +'">\
-           <TD width=99% valign=bottom>\
-           <SPAN id="'+ prefix +'_top"></span></td>\
-           <TD id='+ prefix +'_X align=right valign=middle onmouseover="this.style.cursor=\'pointer\'" style="color:#fff; background:#333; font-weight:bold; font-size:14px; padding:0px 4px">X</td></tr>\
-           <TR><TD height=100% valign=top class="CPMain '+ prefix +'_CPMain" colspan=2 id="'+ prefix +'_main"></td></tr></table>';
+  var m = '<TABLE cellspacing=0 width=100% height=100%>\
+           <TR id="'+ rndPopup['bar'] +'" style="background-color: #dde;">\
+           <TD width=100% valign=bottom>\
+           <SPAN id="'+ rndPopup['top'] +'"></span></td>\
+           <TD id='+ rndPopup['X'] +' align=right valign=middle onmouseover="this.style.cursor=\'pointer\'" style="color:#fff; background:#333; font-weight:bold; font-size:14px; padding:0px 4px">X</td></tr>\
+           <TR><TD height=100% valign=top colspan=2 id="'+ rndPopup['main'] +'"></td></tr></table>';
   
-//  var m = '<TABLE cellspacing=0 width=100% height=100%><TR id="'+ prefix +'_bar" class="'+ topClass +'"><TD width=99% valign=bottom><SPAN id="'+ prefix +'_top"></span></td>\
-//      <TD id='+ prefix +'_X align=right valign=middle onmouseover="this.style.cursor=\'pointer\'" style="color:#fff; background:#333; font-weight:bold; font-size:14px; padding:0px 5px">X</td></tr>\
-//      <TR><TD height=100% valign=top class="CPopMain '+ prefix +'_CPopMain" colspan=2 id="'+ prefix +'_main"></td></tr></table>';
   document.body.appendChild(this.div);
   this.div.innerHTML = m;
-  document.getElementById(prefix+'_X').addEventListener ('click', e_XClose, false);
-  this.dragger = new CWinDrag (document.getElementById(prefix+'_bar'), this.div, enableDrag);
+  document.getElementById(rndPopup['X']).addEventListener ('click', e_XClose, false);
+  this.dragger = new CWinDrag (document.getElementById(rndPopup['bar']), this.div, enableDrag);
   
   this.div.addEventListener ('mousedown', e_divClicked, false);
   WinManager.add(prefix, this);
@@ -10520,10 +9070,10 @@ function CPopup (prefix, x, y, width, height, enableDrag, onClose) {
     t.setLayer(-5);
   }
   function getLocation (){
-    return {x: parseInt(this.div.style.left), y: parseInt(this.div.style.top)};
+    return {x: parseInt(this.div.style.right), y: parseInt(this.div.style.top)};
   }
   function setLocation (loc){
-    t.div.style.left = loc.x +'px';
+    t.div.style.right= loc.x +'px';
     t.div.style.top = loc.y +'px';
   }
   function destroy (){
@@ -10531,19 +9081,32 @@ function CPopup (prefix, x, y, width, height, enableDrag, onClose) {
     WinManager.delete (t.prefix);
   }
   function centerMe (parent){
-    if (parent == null){
-      var coords = getClientCoords(document.body);
-    } 
-    else
-      var coords = getClientCoords(parent);
-    var x = ((coords.width - parseInt(t.div.style.width)) / 2) + coords.x;
-    var y = ((coords.height - parseInt(t.div.style.height)) / 2) + coords.y;
-    if (x<0)
-      x = 0;
-    if (y<0)
-      y = 0;
-    t.div.style.left = x +'px';
-    t.div.style.top = y +'px';
+  
+    var coords = (parent == null) ? getClientCoords(document.body) : t.div.getBoundingClientRect(parent);
+    if (parent != null) {
+        parentWindowCoords = parent.ownerDocument.body;
+        // Our window is to the right
+        mainPopHeight = parent.previousElementSibling.clientHeight;
+        mainPopWidth = parent.previousElementSibliing.clientWidth;
+        mainPopCenterX = mainPopWidth/2 + parentWindowCoords.clientWidth;
+        mainPopCenterY = mainPopHeight/2;
+        dlgCenterX = parseInt(t.div.style.width) / 2;
+        dlgCenterY = parseInt(t.div.style.height) / 2;
+        var winLeft = mainPopCenterX - dlgCenterX;
+        var WinTop = mainPopCenterY - dlgCenterY; 
+    }
+    else {
+        var midX = (coords.left + coords.right) / 2;
+        var midY = (coords.top + coords.bottom) / 2;
+        var winLeft = midX - (parseInt(t.div.style.width) / 2);
+        var winTop = midY - (parseInt(t.div.style.height) / 2);
+    }
+    
+    if (winLeft<0) winLeft = 0;
+    if (winTop<0) winTop = 0;
+    
+    t.div.style.left = winLeft +'px';
+    t.div.style.top = winTop +'px';
   }
   function setEnableDrag (tf){
     t.dragger.setEnable(tf);
@@ -10556,10 +9119,10 @@ function CPopup (prefix, x, y, width, height, enableDrag, onClose) {
     return parseInt(t.div.style.zIndex) - this.BASE_ZINDEX;
   }
   function getTopDiv(){
-    return document.getElementById(this.prefix+'_top');
+    return document.getElementById(rndPopup['top']);
   }
   function getMainDiv(){
-    return document.getElementById(this.prefix+'_main');
+    return document.getElementById(rndPopup['main']);
   }
   function show(tf){
     if (tf){
@@ -10680,17 +9243,17 @@ function CWinDrag (clickableElement, movingDiv, enabled) {
       if (t.enabled && !t.wentOut){
 //t.dispEvent ('eventMOVE', me);
         var newTop = parseInt(t.theDiv.style.top) + me.clientY - t.lastY;
-        var newLeft = parseInt(t.theDiv.style.left) + me.clientX - t.lastX;
+        var newRight = parseInt(t.theDiv.style.right) - me.clientX + t.lastX;
         if (newTop < t.bounds.top){     // if out-of-bounds...
           newTop = t.bounds.top;
           _doneMoving(t);
         } 
-        else if (newLeft < t.bounds.left){
-          newLeft = t.bounds.left;
+        else if (newRight < t.bounds.left){
+          newRight = t.bounds.left;
           _doneMoving(t);
         } 
-        else if (newLeft > t.bounds.right){
-          newLeft = t.bounds.right;
+        else if (newRight > t.bounds.right){
+          newRight = t.bounds.right;
           _doneMoving(t);
         } 
         else if (newTop > t.bounds.bot){
@@ -10698,7 +9261,7 @@ function CWinDrag (clickableElement, movingDiv, enabled) {
           _doneMoving(t);
         }
         t.theDiv.style.top = newTop + 'px';
-        t.theDiv.style.left = newLeft + 'px';
+        t.theDiv.style.right = newRight + 'px';
         t.lastX = me.clientX;
         t.lastY = me.clientY;
       }
@@ -10708,8 +9271,8 @@ function CWinDrag (clickableElement, movingDiv, enabled) {
   function debug  (msg, e){
     logit ("*************** "+ msg +" ****************");
     logit ('clientWidth, Height: '+ e.clientWidth +','+ e.clientHeight);
-    logit ('offsetLeft, Top, Width, Height (parent): '+ e.offsetLeft +','+ e.offsetTop +','+ e.offsetWidth +','+ e.offsetHeight +' ('+ e.offsetParent +')');
-    logit ('scrollLeft, Top, Width, Height: '+ e.scrollLeft +','+ e.scrollTop +','+ e.scrollWidth +','+ e.scrollHeight);
+    logit ('offsetRight, Top, Width, Height (parent): '+ e.offsetRight +','+ e.offsetTop +','+ e.offsetWidth +','+ e.offsetHeight +' ('+ e.offsetParent +')');
+    logit ('scrollRight, Top, Width, Height: '+ e.scrollRight +','+ e.scrollTop +','+ e.scrollWidth +','+ e.scrollHeight);
   }
 
   function dispEvent (msg, me){
@@ -11230,25 +9793,5 @@ function SHA1 (msg) {
 	return temp.toLowerCase();
 }
 
-//alert ('attempting startup');
-setTimeout (dtStartup, 20000);
-//dtStartup();
-
-/*
-
-Notes on owned wildernesses
-
-t.s.player_wildernesses[] contains the array of wildernesses owned by a player
-var t = Seed;
-var wildernesses = t.s.wildernesses;
-
-Notes on jsons
-
-player.json
-maps.json
-
-cities: id cancel march
-reports: id queue up a report
-
-see fetchcity(), marchrecall(), buildingupdate(), messagedetail()
-*/
+setTimeout (dtStartup, 9000);
+}
